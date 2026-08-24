@@ -1,11 +1,12 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { DataSource } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
+import { isDatabaseConfigured } from '@/lib/db';
 import { ROLE_LABELS, type Permission } from '@/lib/permissions';
 
 type ActiveKey = 'visao' | 'atendimento' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
 type Props = { active: ActiveKey; source: DataSource; children: React.ReactNode };
-
 type NavItem = { key: ActiveKey; href: string; icon: string; label: string; permission?: Permission; anyPermission?: Permission[]; adminOnly?: boolean };
 
 const items: NavItem[] = [
@@ -35,13 +36,19 @@ function allowed(item: NavItem, user: Awaited<ReturnType<typeof getCurrentAppUse
 export default async function AppShell({ active, source, children }: Props) {
   const sourceInfo = sourceLabel(source);
   const user = await getCurrentAppUser();
+
+  if (isDatabaseConfigured() && !user) redirect('/sem-acesso');
+
   const visibleItems = user ? items.filter((item) => allowed(item, user)) : items;
+  const activeItem = items.find((item) => item.key === active);
+  if (user && activeItem && !allowed(activeItem, user)) redirect('/sem-acesso');
+
   const initials = user?.nome ? user.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() : 'PS';
 
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <Link href="/" className="brand"><div className="brand-mark">PS</div><div><strong>PintService</strong><span>Funilaria & Pintura</span></div></Link>
+        <Link href="/inicio" className="brand"><div className="brand-mark">PS</div><div><strong>PintService</strong><span>Funilaria & Pintura</span></div></Link>
         <nav className="nav" aria-label="Navegação principal">
           {visibleItems.map((item) => <Link key={item.key} className={active === item.key ? 'active' : ''} href={item.href}>{item.icon} <span>{item.label}</span></Link>)}
           {user?.perfil === 'admin' && <Link href="/simulador">⌁ <span>Simulador</span></Link>}
