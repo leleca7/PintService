@@ -6,10 +6,11 @@ import './access.css';
 import './pint-services-theme.css';
 import './no-emoji.css';
 import './visual-polish.css';
+import './reputation.css';
 
 export const metadata: Metadata = {
   title: 'PintService | Pint Services',
-  description: 'Central inteligente de atendimento e produção da Pint Services.',
+  description: 'Central inteligente de atendimento, produção e reputação da Pint Services.',
   applicationName: 'PintService',
   appleWebApp: { capable: true, title: 'PintService', statusBarStyle: 'black-translucent' },
 };

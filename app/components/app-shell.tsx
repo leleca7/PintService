@@ -2,16 +2,17 @@ import Link from 'next/link';
 import type { DataSource } from '@/lib/dashboard-data';
 
 type Props = {
-  active: 'visao' | 'atendimento' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
+  active: 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
   source: DataSource;
   children: React.ReactNode;
 };
 
-type IconName = 'home' | 'chat' | 'car' | 'tasks' | 'team' | 'access' | 'settings' | 'simulator';
+type IconName = 'home' | 'chat' | 'reputation' | 'car' | 'tasks' | 'team' | 'access' | 'settings' | 'simulator';
 
 const items: { key: Props['active']; href: string; label: string; icon: IconName }[] = [
   { key: 'visao', href: '/', label: 'Visão geral', icon: 'home' },
   { key: 'atendimento', href: '/atendimento', label: 'Atendimento', icon: 'chat' },
+  { key: 'reputacao', href: '/reputacao', label: 'Reputação', icon: 'reputation' },
   { key: 'veiculos', href: '/veiculos', label: 'Veículos', icon: 'car' },
   { key: 'tarefas', href: '/tarefas', label: 'Tarefas', icon: 'tasks' },
   { key: 'funcionarios', href: '/funcionarios', label: 'Funcionários', icon: 'team' },
@@ -35,6 +36,7 @@ function NavIcon({ name }: { name: IconName }) {
 
   if (name === 'home') return <svg {...common}><path d="M3.5 10.5 12 3.8l8.5 6.7"/><path d="M5.5 9.7V20h13V9.7"/><path d="M9.5 20v-6h5v6"/></svg>;
   if (name === 'chat') return <svg {...common}><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8"/><path d="M8 13h5"/></svg>;
+  if (name === 'reputation') return <svg {...common}><path d="m12 3 2.7 5.4 6 .9-4.3 4.2 1 5.9-5.4-2.8-5.4 2.8 1-5.9-4.3-4.2 6-.9L12 3Z"/><path d="m9.5 12 1.6 1.6 3.5-3.6"/></svg>;
   if (name === 'car') return <svg {...common}><path d="m5 15 1.5-5h11L19 15"/><path d="M4 15h16v4H4z"/><path d="M7 19v1.5M17 19v1.5"/><circle cx="7.5" cy="16.8" r=".7"/><circle cx="16.5" cy="16.8" r=".7"/></svg>;
   if (name === 'tasks') return <svg {...common}><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M8.5 9h7"/><path d="M8.5 13h7"/><path d="M8.5 17h4"/></svg>;
   if (name === 'team') return <svg {...common}><circle cx="9" cy="8" r="3"/><path d="M4 19c.5-3.2 2.2-5 5-5s4.5 1.8 5 5"/><circle cx="17" cy="9" r="2"/><path d="M15.5 14.5c2.5.2 4 1.7 4.5 4.5"/></svg>;
