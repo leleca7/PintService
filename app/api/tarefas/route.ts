@@ -1,31 +1,46 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import { requireAnyPermission, userHasPermission } from '@/lib/auth/current-user';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-function authorized(request: Request) {
-  const expected = process.env.STAFF_API_TOKEN;
-  if (!expected) return false;
-  const bearer = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  const direct = request.headers.get('x-staff-token');
-  return bearer === expected || direct === expected;
+function mapTask(row: any) {
+  return {
+    id: String(row.id), codigo: row.codigo, tipo: row.tipo, titulo: row.titulo, instrucoes: row.instrucoes,
+    setor_responsavel: row.setor_responsavel, responsavel_id: row.responsavel_id, prioridade: row.prioridade,
+    status: row.status, requer_foto: row.requer_foto, resposta_funcionario: row.resposta_funcionario,
+    evidencia_url: row.evidencia_url, evidencia_media_id: row.evidencia_media_id, resultado: row.resultado,
+    criado_em: row.criado_em, atualizado_em: row.atualizado_em, resolvido_em: row.resolvido_em,
+    veiculos: row.veiculo_id ? { id: String(row.veiculo_id), placa: row.placa, modelo: row.modelo, status: row.veiculo_status, setor: row.veiculo_setor } : null,
+    funcionarios: row.funcionario_id ? { id: String(row.funcionario_id), nome: row.funcionario_nome, setor: row.funcionario_setor, telefone: row.funcionario_telefone } : null,
+  };
 }
 
 export async function GET(request: Request) {
-  if (!process.env.STAFF_API_TOKEN) return NextResponse.json({ error: 'STAFF_API_TOKEN não configurado.' }, { status: 503 });
-  if (!authorized(request)) return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 });
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) return NextResponse.json({ error: 'Banco não conectado. O painel web continua disponível em modo demonstração.' }, { status: 503 });
+  if (!isDatabaseConfigured()) return NextResponse.json({ error: 'Banco Neon não configurado.' }, { status: 503 });
+  try {
+    const user = await requireAnyPermission(['ver_todas_tarefas', 'ver_proprias_tarefas']);
+    const url = new URL(request.url);
+    const requestedStatus = url.searchParams.get('status')?.trim() || '';
+    const requestedSector = url.searchParams.get('setor')?.trim().toLowerCase() || '';
+    const requestedEmployeeId = url.searchParams.get('responsavel')?.trim() || '';
+    const sql = getDb();
+    const all = userHasPermission(user, 'ver_todas_tarefas');
 
-  const url = new URL(request.url);
-  const status = url.searchParams.get('status');
-  const sector = url.searchParams.get('setor');
-  const employeeId = url.searchParams.get('responsavel');
-  const supabase = getSupabaseAdmin();
-  let query = supabase.from('tarefas_operacionais').select('id,codigo,tipo,titulo,instrucoes,setor_responsavel,responsavel_id,prioridade,status,requer_foto,resposta_funcionario,evidencia_url,evidencia_media_id,resultado,criado_em,atualizado_em,resolvido_em,veiculos(id,placa,modelo,status,setor),funcionarios(id,nome,setor,telefone)').order('criado_em', { ascending: false }).limit(100);
-  if (status) query = query.eq('status', status); else query = query.in('status', ['aberta', 'em_execucao', 'aguardando_confirmacao']);
-  if (sector) query = query.ilike('setor_responsavel', sector);
-  if (employeeId) query = query.eq('responsavel_id', employeeId);
-  const { data, error } = await query;
-  if (error) { console.error('Erro ao listar tarefas operacionais:', error); return NextResponse.json({ error: 'Não foi possível carregar as tarefas.' }, { status: 500 }); }
-  return NextResponse.json({ tasks: data ?? [] });
+    const rows = all
+      ? requestedStatus
+        ? await sql`SELECT t.*,v.id AS veiculo_id,v.placa,v.modelo,v.status AS veiculo_status,v.setor AS veiculo_setor,f.id AS funcionario_id,f.nome AS funcionario_nome,f.setor AS funcionario_setor,f.telefone AS funcionario_telefone FROM tarefas_operacionais t LEFT JOIN veiculos v ON v.id=t.veiculo_id LEFT JOIN funcionarios f ON f.id=t.responsavel_id WHERE t.status=${requestedStatus} ORDER BY t.criado_em DESC LIMIT 100`
+        : await sql`SELECT t.*,v.id AS veiculo_id,v.placa,v.modelo,v.status AS veiculo_status,v.setor AS veiculo_setor,f.id AS funcionario_id,f.nome AS funcionario_nome,f.setor AS funcionario_setor,f.telefone AS funcionario_telefone FROM tarefas_operacionais t LEFT JOIN veiculos v ON v.id=t.veiculo_id LEFT JOIN funcionarios f ON f.id=t.responsavel_id WHERE t.status IN ('aberta','em_execucao','aguardando_confirmacao') ORDER BY t.criado_em DESC LIMIT 100`
+      : user.funcionarioId
+        ? await sql`SELECT t.*,v.id AS veiculo_id,v.placa,v.modelo,v.status AS veiculo_status,v.setor AS veiculo_setor,f.id AS funcionario_id,f.nome AS funcionario_nome,f.setor AS funcionario_setor,f.telefone AS funcionario_telefone FROM tarefas_operacionais t LEFT JOIN veiculos v ON v.id=t.veiculo_id LEFT JOIN funcionarios f ON f.id=t.responsavel_id WHERE t.responsavel_id=${user.funcionarioId} AND t.status IN ('aberta','em_execucao','aguardando_confirmacao') ORDER BY t.criado_em DESC LIMIT 100`
+        : [];
+
+    const filtered = rows.filter((row: any) => (!requestedSector || String(row.setor_responsavel ?? '').toLowerCase() === requestedSector) && (!requestedEmployeeId || String(row.responsavel_id ?? '') === requestedEmployeeId));
+    return NextResponse.json({ tasks: filtered.map(mapTask) });
+  } catch (error: any) {
+    const status = error?.status === 401 ? 401 : error?.status === 403 ? 403 : 500;
+    if (status === 500) console.error('Erro ao listar tarefas operacionais:', error);
+    return NextResponse.json({ error: status === 401 ? 'Não autenticado.' : status === 403 ? 'Sem permissão.' : 'Não foi possível carregar as tarefas.' }, { status });
+  }
 }
