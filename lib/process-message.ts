@@ -1,6 +1,7 @@
 import 'server-only';
 import { answerGeneralQuestion, planAttendance } from '@/lib/agent';
 import { createOrReuseOperationalTask, type OperationalTaskType } from '@/lib/operational-tasks';
+import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/lib/operational-vehicle';
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
 import { getSupabaseAdmin } from '@/lib/supabase-server';
 import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
@@ -12,17 +13,19 @@ function normalize(value = '') {
 }
 
 function statusMessage(vehicle: any) {
-  const base = normalize(`${vehicle.status ?? ''} ${vehicle.setor ?? ''}`);
+  const sector = vehicle.setor ?? vehicle.etapa ?? '';
+  const base = normalize(`${vehicle.status ?? ''} ${sector}`);
   const index = STAGES.findIndex((stage) => base.includes(normalize(stage)));
   const label = vehicle.modelo ? `${vehicle.modelo} (${vehicle.placa})` : `veículo ${vehicle.placa}`;
 
   let text = index >= 0
-    ? `Seu ${label} está na etapa ${index + 1} de ${STAGES.length} — ${STAGES[index]}.`
-    : `Encontrei seu ${label}. A atualização registrada é ${vehicle.setor || vehicle.status || 'em acompanhamento pela oficina'}.`;
+    ? `Seu ${label} está registrado na etapa ${index + 1} de ${STAGES.length} — ${STAGES[index]}.`
+    : `Encontrei seu ${label}. A atualização registrada é ${sector || vehicle.status || 'em acompanhamento pela oficina'}.`;
 
-  if (index >= 0 && index < STAGES.length - 1) text += ` A próxima etapa prevista no fluxo é ${STAGES[index + 1]}.`;
   if (vehicle.status) text += ` Situação registrada: ${vehicle.status}.`;
-  text += ' Se a sua pergunta exigir uma confirmação física atual, eu posso pedir para a equipe verificar sem transferir toda a conversa.';
+  if (vehicle.statusPrazo) text += ` Situação do prazo registrada: ${vehicle.statusPrazo}.`;
+  if (vehicle.source === 'planilha') text += ' Consultei agora a fonte operacional vinculada pela oficina.';
+  text += ' Se a sua pergunta exigir uma confirmação física atual, eu posso pedir para a equipe verificar sem inventar a resposta.';
   return text;
 }
 
@@ -36,6 +39,12 @@ async function createPending(supabase: any, clientId: string | null, vehicleId: 
 
 async function setState(supabase: any, phone: string, values: Record<string, unknown>) {
   await supabase.from('estado_atendimento').upsert({ telefone: phone, atualizado_em: new Date().toISOString(), ...values }, { onConflict: 'telefone' });
+}
+
+function unavailableVehicleReply(reason: 'not_found' | 'source_error' | 'incomplete') {
+  if (reason === 'source_error') return 'A fonte operacional da oficina não respondeu agora. Para não te passar uma informação possivelmente desatualizada, encaminhei para a equipe confirmar e continuar com você por aqui.';
+  if (reason === 'incomplete') return 'Encontrei o veículo, mas a informação de etapa/status não está preenchida na fonte da oficina. Encaminhei para a equipe confirmar antes de te responder.';
+  return 'Não encontrei essa placa na fonte operacional da oficina. Encaminhei para a equipe verificar e continuar com você por aqui.';
 }
 
 export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
@@ -75,9 +84,10 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
 
   if (state?.bot_ativo === false) return { handedToHuman: true };
 
-  const plan = await planAttendance({ message: message.text, messageType: message.type, waitingFor: state?.aguardando_campo ?? null, plateContext: state?.placa_contexto ?? null, vehicles: vehicles ?? [], history: (history ?? []).reverse(), openTasks: openTasks ?? [] });
+  const plannerVehicles = externalVehicleSourceConfigured() ? [] : (vehicles ?? []);
+  const plan = await planAttendance({ message: message.text, messageType: message.type, waitingFor: state?.aguardando_campo ?? null, plateContext: state?.placa_contexto ?? null, vehicles: plannerVehicles, history: (history ?? []).reverse(), openTasks: openTasks ?? [] });
 
-  await supabase.from('decisoes_ia').insert({ telefone: message.phone, mensagem: message.text, intencao: plan.intent, acao: plan.action, confianca: plan.confidence, prioridade: plan.priority, precisa_atendente: plan.needsHuman, dados: { reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks?.length ?? 0 } });
+  await supabase.from('decisoes_ia').insert({ telefone: message.phone, mensagem: message.text, intencao: plan.intent, acao: plan.action, confianca: plan.confidence, prioridade: plan.priority, precisa_atendente: plan.needsHuman, dados: { reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks?.length ?? 0, externalVehicleSource: externalVehicleSourceConfigured() } });
 
   let reply = '';
   let needsHuman = false;
@@ -85,13 +95,15 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
 
   switch (plan.action) {
     case 'status': {
-      const { data: vehicle } = await supabase.from('veiculos').select('*').ilike('placa', plan.plate).maybeSingle();
-      if (!vehicle) {
+      const resolution = await resolveOperationalVehicle(supabase, plan.plate);
+      if (!resolution.ok) {
         needsHuman = true;
-        reply = 'Não encontrei essa placa no cadastro. Encaminhei para o atendimento verificar e continuar com você por aqui.';
-        await createPending(supabase, client.id, null, 'atendente', `Verificar status da placa ${plan.plate || 'não identificada'}.`, 'normal');
+        reply = unavailableVehicleReply(resolution.reason);
+        const detail = resolution.reason === 'source_error' ? `Fonte por link indisponível ao consultar ${plan.plate}: ${resolution.error || 'erro sem detalhe'}.` : resolution.reason === 'incomplete' ? `Completar etapa/status da placa ${plan.plate} na fonte operacional e responder o cliente.` : `Localizar a placa ${plan.plate || 'não identificada'} na fonte operacional e responder o cliente.`;
+        await createPending(supabase, client.id, null, 'atendente', detail, resolution.reason === 'source_error' ? 'alta' : 'normal');
         await setState(supabase, message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'status', aguardando_campo: null });
       } else {
+        const vehicle = resolution.vehicle;
         vehicleId = vehicle.id;
         reply = statusMessage(vehicle);
         await setState(supabase, message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'status', placa_contexto: vehicle.placa, aguardando_campo: null });
@@ -99,15 +111,17 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       break;
     }
     case 'verificar_operacao': {
-      const { data: vehicle } = await supabase.from('veiculos').select('id,placa,modelo,status,setor').ilike('placa', plan.plate).maybeSingle();
-      if (!vehicle) {
+      const resolution = await resolveOperationalVehicle(supabase, plan.plate);
+      if (!resolution.ok) {
         needsHuman = true;
-        reply = 'Não encontrei esse veículo no cadastro para pedir a confirmação à equipe. Encaminhei ao atendimento para verificar a placa.';
-        await createPending(supabase, client.id, null, 'atendente', `Localizar veículo/placa ${plan.plate || 'não identificada'} antes da confirmação operacional.`, 'normal');
+        reply = unavailableVehicleReply(resolution.reason);
+        const detail = resolution.reason === 'source_error' ? `Fonte por link indisponível antes da confirmação física da placa ${plan.plate}: ${resolution.error || 'erro sem detalhe'}.` : `Localizar/completar o cadastro da placa ${plan.plate || 'não identificada'} antes da confirmação operacional.`;
+        await createPending(supabase, client.id, null, 'atendente', detail, plan.priority);
         await setState(supabase, message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: plan.intent, aguardando_campo: null });
         break;
       }
 
+      const vehicle = resolution.vehicle;
       vehicleId = vehicle.id;
       const taskType: OperationalTaskType = plan.operationalTask.type === 'nenhuma' ? 'verificar_status_fisico' : plan.operationalTask.type;
       const request = { type: taskType, sector: plan.operationalTask.sector || vehicle.setor || '', instruction: plan.operationalTask.instruction || `Verificar fisicamente a situação atual do veículo ${vehicle.placa} e confirmar a informação solicitada pelo cliente.`, requiresPhoto: plan.operationalTask.requiresPhoto };
@@ -117,7 +131,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       await setState(supabase, message.phone, { etapa: 'aguardando_tarefa_operacional', bot_ativo: true, ultima_intencao: plan.intent, placa_contexto: vehicle.placa, aguardando_campo: null, tarefa_aguardada_id: task.id });
       break;
     }
-    case 'pedir_placa': reply = 'Claro 😊 Pode me informar a placa do veículo?'; await setState(supabase, message.phone, { etapa: 'aguardando_placa', bot_ativo: true, ultima_intencao: 'status', aguardando_campo: 'placa' }); break;
+    case 'pedir_placa': reply = 'Claro. Pode me informar a placa do veículo?'; await setState(supabase, message.phone, { etapa: 'aguardando_placa', bot_ativo: true, ultima_intencao: 'status', aguardando_campo: 'placa' }); break;
     case 'vistoria': reply = 'Para vistorias de seguradoras e associações, não é necessário agendamento. O atendimento é por ordem de chegada, das 8h às 16h.'; await setState(supabase, message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'vistoria', aguardando_campo: null }); break;
     case 'horario_endereco': {
       const hours = process.env.OFICINA_HOURS || 'das 8h às 16h'; const address = process.env.OFICINA_ADDRESS;
