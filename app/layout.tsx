@@ -3,16 +3,17 @@ import './globals.css';
 import './operational.css';
 import './system-states.css';
 import './access.css';
+import './pint-services-theme.css';
 
 export const metadata: Metadata = {
-  title: 'PintService | Funilaria & Pintura',
-  description: 'Central inteligente de atendimento e produção da oficina.',
+  title: 'PintService | Pint Services',
+  description: 'Central inteligente de atendimento e produção da Pint Services.',
   applicationName: 'PintService',
   appleWebApp: { capable: true, title: 'PintService', statusBarStyle: 'black-translucent' },
 };
 
 export const viewport: Viewport = {
-  themeColor: '#12151a',
+  themeColor: '#090a0a',
   width: 'device-width',
   initialScale: 1,
 };
