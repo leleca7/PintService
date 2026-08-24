@@ -3,6 +3,8 @@ export type UserRole = 'admin' | 'gerente' | 'funcionario';
 export type Permission =
   | 'ver_visao_geral'
   | 'ver_atendimento'
+  | 'ver_reputacao'
+  | 'responder_reputacao'
   | 'ver_todos_veiculos'
   | 'ver_veiculos_setor'
   | 'ver_todas_tarefas'
@@ -22,8 +24,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
 };
 
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  admin: 'Acesso completo à operação, equipe, integrações e configurações.',
-  gerente: 'Acompanha a operação e a equipe, sem acesso às chaves e integrações sensíveis.',
+  admin: 'Acesso completo à operação, equipe, reputação, integrações e configurações.',
+  gerente: 'Acompanha a operação, a equipe e a reputação, sem acesso às chaves e integrações sensíveis.',
   funcionario: 'Vê somente o que precisa para executar o próprio trabalho e as tarefas do seu setor.',
 };
 
@@ -31,6 +33,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   admin: [
     'ver_visao_geral',
     'ver_atendimento',
+    'ver_reputacao',
+    'responder_reputacao',
     'ver_todos_veiculos',
     'ver_veiculos_setor',
     'ver_todas_tarefas',
@@ -46,6 +50,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   gerente: [
     'ver_visao_geral',
     'ver_atendimento',
+    'ver_reputacao',
+    'responder_reputacao',
     'ver_todos_veiculos',
     'ver_veiculos_setor',
     'ver_todas_tarefas',
@@ -64,6 +70,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
 export const PERMISSION_LABELS: Record<Permission, string> = {
   ver_visao_geral: 'Visão geral da oficina',
   ver_atendimento: 'Central de atendimento',
+  ver_reputacao: 'Central de reputação',
+  responder_reputacao: 'Responder Google, Instagram e Reclame Aqui',
   ver_todos_veiculos: 'Todos os veículos',
   ver_veiculos_setor: 'Veículos do próprio setor',
   ver_todas_tarefas: 'Todas as tarefas',
