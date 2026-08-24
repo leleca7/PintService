@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import './operational.css';
 import './system-states.css';
+import './access.css';
 
 export const metadata: Metadata = {
   title: 'PintService | Funilaria & Pintura',
