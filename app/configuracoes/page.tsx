@@ -1,5 +1,6 @@
 import AppShell from '@/app/components/app-shell';
 import { getDashboardData, isSupabaseConfigured } from '@/lib/dashboard-data';
+import { fetchExternalVehicles } from '@/lib/external-vehicle-source';
 import { getChannelStatuses } from '@/lib/reputation';
 
 function configured(...values: Array<string | undefined>) {
@@ -7,10 +8,12 @@ function configured(...values: Array<string | undefined>) {
 }
 
 export default async function SettingsPage() {
-  const data = await getDashboardData();
+  const [data, vehicleSource] = await Promise.all([getDashboardData(), fetchExternalVehicles()]);
   const reputationChannels = getChannelStatuses();
+  const vehicleSourceReady = vehicleSource.configured && !vehicleSource.error && vehicleSource.vehicles.length > 0;
   const connections = [
-    { name: 'Banco de dados', description: 'Hoje mantém o painel em modo demo quando não está conectado. A migração definitiva para Neon fica separada das credenciais públicas.', ready: isSupabaseConfigured(), detail: 'dados operacionais' },
+    { name: 'Banco de dados', description: 'Guarda clientes, conversas, tarefas e histórico do atendimento. A fonte por link pode ser usada como verdade operacional dos veículos.', ready: isSupabaseConfigured(), detail: 'dados de atendimento e operação' },
+    { name: 'Fonte operacional por link', description: 'Lê a planilha atualizada da oficina antes de responder status de veículo. Se a placa ou o status não estiverem lá, a IA solicita confirmação humana.', ready: vehicleSourceReady, detail: vehicleSource.error ? `erro ao ler a fonte: ${vehicleSource.error}` : vehicleSourceReady ? `${vehicleSource.vehicles.length} veículo(s) lido(s) agora` : 'VEHICLE_DATA_URL — link público somente para leitura da aba com Placa/Modelo/Fase/Status' },
     { name: 'OpenAI', description: 'Triagem, interpretação e redação segura de respostas de atendimento e reputação.', ready: configured(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL), detail: 'OPENAI_API_KEY + OPENAI_MODEL' },
     { name: 'WhatsApp Cloud API', description: 'Recebe e envia mensagens pelo número oficial e também pode receber alertas críticos da reputação.', ready: configured(process.env.WHATSAPP_ACCESS_TOKEN, process.env.WHATSAPP_PHONE_NUMBER_ID, process.env.WHATSAPP_VERIFY_TOKEN, process.env.WHATSAPP_APP_SECRET), detail: 'token + phone id + verify token + app secret' },
     { name: 'Google Business Profile', description: 'Lê avaliações da oficina e permite responder diretamente pela Central de reputação.', ready: reputationChannels.find((item) => item.channel === 'google')?.state === 'ready', detail: 'OAuth token + account id + location id' },
@@ -32,6 +35,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="settings-grid">
+        <article className="panel settings-card"><p className="eyebrow">DADOS OPERACIONAIS</p><h2>Como a fonte por link funciona</h2><ul><li>O ideal é um Google Sheets compartilhado como somente leitura e com a aba operacional selecionada no link.</li><li>Antes de responder status, o PintService consulta a fonte novamente; não depende de você anexar uma cópia diária.</li><li>A planilha pode manter as colunas que já existem: Placa, Modelo, Cor, Seguradora, Dt. Entrada, Dt. Produção, Fase, Status, Dias em Casa, Dias p/ Entrega, Status Prazo, Observações e Responsável.</li><li>Se a fonte estiver fora do ar, a placa não existir ou Fase/Status estiver vazio, a IA não usa dado antigo como verdade e encaminha para a equipe confirmar.</li></ul></article>
         <article className="panel settings-card"><p className="eyebrow">REPUTAÇÃO</p><h2>Como os alertas funcionam</h2><ul><li>Instagram usa webhook para alertas em tempo real quando chega mensagem ou comentário crítico.</li><li>Google e Reclame Aqui entram na varredura programada e também podem ser sincronizados pela Central de reputação.</li><li>No plano Hobby da Vercel, a varredura automática fica diária; um scheduler externo ou plano Pro permite frequência maior.</li><li>Casos críticos exigem aprovação humana antes de publicar uma resposta.</li></ul></article>
         <article className="panel settings-card"><p className="eyebrow">SEGURANÇA</p><h2>Proteções preparadas</h2><ul><li>Segredos ficam apenas no servidor.</li><li>Webhooks da Meta validam assinatura quando o App Secret está configurado.</li><li>IA não confirma fatos físicos, preço, prazo, culpa ou dano sem humano.</li><li>Reclamações e avaliações negativas ficam marcadas para aprovação.</li><li>Resposta do Reclame Aqui só é habilitada com o endpoint fornecido no contrato oficial.</li></ul></article>
       </section>
