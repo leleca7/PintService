@@ -369,7 +369,7 @@ export async function getReputationData(options: { demoFallback?: boolean } = {}
   let raSummary: ReclameAquiSummary | null = null;
   let attemptedLive = false;
 
-  const tasks: Array<Promise<void>> = [];
+  const tasks: Array<Promise<unknown>> = [];
   if (channels.find((item) => item.channel === 'google')?.state === 'ready') {
     attemptedLive = true;
     tasks.push(fetchGoogleReviews().then((items) => { liveItems.push(...items); }).catch((error) => errors.push(String(error?.message ?? error))));
