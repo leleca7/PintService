@@ -14,7 +14,12 @@ function fallbackDraft(item: ReputationItem) {
 }
 
 export async function generateReputationDraft(item: ReputationItem) {
-  if (!process.env.OPENAI_API_KEY) return { text: fallbackDraft(item), source: 'fallback' as const };
+  // Enquanto o login/RBAC ainda não está na produção principal, o endpoint público
+  // usa um rascunho seguro local para evitar consumo indevido da chave da OpenAI.
+  if (!process.env.OPENAI_API_KEY || process.env.REPUTATION_AI_DRAFTS_ENABLED !== 'true') {
+    return { text: fallbackDraft(item), source: 'fallback' as const };
+  }
+
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
