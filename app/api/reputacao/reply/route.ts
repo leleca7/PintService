@@ -19,6 +19,18 @@ export async function POST(request: Request) {
 
     if (item.source === 'demo' || item.id.startsWith('demo-')) return NextResponse.json({ ok: true, demo: true });
 
+    // O site principal ainda não tem autenticação/RBAC em produção.
+    // Os adaptadores reais estão prontos, mas a escrita fica bloqueada para que
+    // uma rota pública nunca possa publicar em nome da oficina.
+    if (process.env.REPUTATION_LIVE_WRITES_ENABLED !== 'true') {
+      return NextResponse.json({
+        error: 'Resposta real preparada, mas bloqueada até o login e as permissões estarem ativos em produção.',
+        code: 'live_writes_locked',
+      }, { status: 503 });
+    }
+
+    // Mesmo com a chave de ativação, a implantação definitiva deve proteger esta
+    // rota com a sessão/RBAC antes de REPUTATION_LIVE_WRITES_ENABLED=true.
     if (item.replyTarget.kind === 'google_review') await replyGoogleReview(item.replyTarget.reviewId, text);
     else if (item.replyTarget.kind === 'instagram_dm') await replyInstagramDm(item.replyTarget.recipientId, text);
     else if (item.replyTarget.kind === 'instagram_comment') await replyInstagramComment(item.replyTarget.commentId, text);
