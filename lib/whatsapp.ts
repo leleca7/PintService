@@ -44,5 +44,24 @@ async function sendWhatsAppPayload(payload: Record<string, unknown>) {
 }
 export function sentWhatsAppMessageId(response: any) { return String(response?.messages?.[0]?.id ?? ''); }
 export async function sendWhatsAppText(phone: string, text: string, contextMessageId?: string) { return sendWhatsAppPayload({ messaging_product: 'whatsapp', recipient_type: 'individual', to: normalizeWhatsAppPhone(phone), ...(contextMessageId ? { context: { message_id: contextMessageId } } : {}), type: 'text', text: { preview_url: false, body: text } }); }
+export async function sendWhatsAppTemplate(phone: string, templateName: string, bodyParameters: string[], languageCode = 'pt_BR') {
+  const parameters = bodyParameters.map((text) => ({ type: 'text', text: String(text).slice(0, 900) }));
+  return sendWhatsAppPayload({
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: normalizeWhatsAppPhone(phone),
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: languageCode },
+      ...(parameters.length ? { components: [{ type: 'body', parameters }] } : {}),
+    },
+  });
+}
+export async function sendWhatsAppAlert(phone: string, text: string) {
+  const templateName = process.env.ALERT_WHATSAPP_TEMPLATE?.trim();
+  if (templateName) return sendWhatsAppTemplate(phone, templateName, [text], process.env.ALERT_WHATSAPP_TEMPLATE_LANGUAGE?.trim() || 'pt_BR');
+  return sendWhatsAppText(phone, text);
+}
 export async function sendWhatsAppImageUrl(phone: string, imageUrl: string, caption?: string, contextMessageId?: string) { return sendWhatsAppPayload({ messaging_product: 'whatsapp', recipient_type: 'individual', to: normalizeWhatsAppPhone(phone), ...(contextMessageId ? { context: { message_id: contextMessageId } } : {}), type: 'image', image: { link: imageUrl, ...(caption?.trim() ? { caption: caption.trim().slice(0, 900) } : {}) } }); }
 export async function sendWhatsAppImageId(phone: string, mediaId: string, caption?: string, contextMessageId?: string) { return sendWhatsAppPayload({ messaging_product: 'whatsapp', recipient_type: 'individual', to: normalizeWhatsAppPhone(phone), ...(contextMessageId ? { context: { message_id: contextMessageId } } : {}), type: 'image', image: { id: mediaId, ...(caption?.trim() ? { caption: caption.trim().slice(0, 900) } : {}) } }); }
