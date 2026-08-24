@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { DataSource } from '@/lib/dashboard-data';
 
 type Props = {
-  active: 'visao' | 'atendimento' | 'veiculos' | 'tarefas' | 'funcionarios' | 'configuracoes';
+  active: 'visao' | 'atendimento' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
   source: DataSource;
   children: React.ReactNode;
 };
@@ -13,6 +13,7 @@ const items = [
   { key: 'veiculos', href: '/veiculos', icon: '◇', label: 'Veículos' },
   { key: 'tarefas', href: '/tarefas', icon: '!', label: 'Tarefas' },
   { key: 'funcionarios', href: '/funcionarios', icon: '♙', label: 'Funcionários' },
+  { key: 'acessos', href: '/acessos', icon: '🔐', label: 'Perfis e acessos' },
   { key: 'configuracoes', href: '/configuracoes', icon: '⚙', label: 'Configurações' },
 ] as const;
 
