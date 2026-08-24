@@ -1,0 +1,29 @@
+.attention-icon,
+.car-dot {
+  font-size: 0 !important;
+  position: relative;
+  color: var(--accent);
+  background: rgba(199,154,88,.055) !important;
+  border: 1px solid rgba(199,154,88,.18) !important;
+  border-radius: 10px !important;
+}
+
+.attention-icon::before,
+.car-dot::before {
+  content: '';
+  display: block;
+  width: 13px;
+  height: 13px;
+  border: 1px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.top-actions a[href='/configuracoes'] {
+  font-size: 0;
+}
+
+.top-actions a[href='/configuracoes']::after {
+  content: 'Configurações';
+  font-size: 12px;
+  font-weight: 800;
+}
