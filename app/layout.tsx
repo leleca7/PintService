@@ -8,6 +8,7 @@ import './pint-services-theme.css';
 import './no-emoji.css';
 import './visual-polish.css';
 import './reputation.css';
+import './production-auth.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
