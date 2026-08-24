@@ -35,3 +35,7 @@ As variáveis possíveis estão documentadas em `.env.example`. Nunca coloque ch
 ## Segurança operacional
 
 A IA não deve inventar preço, prazo ou fatos físicos. Confirmações sobre etapa real do veículo, chegada de peça e evidências dependem de informação registrada ou confirmação humana. Fotos não são interpretadas como confirmação automática de etapa/peça/status.
+
+## Validação
+
+Cada novo commit na `main` roda um build automático do Next.js pelo GitHub Actions.
