@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { priorityFor } from '@/lib/reputation';
-import { sendWhatsAppText } from '@/lib/whatsapp';
+import { sendWhatsAppAlert } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
 
@@ -46,8 +46,8 @@ async function notifyIfNeeded(event: { kind: string; author: string; text: strin
   const phone = process.env.ALERT_WHATSAPP_TO?.trim();
   if (!phone || !process.env.WHATSAPP_ACCESS_TOKEN || !process.env.WHATSAPP_PHONE_NUMBER_ID || !process.env.WHATSAPP_GRAPH_VERSION) return;
   const preview = event.text.length > 320 ? `${event.text.slice(0, 317)}...` : event.text;
-  const heading = priority === 'alta' || priority === 'urgente' ? 'PintService — Instagram precisa de atenção' : 'PintService — nova mensagem no Instagram';
-  await sendWhatsAppText(phone, `${heading}\nInstagram · ${event.kind} · prioridade ${priority}\n${event.author}: ${preview}\n\nAbra a Central de reputação para revisar e responder.`);
+  const heading = priority === 'alta' || priority === 'urgente' ? 'Instagram precisa de atenção' : 'Nova mensagem no Instagram';
+  await sendWhatsAppAlert(phone, `${heading}. ${event.kind}; prioridade ${priority}; ${event.author}: ${preview}. Abra a Central de reputação para revisar e responder.`);
 }
 
 export async function GET(request: Request) {

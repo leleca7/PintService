@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { channelLabel, getReputationData } from '@/lib/reputation';
-import { sendWhatsAppText } from '@/lib/whatsapp';
+import { sendWhatsAppAlert } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,9 +28,9 @@ export async function GET(request: Request) {
   if (!actionable.length) return NextResponse.json({ ok: true, alerts: 0, errors: data.errors });
   const lines = actionable.slice(0, 12).map((item) => {
     const short = item.message.replace(/\s+/g, ' ').slice(0, 120);
-    return `• ${channelLabel(item.channel)} · ${item.priority} · ${item.author}: ${short}`;
+    return `${channelLabel(item.channel)}; ${item.priority}; ${item.author}: ${short}`;
   });
-  const extra = actionable.length > 12 ? `\n+ ${actionable.length - 12} item(ns) na central.` : '';
-  await sendWhatsAppText(phone, `PintService — reputação precisa de atenção\n${actionable.length} item(ns) novo(s) ou sem resposta.\n\n${lines.join('\n')}${extra}\n\nAbra /reputacao para revisar e responder.`);
+  const extra = actionable.length > 12 ? ` + ${actionable.length - 12} item(ns) na central.` : '';
+  await sendWhatsAppAlert(phone, `Reputação precisa de atenção. ${actionable.length} item(ns) novo(s) ou sem resposta. ${lines.join(' | ')}${extra} Abra a Central de reputação para revisar e responder.`);
   return NextResponse.json({ ok: true, alerts: actionable.length, errors: data.errors });
 }
