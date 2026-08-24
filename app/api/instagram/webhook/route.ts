@@ -33,13 +33,21 @@ function eventsFrom(payload: any) {
   return events;
 }
 
+function shouldNotify(event: { kind: string }, priority: string) {
+  const mode = (process.env.INSTAGRAM_ALERT_MODE || 'messages').trim().toLowerCase();
+  if (mode === 'all') return true;
+  if (mode === 'critical') return ['alta', 'urgente'].includes(priority);
+  return event.kind === 'mensagem' || ['alta', 'urgente'].includes(priority);
+}
+
 async function notifyIfNeeded(event: { kind: string; author: string; text: string }) {
   const priority = priorityFor({ text: event.text });
-  if (!['alta', 'urgente'].includes(priority)) return;
+  if (!shouldNotify(event, priority)) return;
   const phone = process.env.ALERT_WHATSAPP_TO?.trim();
   if (!phone || !process.env.WHATSAPP_ACCESS_TOKEN || !process.env.WHATSAPP_PHONE_NUMBER_ID || !process.env.WHATSAPP_GRAPH_VERSION) return;
   const preview = event.text.length > 320 ? `${event.text.slice(0, 317)}...` : event.text;
-  await sendWhatsAppText(phone, `PintService — alerta de reputação\nInstagram · ${event.kind} · prioridade ${priority}\n${event.author}: ${preview}\n\nAbra a Central de reputação para revisar e responder.`);
+  const heading = priority === 'alta' || priority === 'urgente' ? 'PintService — Instagram precisa de atenção' : 'PintService — nova mensagem no Instagram';
+  await sendWhatsAppText(phone, `${heading}\nInstagram · ${event.kind} · prioridade ${priority}\n${event.author}: ${preview}\n\nAbra a Central de reputação para revisar e responder.`);
 }
 
 export async function GET(request: Request) {
