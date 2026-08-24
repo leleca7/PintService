@@ -66,7 +66,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
 
   await sql`INSERT INTO conversas (telefone,cliente_id,message_id,mensagem,origem,tipo_mensagem,media_id,atendente_assumiu) VALUES (${message.phone},${client.id},${message.id},${message.text || `[${message.type} recebida]`},'cliente',${message.type},${message.mediaId || null},false)`;
 
-  const [stateRows, vehicles, history, openTasks] = await Promise.all([
+  const [stateRows, vehicleRows, historyRows, openTaskRows] = await Promise.all([
     sql`SELECT * FROM estado_atendimento WHERE telefone = ${message.phone} LIMIT 1`,
     sql`SELECT id,placa,modelo,status,setor,ultima_atualizacao FROM veiculos WHERE cliente_id = ${client.id} ORDER BY ultima_atualizacao DESC`,
     sql`SELECT origem,mensagem FROM conversas WHERE telefone = ${message.phone} ORDER BY id DESC LIMIT 12`,
@@ -75,8 +75,39 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
   const state = stateRows[0] ?? null;
   if (state?.bot_ativo === false) return { handedToHuman: true };
 
+  const vehicles = vehicleRows.map((row) => ({
+    id: String(row.id ?? ''),
+    placa: String(row.placa ?? ''),
+    modelo: row.modelo == null ? null : String(row.modelo),
+    status: row.status == null ? null : String(row.status),
+    setor: row.setor == null ? null : String(row.setor),
+    ultima_atualizacao: row.ultima_atualizacao == null ? null : String(row.ultima_atualizacao),
+  }));
+  const history = historyRows.map((row) => ({
+    origem: String(row.origem ?? ''),
+    mensagem: String(row.mensagem ?? ''),
+  }));
+  const openTasks = openTaskRows.map((row) => ({
+    id: String(row.id ?? ''),
+    veiculo_id: row.veiculo_id == null ? null : String(row.veiculo_id),
+    tipo: String(row.tipo ?? ''),
+    titulo: String(row.titulo ?? ''),
+    instrucoes: String(row.instrucoes ?? ''),
+    setor_responsavel: row.setor_responsavel == null ? null : String(row.setor_responsavel),
+    status: String(row.status ?? ''),
+    criado_em: String(row.criado_em ?? ''),
+  }));
+
   const plannerVehicles = externalVehicleSourceConfigured() ? [] : vehicles;
-  const plan = await planAttendance({ message: message.text, messageType: message.type, waitingFor: state?.aguardando_campo ?? null, plateContext: state?.placa_contexto ?? null, vehicles: plannerVehicles, history: [...history].reverse(), openTasks });
+  const plan = await planAttendance({
+    message: message.text,
+    messageType: message.type,
+    waitingFor: state?.aguardando_campo == null ? null : String(state.aguardando_campo),
+    plateContext: state?.placa_contexto == null ? null : String(state.placa_contexto),
+    vehicles: plannerVehicles,
+    history: [...history].reverse(),
+    openTasks,
+  });
 
   const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured() });
   await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},${plan.intent},${plan.action},${plan.confidence},${plan.priority},${plan.needsHuman},${decisionData}::jsonb)`;
