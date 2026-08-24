@@ -7,6 +7,7 @@ console.log('[PintService env check]', {
   bootstrapAdminEmail: Boolean(process.env.BOOTSTRAP_ADMIN_EMAIL),
 });
 
+// Rebuild marker: valida as variáveis do preview após configuração na Vercel.
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
