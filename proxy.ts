@@ -12,6 +12,6 @@ export default function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/whatsapp|api/health|auth|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)',
+    '/((?!api/auth|api/whatsapp|api/health|auth|preview|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)',
   ],
 };
