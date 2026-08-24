@@ -1,0 +1,11 @@
+.loading-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+.loading-card { width: min(520px, 100%); display: flex; gap: 16px; align-items: center; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: var(--shadow); }
+.loading-card h1 { margin: 2px 0 6px; font-size: 20px; letter-spacing: -.03em; }
+.loading-card p:not(.eyebrow) { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.retry-button { border: 0; border-radius: 10px; min-height: 38px; padding: 0 14px; margin-top: 14px; font-size: 10px; font-weight: 900; }
+.error-card .brand-mark { background: var(--red); }
+.not-found-page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--bg); }
+.not-found-card { width: min(520px, 100%); text-align: center; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 30px; box-shadow: var(--shadow); }
+.not-found-card .vehicle-big-icon { margin: 0 auto 16px; }
+.not-found-card h1 { margin: 4px 0 8px; font-size: 23px; letter-spacing: -.035em; }
+.not-found-card > p:not(.eyebrow) { margin: 0 auto 18px; color: var(--muted); font-size: 11px; line-height: 1.5; }
