@@ -1,0 +1,198 @@
+:root {
+  --soft-radius: 16px;
+  --soft-radius-sm: 10px;
+  --soft-surface: rgba(17, 18, 17, .92);
+  --soft-shadow: 0 22px 60px rgba(0, 0, 0, .20);
+}
+
+/* Mantém a linguagem automotiva reta, mas tira o excesso de caixas rígidas. */
+.sidebar {
+  border-right-color: rgba(255,255,255,.06);
+}
+
+.nav a {
+  border-radius: 10px;
+  border-left: 0;
+  padding-inline: 12px;
+}
+
+.nav a.active {
+  border-left: 0;
+  box-shadow: inset 2px 0 0 var(--accent);
+  background: linear-gradient(90deg, rgba(199,154,88,.11), rgba(255,255,255,.015) 70%, transparent);
+}
+
+.ia-status {
+  border-radius: 14px;
+  border-color: rgba(255,255,255,.07);
+  background: rgba(255,255,255,.018);
+}
+
+.avatar,
+.stage-number,
+.avatar.soft,
+.car-dot {
+  border-radius: 9px;
+}
+
+.content {
+  padding-top: 46px;
+}
+
+.panel,
+.metrics article {
+  border-radius: var(--soft-radius);
+  border-color: rgba(255,255,255,.055);
+  background: linear-gradient(145deg, rgba(255,255,255,.025), transparent 55%), var(--soft-surface);
+  box-shadow: var(--soft-shadow);
+}
+
+.panel-head {
+  border-bottom-color: rgba(255,255,255,.055);
+  padding-inline: 24px;
+}
+
+.metrics {
+  gap: 14px;
+}
+
+.metrics article {
+  border: 0;
+  min-height: 108px;
+  padding: 22px;
+}
+
+.metric-icon {
+  border-radius: 10px;
+  background: rgba(199,154,88,.055);
+  border-color: rgba(199,154,88,.18);
+}
+
+.ghost,
+.primary,
+.wide-button,
+.pending button,
+.action-link {
+  border-radius: 10px !important;
+}
+
+input,
+select,
+textarea {
+  border-radius: 10px;
+  border-color: rgba(255,255,255,.09);
+  background: rgba(6,7,6,.72);
+}
+
+.stage-bar,
+.stage-bar i {
+  border-radius: 999px;
+}
+
+.stage-chip,
+.tag,
+.count {
+  border-radius: 999px;
+}
+
+.vehicle-card,
+.employee-card,
+.task-card,
+.connection-card {
+  border-radius: 14px !important;
+  border-color: rgba(255,255,255,.055) !important;
+  background: linear-gradient(145deg, rgba(255,255,255,.018), transparent 65%), #101110 !important;
+  box-shadow: 0 18px 44px rgba(0,0,0,.14) !important;
+}
+
+.vehicle-card:hover,
+.employee-card:hover,
+.task-card:hover {
+  border-color: rgba(199,154,88,.24) !important;
+  transform: translateY(-2px);
+}
+
+.neon-auth-ui [data-slot='card'] {
+  border-radius: 18px !important;
+  border-color: rgba(255,255,255,.065) !important;
+}
+
+.neon-auth-ui input,
+.neon-auth-ui button[type='submit'] {
+  border-radius: 10px !important;
+}
+
+/* Preview visual: menos “dashboard de caixinhas”, mais painel editorial. */
+.preview-main {
+  padding: 54px 58px;
+}
+
+.preview-header {
+  padding-bottom: 34px;
+}
+
+.preview-status {
+  border-radius: 999px;
+  border-color: rgba(199,154,88,.18);
+  background: rgba(199,154,88,.055);
+}
+
+.preview-stats {
+  gap: 14px;
+  margin: 28px 0 16px;
+}
+
+.preview-stat {
+  border: 0;
+  border-radius: 14px;
+  padding: 22px;
+  background: linear-gradient(145deg, rgba(199,154,88,.05), transparent 70%), #111211;
+  box-shadow: 0 16px 38px rgba(0,0,0,.14);
+}
+
+.preview-grid {
+  gap: 16px;
+}
+
+.preview-panel {
+  border: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111211;
+  box-shadow: 0 22px 54px rgba(0,0,0,.18);
+}
+
+.preview-panel-head {
+  border-bottom-color: rgba(255,255,255,.055);
+  padding: 22px 24px;
+}
+
+.preview-cars,
+.preview-tasks {
+  padding-inline: 24px;
+}
+
+.preview-car,
+.preview-task {
+  border-bottom-color: rgba(255,255,255,.05);
+  padding-block: 18px;
+}
+
+.preview-car-art {
+  border-radius: 8px;
+}
+
+.preview-car em {
+  border-radius: 999px;
+  background: rgba(199,154,88,.055);
+}
+
+@media (max-width: 900px) {
+  .preview-main { padding: 34px 24px; }
+  .preview-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 560px) {
+  .preview-stats { grid-template-columns: 1fr; }
+  .preview-panel, .preview-stat { border-radius: 12px; }
+}
