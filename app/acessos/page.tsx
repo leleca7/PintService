@@ -12,6 +12,24 @@ import {
 const roles: UserRole[] = ['admin', 'gerente', 'funcionario'];
 const permissions = Object.keys(PERMISSION_LABELS) as Permission[];
 
+function RoleIcon({ role }: { role: UserRole }) {
+  const common = {
+    width: 21,
+    height: 21,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.7,
+    strokeLinecap: 'round' as const,
+    strokeLinejoin: 'round' as const,
+    'aria-hidden': true,
+  };
+
+  if (role === 'admin') return <svg {...common}><path d="M12 3 19 6v5c0 4.8-2.8 8-7 10-4.2-2-7-5.2-7-10V6l7-3Z"/><path d="m9.5 12 1.7 1.7 3.5-3.7"/></svg>;
+  if (role === 'gerente') return <svg {...common}><circle cx="12" cy="8" r="3"/><path d="M6.5 19c.6-3.4 2.4-5.2 5.5-5.2s4.9 1.8 5.5 5.2"/><path d="M18.5 5.5v5M16 8h5"/></svg>;
+  return <svg {...common}><circle cx="12" cy="8" r="3"/><path d="M6.5 19c.6-3.4 2.4-5.2 5.5-5.2s4.9 1.8 5.5 5.2"/></svg>;
+}
+
 export default async function AccessPage() {
   const data = await getDashboardData();
 
@@ -29,7 +47,7 @@ export default async function AccessPage() {
         {roles.map((role) => (
           <article className="panel role-card" key={role}>
             <div className="role-card-head">
-              <div className="role-icon">{role === 'admin' ? '★' : role === 'gerente' ? '◆' : '●'}</div>
+              <div className={`role-icon role-icon-${role}`}><RoleIcon role={role} /></div>
               <div>
                 <p className="eyebrow">PERFIL</p>
                 <h2>{ROLE_LABELS[role]}</h2>
