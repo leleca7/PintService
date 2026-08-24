@@ -5,6 +5,7 @@ import './operational.css';
 import './system-states.css';
 import './access.css';
 import './brand.css';
+import './soft-brand.css';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
