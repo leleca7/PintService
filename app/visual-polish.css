@@ -1,0 +1,263 @@
+/* Ajustes finais do tema Pint Services: contraste, alinhamento e remoção de resíduos do tema claro. */
+
+.nav-svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  display: block;
+  color: #858781;
+  transform: translateY(.2px);
+}
+
+.nav a {
+  align-items: center;
+}
+
+.nav a.active .nav-svg,
+.nav a:hover .nav-svg {
+  color: var(--accent);
+}
+
+/* Textos secundários: claros o suficiente para leitura sem perder a hierarquia. */
+.role-card > p,
+.attention-item p,
+.task-instruction,
+.chat-card p,
+.message-row p,
+.connection-card p,
+.settings-card ul,
+.vehicle-card dt,
+.employee-card dt,
+.task-meta dt,
+.plate {
+  color: #999b95;
+}
+
+.role-card > strong,
+.vehicle-card dd,
+.employee-card dd,
+.task-meta dd,
+.connection-card small,
+.attention-item small,
+.task-note,
+.chat-meta,
+.chat-card time,
+.message-row small {
+  color: #747871;
+}
+
+/* Banners não podem voltar a ser claros. */
+.system-banner {
+  background: rgba(255,255,255,.025);
+  border-color: rgba(255,255,255,.075);
+  color: #eeeae2;
+}
+
+.system-banner strong {
+  color: #f4f0e8;
+}
+
+.system-banner span {
+  color: #8f928c;
+}
+
+.demo-banner {
+  background: linear-gradient(90deg, rgba(199,154,88,.09), rgba(199,154,88,.025));
+  border-color: rgba(199,154,88,.35);
+}
+
+.info-banner {
+  background: linear-gradient(90deg, rgba(199,154,88,.07), rgba(255,255,255,.018));
+  border-color: rgba(199,154,88,.2);
+}
+
+.error-banner {
+  background: rgba(211,111,104,.07);
+  border-color: rgba(211,111,104,.24);
+}
+
+.source-chip {
+  background: rgba(199,154,88,.09);
+  color: #d6ad73;
+  border: 1px solid rgba(199,154,88,.18);
+}
+
+/* Perfis e acessos. */
+.role-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(199,154,88,.075);
+  border: 1px solid rgba(199,154,88,.22);
+  color: #d0a466;
+}
+
+.role-icon svg { display: block; }
+.role-icon-gerente { color: #c7c4bb; border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.035); }
+.role-icon-funcionario { color: #9d9e98; border-color: rgba(255,255,255,.09); background: rgba(255,255,255,.025); }
+.role-card h2 { color: #f3efe7; }
+
+.permission-table th {
+  color: #7d8079;
+  background: rgba(4,5,4,.45);
+}
+
+.permission-table td {
+  color: #a8aaa3;
+}
+
+.permission-table td:first-child {
+  color: #b9bbb4;
+}
+
+.permission-yes,
+.permission-no {
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.permission-yes {
+  background: rgba(138,182,155,.09);
+  border-color: rgba(138,182,155,.08);
+  color: #8fbea0;
+}
+
+.permission-no {
+  background: rgba(255,255,255,.035);
+  border-color: rgba(255,255,255,.06);
+  color: #696c66;
+}
+
+/* Tarefas: remove as barras brancas herdadas do tema original. */
+.task-vehicle {
+  background: rgba(255,255,255,.035);
+  border: 1px solid rgba(255,255,255,.07);
+  color: #ece8e0;
+}
+
+.task-vehicle strong { color: #ddd9d0; }
+.task-vehicle span { color: #a4a69f; }
+
+.task-card,
+.pending article {
+  color: #ede9e1;
+}
+
+.task-card h3,
+.task-card strong,
+.task-meta dd {
+  color: #ece8df;
+}
+
+.task-note,
+.open-row {
+  border-color: rgba(255,255,255,.065);
+}
+
+.task-status,
+.task-priority {
+  background: rgba(255,255,255,.055);
+  color: #c6c6bf;
+}
+
+/* Atendimento: destaque humano sem aquele bloco bege lavado. */
+.chat-card,
+.message-row,
+.attention-item,
+.task-row,
+.connection-card,
+.open-row {
+  border-color: rgba(255,255,255,.06);
+}
+
+.human-chat {
+  background: linear-gradient(90deg, rgba(199,154,88,.085), rgba(199,154,88,.018) 70%, transparent);
+  border-radius: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+.chat-card strong,
+.message-row strong,
+.attention-item strong {
+  color: #e9e5dc;
+}
+
+.chat-card-body .tag,
+.chat-meta .tag {
+  border: 1px solid rgba(255,255,255,.045);
+}
+
+/* Veículos e detalhes. */
+.vehicle-card,
+.timeline-stage,
+.employee-card {
+  color: #ece8e0;
+}
+
+.vehicle-card {
+  background: linear-gradient(145deg, rgba(255,255,255,.018), transparent 65%), #101110;
+}
+
+.open-row { color: #d0a466; }
+
+.timeline-stage {
+  background: rgba(255,255,255,.018);
+  border-color: rgba(255,255,255,.065);
+}
+
+.timeline-stage > span {
+  background: rgba(255,255,255,.045);
+  color: #aaa9a3;
+}
+
+.timeline-stage.done {
+  background: rgba(138,182,155,.055);
+  border-color: rgba(138,182,155,.14);
+}
+
+.timeline-stage.current {
+  background: rgba(199,154,88,.07);
+  border-color: rgba(199,154,88,.22);
+}
+
+/* Ícones gráficos internos ficam centralizados e consistentes. */
+.metric-icon,
+.attention-icon,
+.task-symbol,
+.car-dot,
+.vehicle-emoji,
+.vehicle-big-icon {
+  display: grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+}
+
+.metric-icon::before,
+.attention-icon::before,
+.task-symbol::before,
+.car-dot::before,
+.vehicle-emoji::before,
+.vehicle-big-icon::before {
+  margin: 0 !important;
+  transform-origin: center !important;
+}
+
+/* Linhas internas do dashboard estavam claras demais no tema escuro. */
+.stage,
+.conversation,
+td,
+.attention-item,
+.chat-card,
+.task-row,
+.message-row {
+  border-color: rgba(255,255,255,.06) !important;
+}
+
+@media (max-width: 760px) {
+  .nav-svg { width: 17px; height: 17px; flex-basis: 17px; }
+}
