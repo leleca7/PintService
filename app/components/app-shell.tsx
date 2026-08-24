@@ -8,13 +8,13 @@ type Props = {
 };
 
 const items = [
-  { key: 'visao', href: '/', icon: '⌂', label: 'Visão geral' },
-  { key: 'atendimento', href: '/atendimento', icon: '◉', label: 'Atendimento' },
-  { key: 'veiculos', href: '/veiculos', icon: '◇', label: 'Veículos' },
-  { key: 'tarefas', href: '/tarefas', icon: '!', label: 'Tarefas' },
-  { key: 'funcionarios', href: '/funcionarios', icon: '♙', label: 'Funcionários' },
-  { key: 'acessos', href: '/acessos', icon: '🔐', label: 'Perfis e acessos' },
-  { key: 'configuracoes', href: '/configuracoes', icon: '⚙', label: 'Configurações' },
+  { key: 'visao', href: '/', label: 'Visão geral' },
+  { key: 'atendimento', href: '/atendimento', label: 'Atendimento' },
+  { key: 'veiculos', href: '/veiculos', label: 'Veículos' },
+  { key: 'tarefas', href: '/tarefas', label: 'Tarefas' },
+  { key: 'funcionarios', href: '/funcionarios', label: 'Funcionários' },
+  { key: 'acessos', href: '/acessos', label: 'Perfis e acessos' },
+  { key: 'configuracoes', href: '/configuracoes', label: 'Configurações' },
 ] as const;
 
 function sourceLabel(source: DataSource) {
@@ -29,16 +29,16 @@ export default function AppShell({ active, source, children }: Props) {
     <main className="app-shell">
       <aside className="sidebar">
         <Link href="/" className="brand">
-          <div className="brand-mark">PS</div>
-          <div><strong>PintService</strong><span>Funilaria & Pintura</span></div>
+          <div className="brand-mark" aria-hidden="true">PS</div>
+          <div><strong>PintService</strong><span>Pint Services Car Center</span></div>
         </Link>
         <nav className="nav" aria-label="Navegação principal">
           {items.map((item) => (
             <Link key={item.key} className={active === item.key ? 'active' : ''} href={item.href}>
-              {item.icon} <span>{item.label}</span>
+              <i className="nav-icon" aria-hidden="true" /><span>{item.label}</span>
             </Link>
           ))}
-          <Link href="/simulador">⌁ <span>Simulador</span></Link>
+          <Link href="/simulador"><i className="nav-icon" aria-hidden="true" /><span>Simulador</span></Link>
         </nav>
         <div className="sidebar-bottom">
           <div className={`ia-status ${sourceInfo.className}`}><span className="pulse" /> {sourceInfo.text}<small>{sourceInfo.detail}</small></div>
