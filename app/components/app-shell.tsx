@@ -1,39 +1,28 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { DataSource } from '@/lib/dashboard-data';
+import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
+import { isDatabaseConfigured } from '@/lib/db';
+import { ROLE_LABELS, type Permission } from '@/lib/permissions';
 
-type Props = {
-  active: 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
-  source: DataSource;
-  children: React.ReactNode;
-};
-
+type ActiveKey = 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
+type Props = { active: ActiveKey; source: DataSource; children: React.ReactNode };
 type IconName = 'home' | 'chat' | 'reputation' | 'car' | 'tasks' | 'team' | 'access' | 'settings' | 'simulator';
+type NavItem = { key: ActiveKey; href: string; label: string; icon: IconName; permission?: Permission; anyPermission?: Permission[]; adminOnly?: boolean };
 
-const items: { key: Props['active']; href: string; label: string; icon: IconName }[] = [
-  { key: 'visao', href: '/', label: 'Visão geral', icon: 'home' },
-  { key: 'atendimento', href: '/atendimento', label: 'Atendimento', icon: 'chat' },
-  { key: 'reputacao', href: '/reputacao', label: 'Reputação', icon: 'reputation' },
-  { key: 'veiculos', href: '/veiculos', label: 'Veículos', icon: 'car' },
-  { key: 'tarefas', href: '/tarefas', label: 'Tarefas', icon: 'tasks' },
-  { key: 'funcionarios', href: '/funcionarios', label: 'Funcionários', icon: 'team' },
-  { key: 'acessos', href: '/acessos', label: 'Perfis e acessos', icon: 'access' },
-  { key: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: 'settings' },
+const items: NavItem[] = [
+  { key: 'visao', href: '/', label: 'Visão geral', icon: 'home', permission: 'ver_visao_geral' },
+  { key: 'atendimento', href: '/atendimento', label: 'Atendimento', icon: 'chat', permission: 'ver_atendimento' },
+  { key: 'reputacao', href: '/reputacao', label: 'Reputação', icon: 'reputation', permission: 'ver_reputacao' },
+  { key: 'veiculos', href: '/veiculos', label: 'Veículos', icon: 'car', anyPermission: ['ver_todos_veiculos', 'ver_veiculos_setor'] },
+  { key: 'tarefas', href: '/tarefas', label: 'Tarefas', icon: 'tasks', anyPermission: ['ver_todas_tarefas', 'ver_proprias_tarefas'] },
+  { key: 'funcionarios', href: '/funcionarios', label: 'Funcionários', icon: 'team', permission: 'ver_funcionarios' },
+  { key: 'acessos', href: '/acessos', label: 'Perfis e acessos', icon: 'access', adminOnly: true },
+  { key: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: 'settings', permission: 'ver_configuracoes' },
 ];
 
 function NavIcon({ name }: { name: IconName }) {
-  const common = {
-    width: 18,
-    height: 18,
-    viewBox: '0 0 24 24',
-    fill: 'none',
-    stroke: 'currentColor',
-    strokeWidth: 1.7,
-    strokeLinecap: 'round' as const,
-    strokeLinejoin: 'round' as const,
-    'aria-hidden': true,
-    className: 'nav-svg',
-  };
-
+  const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, className: 'nav-svg' };
   if (name === 'home') return <svg {...common}><path d="M3.5 10.5 12 3.8l8.5 6.7"/><path d="M5.5 9.7V20h13V9.7"/><path d="M9.5 20v-6h5v6"/></svg>;
   if (name === 'chat') return <svg {...common}><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8"/><path d="M8 13h5"/></svg>;
   if (name === 'reputation') return <svg {...common}><path d="m12 3 2.7 5.4 6 .9-4.3 4.2 1 5.9-5.4-2.8-5.4 2.8 1-5.9-4.3-4.2 6-.9L12 3Z"/><path d="m9.5 12 1.6 1.6 3.5-3.6"/></svg>;
@@ -46,31 +35,40 @@ function NavIcon({ name }: { name: IconName }) {
 }
 
 function sourceLabel(source: DataSource) {
-  if (source === 'live') return { text: 'Dados ao vivo', detail: 'Banco conectado', className: 'live-source' };
-  if (source === 'error') return { text: 'Conexão com erro', detail: 'Verifique o banco', className: 'error-source' };
-  return { text: 'Modo demonstração', detail: 'Banco opcional por enquanto', className: 'demo-source' };
+  if (source === 'live') return { text: 'Operação ao vivo', detail: 'Neon conectado', className: 'live-source' };
+  if (source === 'error') return { text: 'Conexão com erro', detail: 'Verifique banco e perfil', className: 'error-source' };
+  return { text: 'Configuração pendente', detail: 'Ambiente ainda não ativado', className: 'demo-source' };
 }
 
-export default function AppShell({ active, source, children }: Props) {
+function allowed(item: NavItem, user: Awaited<ReturnType<typeof getCurrentAppUser>>) {
+  if (!user) return false;
+  if (item.adminOnly) return user.perfil === 'admin';
+  if (item.permission) return userHasPermission(user, item.permission);
+  if (item.anyPermission) return item.anyPermission.some((permission) => userHasPermission(user, permission));
+  return false;
+}
+
+export default async function AppShell({ active, source, children }: Props) {
   const sourceInfo = sourceLabel(source);
+  const user = await getCurrentAppUser();
+  if (isDatabaseConfigured() && !user) redirect('/sem-acesso');
+
+  const visibleItems = user ? items.filter((item) => allowed(item, user)) : [];
+  const activeItem = items.find((item) => item.key === active);
+  if (user && activeItem && !allowed(activeItem, user)) redirect('/sem-acesso');
+  const initials = user?.nome ? user.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() : 'PS';
+
   return (
     <main className="app-shell">
       <aside className="sidebar">
-        <Link href="/" className="brand">
-          <div className="brand-mark" aria-hidden="true">PS</div>
-          <div><strong>PintService</strong><span>Pint Services Car Center</span></div>
-        </Link>
+        <Link href="/inicio" className="brand"><div className="brand-mark" aria-hidden="true">PS</div><div><strong>PintService</strong><span>Pint Services Car Center</span></div></Link>
         <nav className="nav" aria-label="Navegação principal">
-          {items.map((item) => (
-            <Link key={item.key} className={active === item.key ? 'active' : ''} href={item.href}>
-              <NavIcon name={item.icon} /><span>{item.label}</span>
-            </Link>
-          ))}
-          <Link href="/simulador"><NavIcon name="simulator" /><span>Simulador</span></Link>
+          {visibleItems.map((item) => <Link key={item.key} className={active === item.key ? 'active' : ''} href={item.href}><NavIcon name={item.icon}/><span>{item.label}</span></Link>)}
+          {user?.perfil === 'admin' && <Link href="/simulador"><NavIcon name="simulator"/><span>Simulador</span></Link>}
         </nav>
         <div className="sidebar-bottom">
-          <div className={`ia-status ${sourceInfo.className}`}><span className="pulse" /> {sourceInfo.text}<small>{sourceInfo.detail}</small></div>
-          <div className="profile"><div className="avatar">PS</div><div><strong>PintService</strong><span>Administrador</span></div></div>
+          <div className={`ia-status ${sourceInfo.className}`}><span className="pulse"/> {sourceInfo.text}<small>{sourceInfo.detail}</small></div>
+          <Link className="profile" href="/auth/sign-out"><div className="avatar">{initials}</div><div><strong>{user?.nome || 'PintService'}</strong><span>{user ? ROLE_LABELS[user.perfil] : 'Acesso não vinculado'}</span></div></Link>
         </div>
       </aside>
       <section className="content">{children}</section>
