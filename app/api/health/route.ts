@@ -3,40 +3,17 @@ import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { isAuthConfigured } from '@/lib/auth/server';
 
 export const runtime = 'nodejs';
-// Sempre avalia as variáveis atuais da Vercel, sem reutilizar resultado antigo.
 export const dynamic = 'force-dynamic';
 
-function getSafeDatabaseTarget() {
-  const value = process.env.DATABASE_URL?.trim();
-  if (!value) return null;
-  try {
-    const parsed = new URL(value);
-    return {
-      host: parsed.hostname,
-      database: parsed.pathname.replace(/^\//, '') || null,
-    };
-  } catch {
-    return { host: 'invalid-url', database: null };
-  }
-}
-
 export async function GET() {
-  const databaseConfigured = isDatabaseConfigured();
-  const databaseTarget = getSafeDatabaseTarget();
   let database = false;
-  let databaseStatus: 'ready' | 'missing-DATABASE_URL' | 'connection-failed' = databaseConfigured
-    ? 'connection-failed'
-    : 'missing-DATABASE_URL';
-
-  if (databaseConfigured) {
+  if (isDatabaseConfigured()) {
     try {
       const sql = getDb();
       const result = await sql`SELECT 1 AS ok`;
       database = Number(result[0]?.ok) === 1;
-      if (database) databaseStatus = 'ready';
     } catch {
       database = false;
-      databaseStatus = 'connection-failed';
     }
   }
 
@@ -53,13 +30,5 @@ export async function GET() {
   };
   const coreReady = checks.database && checks.auth;
   const integrationsReady = checks.vehicleSource && checks.openai && checks.whatsapp;
-  return NextResponse.json({
-    ok: coreReady,
-    mode: coreReady ? 'production-ready-core' : 'setup-required',
-    coreReady,
-    integrationsReady,
-    databaseStatus,
-    databaseTarget,
-    checks,
-  });
+  return NextResponse.json({ ok: coreReady, mode: coreReady ? 'production-ready-core' : 'setup-required', coreReady, integrationsReady, checks });
 }
