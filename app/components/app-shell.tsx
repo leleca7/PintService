@@ -5,13 +5,14 @@ import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { isDatabaseConfigured } from '@/lib/db';
 import { ROLE_LABELS, type Permission } from '@/lib/permissions';
 
-type ActiveKey = 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
+type ActiveKey = 'visao' | 'resumo' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
 type Props = { active: ActiveKey; source: DataSource; children: React.ReactNode };
-type IconName = 'home' | 'chat' | 'reputation' | 'car' | 'tasks' | 'team' | 'access' | 'settings';
+type IconName = 'home' | 'summary' | 'chat' | 'reputation' | 'car' | 'tasks' | 'team' | 'access' | 'settings';
 type NavItem = { key: ActiveKey; href: string; label: string; icon: IconName; permission?: Permission; anyPermission?: Permission[]; adminOnly?: boolean };
 
 const items: NavItem[] = [
   { key: 'visao', href: '/', label: 'Visão geral', icon: 'home', permission: 'ver_visao_geral' },
+  { key: 'resumo', href: '/resumo', label: 'Resumo do dia', icon: 'summary', permission: 'ver_visao_geral' },
   { key: 'atendimento', href: '/atendimento', label: 'Atendimento', icon: 'chat', permission: 'ver_atendimento' },
   { key: 'reputacao', href: '/reputacao', label: 'Reputação', icon: 'reputation', permission: 'ver_reputacao' },
   { key: 'veiculos', href: '/veiculos', label: 'Veículos', icon: 'car', anyPermission: ['ver_todos_veiculos', 'ver_veiculos_setor'] },
@@ -24,6 +25,7 @@ const items: NavItem[] = [
 function NavIcon({ name }: { name: IconName }) {
   const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, className: 'nav-svg' };
   if (name === 'home') return <svg {...common}><path d="M3.5 10.5 12 3.8l8.5 6.7"/><path d="M5.5 9.7V20h13V9.7"/><path d="M9.5 20v-6h5v6"/></svg>;
+  if (name === 'summary') return <svg {...common}><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>;
   if (name === 'chat') return <svg {...common}><path d="M4 5.5h16v11H9l-5 3v-14Z"/><path d="M8 10h8"/><path d="M8 13h5"/></svg>;
   if (name === 'reputation') return <svg {...common}><path d="m12 3 2.7 5.4 6 .9-4.3 4.2 1 5.9-5.4-2.8-5.4 2.8 1-5.9-4.3-4.2 6-.9L12 3Z"/><path d="m9.5 12 1.6 1.6 3.5-3.6"/></svg>;
   if (name === 'car') return <svg {...common}><path d="m5 15 1.5-5h11L19 15"/><path d="M4 15h16v4H4z"/><path d="M7 19v1.5M17 19v1.5"/><circle cx="7.5" cy="16.8" r=".7"/><circle cx="16.5" cy="16.8" r=".7"/></svg>;
