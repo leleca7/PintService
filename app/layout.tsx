@@ -11,6 +11,8 @@ import './reputation.css';
 import './production-auth.css';
 import { Providers } from './providers';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = {
   title: 'PintService | Pint Services',
   description: 'Central inteligente de atendimento, produção e reputação da Pint Services.',
