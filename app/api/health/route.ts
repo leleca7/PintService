@@ -6,8 +6,23 @@ export const runtime = 'nodejs';
 // Sempre avalia as variáveis atuais da Vercel, sem reutilizar resultado antigo.
 export const dynamic = 'force-dynamic';
 
+function getSafeDatabaseTarget() {
+  const value = process.env.DATABASE_URL?.trim();
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return {
+      host: parsed.hostname,
+      database: parsed.pathname.replace(/^\//, '') || null,
+    };
+  } catch {
+    return { host: 'invalid-url', database: null };
+  }
+}
+
 export async function GET() {
   const databaseConfigured = isDatabaseConfigured();
+  const databaseTarget = getSafeDatabaseTarget();
   let database = false;
   let databaseStatus: 'ready' | 'missing-DATABASE_URL' | 'connection-failed' = databaseConfigured
     ? 'connection-failed'
@@ -44,6 +59,7 @@ export async function GET() {
     coreReady,
     integrationsReady,
     databaseStatus,
+    databaseTarget,
     checks,
   });
 }
