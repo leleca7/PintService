@@ -6,6 +6,10 @@ import { extractIncomingMessages, verifyMetaSignature } from '@/lib/whatsapp';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+function whatsappAiEnabled() {
+  return process.env.WHATSAPP_AI_ENABLED?.trim().toLowerCase() === 'true';
+}
+
 export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get('hub.mode');
   const token = request.nextUrl.searchParams.get('hub.verify_token');
@@ -19,6 +23,11 @@ export async function POST(request: NextRequest) {
   const rawBody = await request.text();
   const signature = request.headers.get('x-hub-signature-256');
   if (!verifyMetaSignature(rawBody, signature)) return NextResponse.json({ error: 'Assinatura inválida' }, { status: 401 });
+
+  if (!whatsappAiEnabled()) {
+    return NextResponse.json({ received: true, automation: 'paused' });
+  }
+
   let payload: unknown;
   try { payload = JSON.parse(rawBody); } catch { return NextResponse.json({ error: 'JSON inválido' }, { status: 400 }); }
   const messages = extractIncomingMessages(payload);
@@ -28,5 +37,5 @@ export async function POST(request: NextRequest) {
       catch (error) { console.error('whatsapp_process_error', { messageId: message.id, error }); }
     }
   });
-  return NextResponse.json({ received: true });
+  return NextResponse.json({ received: true, automation: 'enabled' });
 }
