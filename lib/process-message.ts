@@ -4,6 +4,7 @@ import { createOrReuseOperationalTask, type OperationalTaskType } from '@/lib/op
 import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/lib/operational-vehicle';
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
 import { getDb } from '@/lib/db';
+import { getOfficeProfile } from '@/lib/office-profile';
 import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 
 const STAGES = ['Desmontagem', 'Funilaria', 'Preparação de pintura', 'Pintura', 'Montagem', 'Polimento', 'Lavagem'];
@@ -164,9 +165,8 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       await setState(message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'vistoria' });
       break;
     case 'horario_endereco': {
-      const hours = process.env.OFICINA_HOURS || 'das 8h às 16h';
-      const address = process.env.OFICINA_ADDRESS;
-      reply = address ? `Nosso atendimento é ${hours}. Estamos em ${address}.` : `Nosso atendimento é ${hours}. Para confirmar o endereço, vou deixar essa informação disponível assim que cadastrarmos os dados da oficina.`;
+      const office = getOfficeProfile();
+      reply = `Nosso atendimento é ${office.hours}. Estamos em ${office.address}. Telefone comercial: ${office.publicPhone}.`;
       break;
     }
     case 'foto':
