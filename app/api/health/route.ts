@@ -1,13 +1,34 @@
 import { NextResponse } from 'next/server';
+import { getDb, isDatabaseConfigured } from '@/lib/db';
+import { isAuthConfigured } from '@/lib/auth/server';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  let database = false;
+  if (isDatabaseConfigured()) {
+    try {
+      const sql = getDb();
+      const result = await sql`SELECT 1 AS ok`;
+      database = Number(result[0]?.ok) === 1;
+    } catch {
+      database = false;
+    }
+  }
+
   const checks = {
-    database: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SECRET_KEY),
-    openai: Boolean(process.env.OPENAI_API_KEY),
-    whatsapp: Boolean(process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.WHATSAPP_GRAPH_VERSION && process.env.WHATSAPP_VERIFY_TOKEN && process.env.WHATSAPP_APP_SECRET),
+    database,
+    auth: isAuthConfigured,
+    vehicleSource: Boolean(process.env.VEHICLE_DATA_URL?.trim()),
+    openai: Boolean(process.env.OPENAI_API_KEY?.trim() && process.env.OPENAI_MODEL?.trim()),
+    whatsapp: Boolean(process.env.WHATSAPP_ACCESS_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() && process.env.WHATSAPP_GRAPH_VERSION?.trim() && process.env.WHATSAPP_VERIFY_TOKEN?.trim() && process.env.WHATSAPP_APP_SECRET?.trim()),
+    instagram: Boolean(process.env.INSTAGRAM_ACCESS_TOKEN?.trim() && process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() && process.env.INSTAGRAM_VERIFY_TOKEN?.trim() && process.env.INSTAGRAM_APP_SECRET?.trim()),
+    google: Boolean(process.env.GOOGLE_BUSINESS_ACCESS_TOKEN?.trim() && process.env.GOOGLE_BUSINESS_ACCOUNT_ID?.trim() && process.env.GOOGLE_BUSINESS_LOCATION_ID?.trim()),
+    reclameAqui: Boolean(process.env.RECLAME_AQUI_API_KEY?.trim() && process.env.RECLAME_AQUI_COMPANY_ID?.trim()),
+    shop: Boolean(process.env.OFICINA_HOURS?.trim() && process.env.OFICINA_ADDRESS?.trim()),
   };
-  const integrationsReady = Object.values(checks).every(Boolean);
-  return NextResponse.json({ ok: true, mode: integrationsReady ? 'connected' : 'demo', integrationsReady, checks });
+  const coreReady = checks.database && checks.auth;
+  const integrationsReady = checks.vehicleSource && checks.openai && checks.whatsapp;
+  return NextResponse.json({ ok: coreReady, mode: coreReady ? 'production-ready-core' : 'setup-required', coreReady, integrationsReady, checks });
 }
