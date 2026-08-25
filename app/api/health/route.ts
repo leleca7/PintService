@@ -7,14 +7,21 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  const databaseConfigured = isDatabaseConfigured();
   let database = false;
-  if (isDatabaseConfigured()) {
+  let databaseStatus: 'ready' | 'missing-DATABASE_URL' | 'connection-failed' = databaseConfigured
+    ? 'connection-failed'
+    : 'missing-DATABASE_URL';
+
+  if (databaseConfigured) {
     try {
       const sql = getDb();
       const result = await sql`SELECT 1 AS ok`;
       database = Number(result[0]?.ok) === 1;
+      if (database) databaseStatus = 'ready';
     } catch {
       database = false;
+      databaseStatus = 'connection-failed';
     }
   }
 
@@ -31,5 +38,12 @@ export async function GET() {
   };
   const coreReady = checks.database && checks.auth;
   const integrationsReady = checks.vehicleSource && checks.openai && checks.whatsapp;
-  return NextResponse.json({ ok: coreReady, mode: coreReady ? 'production-ready-core' : 'setup-required', coreReady, integrationsReady, checks });
+  return NextResponse.json({
+    ok: coreReady,
+    mode: coreReady ? 'production-ready-core' : 'setup-required',
+    coreReady,
+    integrationsReady,
+    databaseStatus,
+    checks,
+  });
 }
