@@ -3,6 +3,7 @@ import { getDb, isDatabaseConfigured } from '@/lib/db';
 import { isAuthConfigured } from '@/lib/auth/server';
 
 export const runtime = 'nodejs';
+// Sempre avalia as variáveis atuais da Vercel, sem reutilizar resultado antigo.
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
