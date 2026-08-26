@@ -38,4 +38,4 @@ A IA não deve inventar preço, prazo ou fatos físicos. Confirmações sobre et
 
 ## Validação
 
-Cada novo commit na `main` roda um build automático do Next.js pelo GitHub Actions.
+Cada novo commit na `main` roda um build automático do Next.js pelo GitHub Actions. Alterações nas Environment Variables da Vercel exigem um novo deployment para entrarem em vigor.
