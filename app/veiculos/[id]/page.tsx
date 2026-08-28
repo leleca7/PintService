@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
+import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getVehicleDetail } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { updateVehicle } from '../actions';
@@ -35,8 +36,8 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         <section className={styles.darkBand}>
           <div className={styles.darkCopy}>
             <p className={styles.darkLabel}>ETAPA ATUAL</p>
-            <h2 className={styles.darkTitle}>{vehicle.etapa}</h2>
-            <p className={styles.darkText}>{vehicle.status}. Última atualização registrada em {dateTime(vehicle.ultimaAtualizacao)}.</p>
+            <h2 className={styles.darkTitle}>{vehicle.etapa || 'Etapa não informada'}</h2>
+            <p className={styles.darkText}>{vehicle.status || 'Status não informado'}. Última atualização registrada em {dateTime(vehicle.ultimaAtualizacao)}.</p>
           </div>
           <div className={styles.darkStats}>
             <div className={styles.darkStat}><strong>{activeTasks.length}</strong><span>tarefas abertas</span></div>
@@ -45,15 +46,37 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         </section>
 
         <div className={styles.summaryGrid}>
-          <div className={styles.summaryItem}><span>Cliente</span><strong style={{ fontSize: 18 }}>{vehicle.cliente}</strong><small>responsável pelo veículo</small></div>
-          <div className={styles.summaryItem}><span>Placa</span><strong style={{ fontSize: 22 }}>{vehicle.placa}</strong><small>identificação operacional</small></div>
+          <div className={styles.summaryItem}><span>Cliente</span><strong className={ops.summaryTextValue}>{vehicle.cliente}</strong><small>responsável pelo veículo</small></div>
+          <div className={styles.summaryItem}><span>Placa</span><strong className={ops.summaryPlateValue}>{vehicle.placa}</strong><small>identificação operacional</small></div>
           <div className={styles.summaryItem}><span>Tarefas abertas</span><strong>{activeTasks.length}</strong><small>{escalated.length} escaladas</small></div>
           <div className={styles.summaryItem}><span>Conversas ligadas</span><strong>{data.conversations.length}</strong><small>{humanConversations.length} com humano</small></div>
         </div>
 
-        {canManage && <section className={styles.section}><div className={styles.sectionHead}><div><p>EDIÇÃO INTERNA</p><h2>Atualizar cadastro confirmado</h2></div></div><form action={updateVehicle} className="settings-grid"><input type="hidden" name="id" value={vehicle.id}/><label>Modelo<input name="modelo" defaultValue={vehicle.modelo}/></label><label>Cor<input name="cor" defaultValue={vehicle.cor}/></label><label>Etapa / setor<input name="setor" defaultValue={vehicle.etapa}/></label><label>Status<input name="status" defaultValue={vehicle.status}/></label><label className="form-wide">Observações<textarea name="observacoes" placeholder="Informação interna confirmada pela equipe"/></label><div><button className="ghost action-link" type="submit">Salvar alterações</button></div></form><p className="section-intro">Quando a fonte por link estiver ativa, Fase e Status consultados da planilha continuam sendo a referência operacional para respostas ao cliente.</p></section>}
+        {canManage && <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>EDIÇÃO INTERNA</p><h2>Atualizar cadastro confirmado</h2></div></div>
+          <form action={updateVehicle} className={ops.detailForm}>
+            <input type="hidden" name="id" value={vehicle.id}/>
+            <label className={ops.detailField}>Modelo<input name="modelo" defaultValue={vehicle.modelo}/></label>
+            <label className={ops.detailField}>Cor<input name="cor" defaultValue={vehicle.cor}/></label>
+            <label className={ops.detailField}>Etapa / setor<input name="setor" defaultValue={vehicle.etapa}/></label>
+            <label className={ops.detailField}>Status<input name="status" defaultValue={vehicle.status}/></label>
+            <label className={`${ops.detailField} ${ops.detailFieldWide}`}>Observações<textarea name="observacoes" placeholder="Informação interna confirmada pela equipe"/></label>
+            <div className={ops.detailFormActions}><button className={styles.button} type="submit">Salvar alterações</button></div>
+          </form>
+          <p className={ops.detailHint}>Quando a fonte por link estiver ativa, Fase e Status consultados da planilha continuam sendo a referência operacional para respostas ao cliente.</p>
+        </section>}
 
-        <section className={styles.section}><div className={styles.sectionHead}><div><p>LINHA DE PRODUÇÃO</p><h2>Etapas do veículo</h2></div></div><div className="timeline-stages">{STAGES.map((stage, index) => { const state = currentIndex < 0 ? 'future' : index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'future'; return <div className={`timeline-stage ${state}`} key={stage}><span>{state === 'done' ? '✓' : index + 1}</span><div><strong>{stage}</strong><small>{state === 'done' ? 'Concluída anteriormente' : state === 'current' ? 'Etapa registrada agora' : 'Ainda não registrada'}</small></div></div>; })}</div></section>
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>LINHA DE PRODUÇÃO</p><h2>Etapas do veículo</h2></div></div>
+          <div className={ops.timeline}>{STAGES.map((stage, index) => {
+            const state = currentIndex < 0 ? 'future' : index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'future';
+            const stateClass = state === 'done' ? ops.timelineDone : state === 'current' ? ops.timelineCurrent : ops.timelineFuture;
+            return <div className={`${ops.timelineStep} ${stateClass}`} key={stage}>
+              <span className={ops.timelineIndex}>{state === 'done' ? '✓' : index + 1}</span>
+              <div><strong>{stage}</strong><small>{state === 'done' ? 'Concluída anteriormente' : state === 'current' ? 'Etapa registrada agora' : 'Ainda não registrada'}</small></div>
+            </div>;
+          })}</div>
+        </section>
 
         <div className={styles.split}>
           <section className={styles.section}><div className={styles.sectionHead}><div><p>TAREFAS</p><h2>Pendências deste veículo</h2></div><Link href="/tarefas" className="link-button">Todas</Link></div>{data.tasks.length ? <div className={styles.list}>{data.tasks.map((task) => <article className={`${styles.row} ${['alta','urgente'].includes(task.prioridade) ? styles.rowCritical : ''}`} key={task.id}><div className={styles.avatar}>{task.requerFoto ? 'FT' : 'TK'}</div><div className={styles.rowBody}><div className={styles.rowTop}><strong>#{task.codigo} · {task.titulo}</strong><time>{task.status.replaceAll('_', ' ')}</time></div><p className={styles.preview}>{task.setor} · {task.responsavel}</p><div className={styles.meta}><span className={`${styles.badge} ${['alta','urgente'].includes(task.prioridade) ? styles.badgeHot : styles.badgeAi}`}>{task.prioridade}</span></div></div></article>)}</div> : <div className={styles.quiet}><strong>Nenhuma pendência ligada.</strong>Este veículo não possui tarefas no histórico carregado.</div>}</section>
