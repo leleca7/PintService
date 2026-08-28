@@ -5,9 +5,11 @@ import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/li
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
 import { getOfficeProfile } from '@/lib/office-profile';
 import { getDb } from '@/lib/db';
-import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
+import { sendWhatsAppText, sentWhatsAppMessageId, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 
 const STAGES = ['Desmontagem', 'Funilaria', 'Preparação de pintura', 'Pintura', 'Montagem', 'Polimento', 'Lavagem'];
+
+type ProcessIncomingOptions = { eventManaged?: boolean };
 
 function normalize(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 
@@ -23,7 +25,6 @@ function statusMessage(vehicle: any) {
   const label = vehicle.modelo ? `${vehicle.modelo} (${vehicle.placa})` : `veículo ${vehicle.placa}`;
   let text = index >= 0 ? `Seu ${label} está registrado na etapa ${index + 1} de ${STAGES.length} — ${STAGES[index]}.` : `Encontrei seu ${label}. A atualização registrada é ${sector || vehicle.status || 'em acompanhamento pela oficina'}.`;
   if (vehicle.status) text += ` Situação registrada: ${vehicle.status}.`;
-  // Prazo só é comunicado depois da desmontagem e quando a fonte oficial trouxe status de prazo.
   if (index > 0 && vehicle.statusPrazo) text += ` Situação do prazo registrada: ${vehicle.statusPrazo}.`;
   if (vehicle.source === 'planilha') text += ' Consultei agora a fonte operacional vinculada pela oficina.';
   text += ' Se a sua pergunta exigir uma confirmação física atual, eu posso pedir para a equipe verificar sem inventar a resposta.';
@@ -55,10 +56,12 @@ function unavailableVehicleReply(reason: 'not_found' | 'source_error' | 'incompl
   return 'Não encontrei essa placa na fonte operacional da oficina. Encaminhei para a equipe verificar e continuar com você por aqui.';
 }
 
-export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
+export async function processIncomingMessage(message: IncomingWhatsAppMessage, options: ProcessIncomingOptions = {}) {
   const sql = getDb();
-  const event = await sql`INSERT INTO eventos_whatsapp (message_id,telefone) VALUES (${message.id},${message.phone}) ON CONFLICT (message_id) DO NOTHING RETURNING message_id`;
-  if (!event[0]) return { duplicate: true };
+  if (!options.eventManaged) {
+    const event = await sql`INSERT INTO eventos_whatsapp (message_id,telefone) VALUES (${message.id},${message.phone}) ON CONFLICT (message_id) DO NOTHING RETURNING message_id`;
+    if (!event[0]) return { duplicate: true };
+  }
 
   const employee = await findEmployeeByWhatsAppPhone(message.phone);
   if (employee) return processStaffWhatsAppMessage(message, employee);
@@ -71,7 +74,11 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
   const client = clients[0];
   if (!client) throw new Error('Não foi possível registrar o cliente.');
 
-  await sql`INSERT INTO conversas (telefone,cliente_id,message_id,mensagem,origem,tipo_mensagem,media_id,atendente_assumiu) VALUES (${message.phone},${client.id},${message.id},${message.text || `[${message.type} recebida]`},'cliente',${message.type},${message.mediaId || null},false)`;
+  await sql`
+    INSERT INTO conversas (telefone,cliente_id,message_id,mensagem,origem,tipo_mensagem,media_id,atendente_assumiu)
+    VALUES (${message.phone},${client.id},${message.id},${message.text || `[${message.type} recebida]`},'cliente',${message.type},${message.mediaId || null},false)
+    ON CONFLICT (message_id) DO NOTHING
+  `;
 
   const [stateRows, vehicleRows, historyRows, openTaskRows] = await Promise.all([
     sql`SELECT * FROM estado_atendimento WHERE telefone = ${message.phone} LIMIT 1`,
@@ -90,10 +97,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
     setor: row.setor == null ? null : String(row.setor),
     ultima_atualizacao: row.ultima_atualizacao == null ? null : String(row.ultima_atualizacao),
   }));
-  const history = historyRows.map((row) => ({
-    origem: String(row.origem ?? ''),
-    mensagem: String(row.mensagem ?? ''),
-  }));
+  const history = historyRows.map((row) => ({ origem: String(row.origem ?? ''), mensagem: String(row.mensagem ?? '') }));
   const openTasks = openTaskRows.map((row) => ({
     id: String(row.id ?? ''),
     veiculo_id: row.veiculo_id == null ? null : String(row.veiculo_id),
@@ -123,13 +127,16 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
     await createPending(String(client.id), null, 'atendente', `Triagem automática indisponível. Revisar a mensagem do cliente: ${message.text || `[${message.type} recebida]`}`, 'alta');
     await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'falha_ia' });
     const fallbackReply = 'Recebi sua mensagem. Nosso atendimento automático está indisponível neste momento, então encaminhei sua solicitação para a equipe continuar com você por aqui.';
-    await sendWhatsAppText(message.phone, fallbackReply);
-    await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},'humano','humano',0,'alta',true,${JSON.stringify({ reason: 'ai_unavailable', error: summary })}::jsonb)`;
-    await sql`INSERT INTO conversas (telefone,cliente_id,mensagem,origem,intencao,atendente_assumiu) VALUES (${message.phone},${client.id},${fallbackReply},'bot','humano',true)`;
+    const sendResult = await sendWhatsAppText(message.phone, fallbackReply);
+    const outboundMessageId = sentWhatsAppMessageId(sendResult);
+    await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},'humano','humano',0,'alta',true,${JSON.stringify({ reason: 'ai_unavailable', error: summary, incomingMessageId: message.id, outboundMessageId })}::jsonb)`;
+    if (outboundMessageId) {
+      await sql`INSERT INTO conversas (telefone,cliente_id,message_id,mensagem,origem,intencao,atendente_assumiu) VALUES (${message.phone},${client.id},${outboundMessageId},${fallbackReply},'bot','humano',true) ON CONFLICT (message_id) DO NOTHING`;
+    }
     return { ok: true, action: 'humano', needsHuman: true, fallback: 'ai_unavailable' };
   }
 
-  const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured() });
+  const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured(), incomingMessageId: message.id });
   await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},${plan.intent},${plan.action},${plan.confidence},${plan.priority},${plan.needsHuman},${decisionData}::jsonb)`;
 
   let reply = '';
@@ -224,7 +231,10 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       break;
   }
 
-  await sendWhatsAppText(message.phone, reply);
-  await sql`INSERT INTO conversas (telefone,cliente_id,veiculo_id,mensagem,origem,intencao,atendente_assumiu) VALUES (${message.phone},${client.id},${vehicleId},${reply},'bot',${plan.intent},${needsHuman})`;
-  return { ok: true, action: plan.action, needsHuman };
+  const sendResult = await sendWhatsAppText(message.phone, reply);
+  const outboundMessageId = sentWhatsAppMessageId(sendResult);
+  if (outboundMessageId) {
+    await sql`INSERT INTO conversas (telefone,cliente_id,veiculo_id,message_id,mensagem,origem,intencao,atendente_assumiu) VALUES (${message.phone},${client.id},${vehicleId},${outboundMessageId},${reply},'bot',${plan.intent},${needsHuman}) ON CONFLICT (message_id) DO NOTHING`;
+  }
+  return { ok: true, action: plan.action, needsHuman, outboundMessageId };
 }

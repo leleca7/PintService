@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { channelLabel, getReputationData } from '@/lib/reputation';
+import { safeStringEqual } from '@/lib/security';
 import { sendWhatsAppAlert } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic';
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET?.trim();
   if (!secret) return process.env.NODE_ENV !== 'production';
-  return request.headers.get('authorization') === `Bearer ${secret}`;
+  return safeStringEqual(request.headers.get('authorization'), `Bearer ${secret}`);
 }
 
 export async function GET(request: Request) {

@@ -3,15 +3,26 @@ import { createHash } from 'node:crypto';
 import { answerOperationalResolution } from '@/lib/agent';
 import { getDb } from '@/lib/db';
 import { sendOperationalTaskToEmployee } from '@/lib/task-messaging';
-import { sendWhatsAppImageId, sendWhatsAppImageUrl, sendWhatsAppText } from '@/lib/whatsapp';
+import { sendWhatsAppImageId, sendWhatsAppImageUrl, sendWhatsAppText, sentWhatsAppMessageId } from '@/lib/whatsapp';
 
 export type OperationalTaskType = 'confirmar_etapa' | 'tirar_foto' | 'confirmar_peca' | 'verificar_status_fisico' | 'informacao_setor';
 export type OperationalTaskRequest = { type: OperationalTaskType; sector: string; instruction: string; requiresPhoto: boolean };
 type CreateTaskInput = { clientId: string; vehicle: { id: string; placa: string; modelo?: string | null }; customerPhone: string; customerMessage: string; priority: 'baixa' | 'normal' | 'alta' | 'urgente'; request: OperationalTaskRequest };
 type ResolveTaskInput = { taskId: string; employeeId?: string | null; employeeResponse: string; evidenceUrl?: string | null; evidenceMediaId?: string | null; newVehicleStatus?: string | null; newVehicleSector?: string | null; customerReply?: string | null };
 
+type DeliveryState = {
+  completed: boolean;
+  evidenceSent: boolean;
+  replySent: boolean;
+  messageIds: string[];
+};
+
 function compact(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 160); }
 function taskKey(vehicleId: string, request: OperationalTaskRequest) { return createHash('sha256').update([vehicleId, request.type, compact(request.sector), compact(request.instruction)].join('|')).digest('hex'); }
+function safeDeliveryError(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error ?? 'erro_desconhecido');
+  return raw.replace(/(Bearer\s+)[^\s]+/gi, '$1***').replace(/([?&](?:access_token|token)=)[^&\s]+/gi, '$1***').slice(0, 500);
+}
 
 async function findResponsibleEmployee(sector: string) {
   if (!sector.trim()) return null;
@@ -82,6 +93,100 @@ function defaultCustomerReply(task: any, employeeResponse: string) {
   }
 }
 
+async function readDeliveryState(taskId: string): Promise<DeliveryState> {
+  const sql = getDb();
+  const rows = await sql`SELECT evento,dados FROM tarefa_eventos WHERE tarefa_id = ${taskId} AND evento IN ('cliente_notificacao_item','cliente_notificado') ORDER BY id ASC`;
+  const state: DeliveryState = { completed: false, evidenceSent: false, replySent: false, messageIds: [] };
+  for (const row of rows) {
+    const data = row.dados && typeof row.dados === 'object' ? row.dados : {};
+    if (row.evento === 'cliente_notificado') state.completed = true;
+    if (data.evidenceSent === true) state.evidenceSent = true;
+    if (data.replySent === true) state.replySent = true;
+    const messageId = String(data.messageId ?? '');
+    if (messageId && !state.messageIds.includes(messageId)) state.messageIds.push(messageId);
+  }
+  return state;
+}
+
+async function recordDeliveryItem(taskId: string, data: Record<string, unknown>) {
+  const sql = getDb();
+  const json = JSON.stringify(data);
+  await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, evento, dados) VALUES (${taskId}, 'sistema', 'cliente_notificacao_item', ${json}::jsonb)`;
+}
+
+async function ensureDeliveredConversation(task: any, phone: string, reply: string, messageId: string, evidenceSent: boolean) {
+  const sql = getDb();
+  const logMessage = evidenceSent && task.tipo === 'tirar_foto' ? `${reply} [foto enviada]` : reply;
+  if (messageId) {
+    await sql`
+      INSERT INTO conversas (telefone, cliente_id, veiculo_id, message_id, mensagem, origem, intencao, atendente_assumiu)
+      VALUES (${phone}, ${task.cliente_id}, ${task.veiculo_id}, ${messageId}, ${logMessage}, 'bot', 'confirmacao_operacional', false)
+      ON CONFLICT (message_id) DO NOTHING
+    `;
+  }
+  await sql`
+    INSERT INTO estado_atendimento (telefone, etapa, bot_ativo, ultima_intencao, placa_contexto, aguardando_campo, tarefa_aguardada_id, atualizado_em)
+    VALUES (${phone}, 'inicio', true, 'confirmacao_operacional', ${task.placa ?? null}, null, null, now())
+    ON CONFLICT (telefone) DO UPDATE SET etapa = 'inicio', bot_ativo = true, ultima_intencao = 'confirmacao_operacional', placa_contexto = EXCLUDED.placa_contexto, aguardando_campo = null, tarefa_aguardada_id = null, atualizado_em = now()
+  `;
+}
+
+async function deliverResolvedTask(task: any, reply: string, evidenceUrl: string | null, evidenceMediaId: string | null) {
+  const sql = getDb();
+  const phone = String(task.telefone_cliente || task.cliente_telefone || '');
+  const hasEvidence = Boolean(evidenceUrl || evidenceMediaId);
+  if (!phone || !reply) return { delivered: false, pending: false, reason: 'sem_destino_ou_resposta', messageIds: [] as string[] };
+
+  let state = await readDeliveryState(String(task.id));
+  if (state.completed) {
+    const primaryMessageId = state.messageIds[state.messageIds.length - 1] ?? '';
+    await ensureDeliveredConversation(task, phone, reply, primaryMessageId, hasEvidence);
+    return { delivered: true, pending: false, recovered: false, messageIds: state.messageIds };
+  }
+
+  try {
+    if (hasEvidence && !state.evidenceSent) {
+      const caption = task.tipo === 'tirar_foto' ? reply : `Evidência da verificação do veículo ${task.placa ?? ''}`.trim();
+      const response = evidenceMediaId
+        ? await sendWhatsAppImageId(phone, evidenceMediaId, caption)
+        : await sendWhatsAppImageUrl(phone, evidenceUrl!, caption);
+      const messageId = sentWhatsAppMessageId(response);
+      await recordDeliveryItem(String(task.id), { evidenceSent: true, replySent: task.tipo === 'tirar_foto', messageId });
+      state.evidenceSent = true;
+      if (task.tipo === 'tirar_foto') state.replySent = true;
+      if (messageId) state.messageIds.push(messageId);
+    }
+
+    if ((!hasEvidence || task.tipo !== 'tirar_foto') && !state.replySent) {
+      const response = await sendWhatsAppText(phone, reply);
+      const messageId = sentWhatsAppMessageId(response);
+      await recordDeliveryItem(String(task.id), { evidenceSent: false, replySent: true, messageId });
+      state.replySent = true;
+      if (messageId) state.messageIds.push(messageId);
+    }
+
+    const requiredEvidenceDone = !hasEvidence || state.evidenceSent;
+    const requiredReplyDone = state.replySent;
+    if (!requiredEvidenceDone || !requiredReplyDone) return { delivered: false, pending: true, reason: 'entrega_parcial', messageIds: state.messageIds };
+
+    const completedData = JSON.stringify({ messageIds: state.messageIds, evidenceSent: state.evidenceSent, replySent: state.replySent });
+    await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, evento, dados) VALUES (${task.id}, 'sistema', 'cliente_notificado', ${completedData}::jsonb)`;
+    const primaryMessageId = state.messageIds[state.messageIds.length - 1] ?? '';
+    await ensureDeliveredConversation(task, phone, reply, primaryMessageId, hasEvidence);
+    return { delivered: true, pending: false, recovered: true, messageIds: state.messageIds };
+  } catch (error) {
+    const summary = safeDeliveryError(error);
+    console.error('Falha ao entregar conclusão operacional ao cliente:', { taskId: String(task.id), error: summary });
+    const failure = JSON.stringify({ error: summary, evidenceSent: state.evidenceSent, replySent: state.replySent });
+    try { await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, evento, dados) VALUES (${task.id}, 'sistema', 'cliente_notificacao_falhou', ${failure}::jsonb)`; } catch {}
+    return { delivered: false, pending: true, reason: 'falha_transporte', error: summary, messageIds: state.messageIds };
+  }
+}
+
+function persistedResult(task: any) {
+  return task?.resultado && typeof task.resultado === 'object' ? task.resultado : {};
+}
+
 export async function resolveOperationalTask(input: ResolveTaskInput) {
   const sql = getDb();
   const rows = await sql`
@@ -94,12 +199,29 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
   `;
   const task = rows[0];
   if (!task) throw new Error('Tarefa operacional não encontrada.');
-  if (task.status === 'resolvida' || task.status === 'cancelada') return { task, alreadyFinished: true };
+  if (task.status === 'cancelada') return { task, alreadyFinished: true, customerDelivery: { delivered: false, pending: false, reason: 'tarefa_cancelada' } };
+  if (task.status === 'resolvida') {
+    const saved = persistedResult(task);
+    const reply = String(saved.customerReply ?? '').trim() || defaultCustomerReply(task, String(task.resposta_funcionario ?? input.employeeResponse ?? ''));
+    const delivery = await deliverResolvedTask(task, reply, task.evidencia_url ?? saved.evidenceUrl ?? null, task.evidencia_media_id ?? saved.evidenceMediaId ?? null);
+    return { task, customerReply: reply, alreadyFinished: true, customerDelivery: delivery };
+  }
 
   if (task.veiculo_id && input.newVehicleStatus) await sql`UPDATE veiculos SET status = ${input.newVehicleStatus}, ultima_atualizacao = now() WHERE id = ${task.veiculo_id}`;
   if (task.veiculo_id && input.newVehicleSector) await sql`UPDATE veiculos SET setor = ${input.newVehicleSector}, ultima_atualizacao = now() WHERE id = ${task.veiculo_id}`;
 
-  const result = { employeeResponse: input.employeeResponse, evidenceUrl: input.evidenceUrl ?? null, evidenceMediaId: input.evidenceMediaId ?? null, newVehicleStatus: input.newVehicleStatus ?? null, newVehicleSector: input.newVehicleSector ?? null };
+  const evidenceSent = Boolean(input.evidenceUrl || input.evidenceMediaId);
+  let reply = input.customerReply?.trim() || '';
+  if (!reply && process.env.OPENAI_API_KEY) {
+    try {
+      reply = await answerOperationalResolution({ customerQuestion: task.origem_mensagem || task.instrucoes || '', employeeResponse: input.employeeResponse, taskType: task.tipo, evidenceSent, vehicle: { placa: task.placa ?? null, modelo: task.modelo ?? null, status: input.newVehicleStatus ?? task.veiculo_status ?? null, setor: input.newVehicleSector ?? task.veiculo_setor ?? null } });
+    } catch (error) { console.error('Falha ao reavaliar conclusão operacional com IA:', error); }
+  }
+  if (!reply) reply = defaultCustomerReply(task, input.employeeResponse);
+
+  // A resposta final é persistida antes da tentativa externa. Um retry posterior reutiliza
+  // exatamente este texto, sem pedir à IA que gere uma versão diferente.
+  const result = { employeeResponse: input.employeeResponse, evidenceUrl: input.evidenceUrl ?? null, evidenceMediaId: input.evidenceMediaId ?? null, newVehicleStatus: input.newVehicleStatus ?? null, newVehicleSector: input.newVehicleSector ?? null, customerReply: reply };
   const resultJson = JSON.stringify(result);
   const resolvedRows = await sql`
     UPDATE tarefas_operacionais
@@ -110,27 +232,7 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
   const eventType = input.employeeId ? 'funcionario' : 'sistema';
   await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados) VALUES (${input.taskId}, ${eventType}, ${input.employeeId ?? null}, 'tarefa_resolvida', ${resultJson}::jsonb)`;
 
-  const phone = String(task.telefone_cliente || task.cliente_telefone || '');
-  let reply = input.customerReply?.trim() || '';
-  const evidenceSent = Boolean(input.evidenceUrl || input.evidenceMediaId);
-  if (!reply && process.env.OPENAI_API_KEY) {
-    try {
-      reply = await answerOperationalResolution({ customerQuestion: task.origem_mensagem || task.instrucoes || '', employeeResponse: input.employeeResponse, taskType: task.tipo, evidenceSent, vehicle: { placa: task.placa ?? null, modelo: task.modelo ?? null, status: input.newVehicleStatus ?? task.veiculo_status ?? null, setor: input.newVehicleSector ?? task.veiculo_setor ?? null } });
-    } catch (error) { console.error('Falha ao reavaliar conclusão operacional com IA:', error); }
-  }
-  if (!reply) reply = defaultCustomerReply(task, input.employeeResponse);
-
-  if (phone && reply) {
-    if (input.evidenceMediaId) await sendWhatsAppImageId(phone, input.evidenceMediaId, task.tipo === 'tirar_foto' ? reply : `Evidência da verificação do veículo ${task.placa ?? ''}`.trim());
-    else if (input.evidenceUrl) await sendWhatsAppImageUrl(phone, input.evidenceUrl, task.tipo === 'tirar_foto' ? reply : `Evidência da verificação do veículo ${task.placa ?? ''}`.trim());
-    if (!evidenceSent || task.tipo !== 'tirar_foto') await sendWhatsAppText(phone, reply);
-    const logMessage = evidenceSent && task.tipo === 'tirar_foto' ? `${reply} [foto enviada]` : reply;
-    await sql`INSERT INTO conversas (telefone, cliente_id, veiculo_id, mensagem, origem, intencao, atendente_assumiu) VALUES (${phone}, ${task.cliente_id}, ${task.veiculo_id}, ${logMessage}, 'bot', 'confirmacao_operacional', false)`;
-    await sql`
-      INSERT INTO estado_atendimento (telefone, etapa, bot_ativo, ultima_intencao, placa_contexto, aguardando_campo, tarefa_aguardada_id, atualizado_em)
-      VALUES (${phone}, 'inicio', true, 'confirmacao_operacional', ${task.placa ?? null}, null, null, now())
-      ON CONFLICT (telefone) DO UPDATE SET etapa = 'inicio', bot_ativo = true, ultima_intencao = 'confirmacao_operacional', placa_contexto = EXCLUDED.placa_contexto, aguardando_campo = null, tarefa_aguardada_id = null, atualizado_em = now()
-    `;
-  }
-  return { task: resolvedRows[0], customerReply: reply, alreadyFinished: false };
+  const resolvedTask = { ...task, ...resolvedRows[0], resultado: result };
+  const delivery = await deliverResolvedTask(resolvedTask, reply, input.evidenceUrl ?? null, input.evidenceMediaId ?? null);
+  return { task: resolvedRows[0], customerReply: reply, alreadyFinished: false, customerDelivery: delivery };
 }
