@@ -28,6 +28,7 @@ export async function GET() {
     instagram: Boolean(process.env.INSTAGRAM_ACCESS_TOKEN?.trim() && process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim() && process.env.INSTAGRAM_VERIFY_TOKEN?.trim() && process.env.INSTAGRAM_APP_SECRET?.trim()),
     google: Boolean(process.env.GOOGLE_BUSINESS_ACCESS_TOKEN?.trim() && process.env.GOOGLE_BUSINESS_ACCOUNT_ID?.trim() && process.env.GOOGLE_BUSINESS_LOCATION_ID?.trim()),
     reclameAqui: Boolean(process.env.RECLAME_AQUI_API_KEY?.trim() && process.env.RECLAME_AQUI_COMPANY_ID?.trim()),
+    blinko: Boolean(process.env.BLINKO_API_SECRET?.trim()),
     shop: Boolean(office.name && office.publicPhone && office.address && office.hours),
   };
   const coreReady = checks.database && checks.auth;

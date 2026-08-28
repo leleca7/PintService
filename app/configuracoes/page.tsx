@@ -24,6 +24,7 @@ export default async function SettingsPage() {
     { name: 'Instagram profissional', description: 'Sincroniza DMs e comentários, responde pela API e recebe webhooks em tempo real.', ready: instagramReady, detail: 'token + Instagram business id + verify token + app secret' },
     { name: 'Reclame Aqui', description: 'Mostra reputação e, quando contratado, lê e responde reclamações pela RA API.', ready: reputationChannels.find((item) => item.channel === 'reclame_aqui')?.state !== 'missing', detail: reputationChannels.find((item) => item.channel === 'reclame_aqui')?.state === 'partial' ? 'indicadores conectados; casos individuais dependem do contrato RA API' : 'APIKey + company id + endpoints do contrato' },
     { name: 'Alertas de reputação', description: 'Envia ao WhatsApp interno novas DMs e casos classificados como alta/urgente.', ready: configured(process.env.ALERT_WHATSAPP_TO, process.env.WHATSAPP_ACCESS_TOKEN, process.env.WHATSAPP_PHONE_NUMBER_ID), detail: 'número interno + WhatsApp Cloud API + template recomendado' },
+    { name: 'Blinko', description: 'Permite que a central Blinko consulte apenas um resumo seguro da operação, sem acesso ao banco completo.', ready: configured(process.env.BLINKO_API_SECRET), detail: 'BLINKO_API_SECRET compartilhado com a Blinko' },
     { name: 'Dados da oficina', description: 'Telefone, horários e endereço usados como informação oficial no atendimento.', ready: officeCoreReady, detail: officeCoreReady ? `${office.publicPhone} · ${office.address}` : 'telefone + horário + endereço confirmados' },
   ];
 
