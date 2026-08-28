@@ -3,25 +3,35 @@ import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 
+function normalize(value = '') {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function timestamp(value: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function dateTime(value: string | null) {
-  if (!value) return 'Sem horário';
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }).format(new Date(value));
+  const parsed = timestamp(value);
+  if (parsed === null) return 'Sem horário';
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }).format(new Date(parsed));
 }
 
 function elapsed(value: string | null) {
-  if (!value) return 'tempo não informado';
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  const parsed = timestamp(value);
+  if (parsed === null) return 'tempo não informado';
+  const minutes = Math.max(0, Math.floor((Date.now() - parsed) / 60_000));
   if (minutes < 1) return 'agora';
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return `há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
+  if (hours < 24) return `há ${hours}h`;
+  return `há ${Math.floor(hours / 24)}d`;
 }
 
 function timeValue(value: string | null, fallback: number) {
-  if (!value) return fallback;
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : fallback;
+  return timestamp(value) ?? fallback;
 }
 
 function initials(name: string) {
@@ -31,10 +41,10 @@ function initials(name: string) {
 export default async function AttendancePage() {
   const data = await getDashboardData();
   const human = data.conversations
-    .filter((item) => item.status.includes('humano'))
+    .filter((item) => normalize(item.status).includes('humano'))
     .sort((a, b) => timeValue(a.criadoEm, Number.MAX_SAFE_INTEGER) - timeValue(b.criadoEm, Number.MAX_SAFE_INTEGER));
   const ai = data.conversations
-    .filter((item) => !item.status.includes('humano'))
+    .filter((item) => !normalize(item.status).includes('humano'))
     .sort((a, b) => timeValue(b.criadoEm, 0) - timeValue(a.criadoEm, 0));
   const withVehicle = data.conversations.filter((item) => Boolean(item.placa)).length;
   const hasEscalation = human.length > 0;
@@ -93,7 +103,7 @@ export default async function AttendancePage() {
                 <p className={styles.preview}>{conversation.mensagem}</p>
                 <div className={styles.meta}>
                   <span className={`${styles.badge} ${styles.badgeHuman}`}>Aguardando humano</span>
-                  <span className={ops.waiting}>há {elapsed(conversation.criadoEm)}</span>
+                  <span className={ops.waiting}>{elapsed(conversation.criadoEm)}</span>
                   {conversation.placa && <span>{conversation.placa}</span>}
                   {conversation.intencao && <span>{conversation.intencao}</span>}
                 </div>
