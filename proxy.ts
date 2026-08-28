@@ -10,6 +10,7 @@ export default function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    // O resumo da Blinko usa autenticação Bearer própria na rota; não depende de sessão interativa.
     '/((?!api/auth|api/whatsapp|api/instagram/webhook|api/health|api/blinko/summary|api/reputacao/check|auth|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)',
   ],
 };
