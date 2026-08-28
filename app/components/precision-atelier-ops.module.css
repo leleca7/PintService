@@ -1,0 +1,180 @@
+.calmBand {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, .65fr);
+  gap: 28px;
+  align-items: center;
+  min-height: 154px;
+  padding: 26px 30px;
+  border: 1px solid #d8e4db;
+  border-radius: 5px;
+  background: linear-gradient(120deg, #f7faf7 0%, #f1f6f2 68%, #eef4ef 100%);
+  color: #1d2420;
+}
+.calmLabel {
+  margin: 0 0 9px;
+  color: #52705f;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.calmTitle {
+  margin: 0;
+  max-width: 760px;
+  color: #1c2520;
+  font-size: clamp(25px, 3vw, 38px);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+  font-weight: 620;
+}
+.calmText {
+  max-width: 650px;
+  margin: 13px 0 0;
+  color: #59655e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.calmStats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-left: 1px solid #d4dfd7;
+}
+.calmStat {
+  min-height: 78px;
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.calmStat + .calmStat { border-left: 1px solid #d4dfd7; }
+.calmStat strong {
+  color: #213229;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -.05em;
+  font-weight: 650;
+}
+.calmStat span {
+  margin-top: 7px;
+  color: #66736b;
+  font-size: 10px;
+  line-height: 1.35;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  font-weight: 750;
+}
+
+.queueSection { box-shadow: inset 0 2px 0 #ef5a2a; }
+.routineSection { background: #fff; }
+.waiting {
+  color: #9a5a24;
+  font-weight: 750;
+}
+
+.vehicleNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  padding: 17px 20px;
+  border: 1px solid #ead8bd;
+  border-radius: 5px;
+  background: #fbf6ed;
+}
+.vehicleNotice strong {
+  display: block;
+  color: #3a3025;
+  font-size: 13px;
+  letter-spacing: -.01em;
+}
+.vehicleNotice p {
+  margin: 4px 0 0;
+  color: #706456;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.vehicleNoticeCount {
+  flex: 0 0 auto;
+  min-width: 40px;
+  height: 34px;
+  padding: 0 11px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #f3e6d3;
+  color: #8c5e24;
+  font-size: 12px;
+  font-weight: 850;
+}
+.vehicleCardAttention { background: #fffdf9 !important; }
+.vehicleCardAttention:hover { background: #fbf6ed !important; }
+.signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+.signal::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.signalOk { color: #287154; }
+.signalPending { color: #c4522b; }
+.signalStale { color: #9a6725; }
+
+.escalatedCard {
+  background: #fffaf5;
+  box-shadow: inset 2px 0 0 #ef5a2a;
+}
+.urgentCard {
+  background: #fff5f3;
+  box-shadow: inset 3px 0 0 #b9473f;
+}
+.taskFacts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #e8e5df;
+}
+.taskFact span,
+.taskFact strong { display: block; }
+.taskFact span {
+  color: #737871;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.taskFact strong {
+  margin-top: 4px;
+  color: #3f4540;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.priorityHigh { color: #c4522b !important; }
+.priorityUrgent { color: #a73f38 !important; }
+
+@media (max-width: 860px) {
+  .calmBand { grid-template-columns: 1fr; gap: 16px; }
+  .calmStats { border-left: 0; border-top: 1px solid #d4dfd7; padding-top: 10px; }
+  .taskFacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  .calmBand { min-height: 0; padding: 22px 18px; }
+  .calmTitle { font-size: 28px; }
+  .calmStats { grid-template-columns: 1fr 1fr; }
+  .calmStat { padding: 11px 8px; }
+  .vehicleNotice { align-items: flex-start; padding: 15px 16px; }
+  .taskFacts { grid-template-columns: 1fr 1fr; }
+}
