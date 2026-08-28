@@ -15,11 +15,14 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const user = await requireAnyPermission(['gerenciar_tarefas', 'ver_proprias_tarefas']);
     const { id } = await context.params;
     const body = BodySchema.parse(await request.json());
-    const canManage = userHasPermission(user, 'gerenciar_tarefas');
+    const canManageTasks = userHasPermission(user, 'gerenciar_tarefas');
+    const canManageVehicles = userHasPermission(user, 'gerenciar_veiculos');
     let employeeId = body.employeeId ?? null;
-    let customerReply = body.customerReply ?? null;
+    let customerReply = canManageTasks ? body.customerReply ?? null : null;
+    const newVehicleStatus = canManageVehicles ? body.newVehicleStatus ?? null : null;
+    const newVehicleSector = canManageVehicles ? body.newVehicleSector ?? null : null;
 
-    if (!canManage) {
+    if (!canManageTasks) {
       if (!user.funcionarioId) return NextResponse.json({ error: 'Usuário não vinculado a funcionário.' }, { status: 403 });
       const sql = getDb();
       const task = await sql`SELECT responsavel_id FROM tarefas_operacionais WHERE id = ${id} LIMIT 1`;
@@ -29,7 +32,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       customerReply = null;
     }
 
-    const result = await resolveOperationalTask({ taskId: id, ...body, employeeId, customerReply });
+    const result = await resolveOperationalTask({ taskId: id, ...body, employeeId, customerReply, newVehicleStatus, newVehicleSector });
     return NextResponse.json({ ok: true, ...result });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: 'Dados inválidos.', details: error.flatten() }, { status: 400 });
