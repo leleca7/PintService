@@ -17,6 +17,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const body = BodySchema.parse(await request.json());
     const canManage = userHasPermission(user, 'gerenciar_tarefas');
     let employeeId = body.employeeId ?? null;
+    let customerReply = body.customerReply ?? null;
 
     if (!canManage) {
       if (!user.funcionarioId) return NextResponse.json({ error: 'Usuário não vinculado a funcionário.' }, { status: 403 });
@@ -24,9 +25,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const task = await sql`SELECT responsavel_id FROM tarefas_operacionais WHERE id = ${id} LIMIT 1`;
       if (!task[0] || String(task[0].responsavel_id ?? '') !== user.funcionarioId) return NextResponse.json({ error: 'Esta tarefa não está atribuída a você.' }, { status: 403 });
       employeeId = user.funcionarioId;
+      // Funcionário confirma fatos; a mensagem ao cliente é composta pelo fluxo seguro do sistema.
+      customerReply = null;
     }
 
-    const result = await resolveOperationalTask({ taskId: id, ...body, employeeId });
+    const result = await resolveOperationalTask({ taskId: id, ...body, employeeId, customerReply });
     return NextResponse.json({ ok: true, ...result });
   } catch (error: any) {
     if (error instanceof z.ZodError) return NextResponse.json({ error: 'Dados inválidos.', details: error.flatten() }, { status: 400 });
