@@ -44,6 +44,8 @@ const schema = {
 };
 
 function normalizePlate(value = '') { const match = value.toUpperCase().match(/\b([A-Z]{3})[\s-]?([0-9][A-Z][0-9]{2}|[0-9]{4})\b/); return match ? `${match[1]}${match[2]}` : ''; }
+function normalizeText(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+function asksAboutParts(value = '') { return /\b(peca|pecas|reposicao|componente|componentes)\b/.test(normalizeText(value)); }
 const emptyTask = { type: 'nenhuma' as const, sector: '', instruction: '', requiresPhoto: false };
 
 export async function planAttendance(context: AgentContext): Promise<AgentPlan> {
@@ -54,19 +56,25 @@ export async function planAttendance(context: AgentContext): Promise<AgentPlan> 
 Entenda a intenção do cliente e escolha UMA ação segura.
 Nunca invente status, setor, preço, orçamento, prazo, data de entrega, peça recebida ou disponibilidade.
 Status registrado no sistema pode ser informado, mas perguntas que exigem confirmação física atual devem gerar verificar_operacao.
-Exemplos: "já está pronto para pintura?", "a peça chegou?", "consegue tirar uma foto agora?", "confere em qual setor ele está?".
-Nesses casos use intent=confirmacao_operacional, action=verificar_operacao e preencha operationalTask com instrução objetiva ao funcionário.
-Tipos: confirmar_etapa, tirar_foto, confirmar_peca, verificar_status_fisico ou informacao_setor.
-Para pedido de foto do veículo na oficina, prefira verificar_operacao/tirar_foto.
+Exemplos permitidos para verificar_operacao: "já está pronto para pintura?", "consegue tirar uma foto agora?", "confere em qual setor ele está?".
+Tipos operacionais permitidos para resposta automática: confirmar_etapa, tirar_foto, verificar_status_fisico ou informacao_setor.
+Qualquer pergunta sobre peça, peças, reposição, chegada de peça ou componente deve ir para humano. Nunca use confirmar_peca para atender cliente automaticamente.
+Solicitações de vistoria, orçamento particular, discussão de preço/prazo, reclamação, pedido de gerente, ameaça, acidente grave, informação conflitante ou baixa confiança devem ir para humano.
+Para pedido de foto do veículo na oficina, prefira verificar_operacao/tirar_foto quando a placa estiver identificada.
 Revise openTasks antes de pedir nova verificação. Se já houver tarefa equivalente, reutilize a finalidade.
-Se houver reclamação, discussão de preço/prazo, pedido de gerente, ameaça, acidente grave ou baixa confiança, encaminhe para humano.
 Se o cliente pedir status simples e existir exatamente um veículo, pode usar a placa dele. Se houver vários e não identificar qual, peça a placa.
-Vistoria simples de seguradora/associação: não precisa agendamento; atendimento por ordem de chegada, das 8h às 16h.
 Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" e os demais campos vazios/false.`,
     input: JSON.stringify(context), text: { format: { type: 'json_schema', name: 'triagem_oficina', strict: true, schema } },
   });
   const plan = PlanSchema.parse(JSON.parse(response.output_text));
   const messagePlate = normalizePlate(context.message); const contextPlate = normalizePlate(context.plateContext || ''); const aiPlate = normalizePlate(plan.plate); let plate = messagePlate || aiPlate || contextPlate;
+
+  if (asksAboutParts(context.message) || plan.operationalTask.type === 'confirmar_peca') {
+    return { ...plan, intent: 'humano', action: 'humano', plate, needsHuman: true, priority: plan.priority === 'baixa' ? 'normal' : plan.priority, reason: `guardrail:pecas:${plan.reason}`, operationalTask: emptyTask };
+  }
+  if (plan.intent === 'vistoria' || plan.action === 'vistoria') {
+    return { ...plan, action: 'humano', plate, needsHuman: true, reason: `guardrail:vistoria:${plan.reason}`, operationalTask: emptyTask };
+  }
   if (plan.confidence < 0.62 || plan.intent === 'reclamacao' || plan.intent === 'humano') return { ...plan, plate, action: 'humano', needsHuman: true, reason: `guardrail:${plan.reason}`, operationalTask: emptyTask };
   if ((plan.action === 'status' || plan.action === 'verificar_operacao') && !plate) { if (context.vehicles.length === 1) plate = normalizePlate(context.vehicles[0].placa); else return { ...plan, plate: '', action: 'pedir_placa', needsHuman: false, operationalTask: emptyTask }; }
   if (plan.action === 'verificar_operacao' && plan.operationalTask.type === 'nenhuma') return { ...plan, plate, operationalTask: { type: 'verificar_status_fisico', sector: '', instruction: 'Verificar fisicamente a situação atual do veículo e confirmar a informação solicitada pelo cliente.', requiresPhoto: false } };
@@ -74,7 +82,7 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
 }
 
 export async function answerGeneralQuestion(message: string) {
-  const response = await client().responses.create({ model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false, instructions: 'Você atende a PintService, uma oficina de funilaria e pintura, pelo WhatsApp. Responda em português do Brasil, cordialmente, em até 3 frases. Nunca informe preço, prazo, disponibilidade, status de veículo ou diagnóstico definitivo sem dados reais do sistema. Se a pergunta exigir avaliação específica, diga que a equipe precisa confirmar.', input: message });
+  const response = await client().responses.create({ model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false, instructions: 'Você atende a PintService, uma oficina de funilaria e pintura, pelo WhatsApp. Responda em português do Brasil, cordialmente, em até 3 frases. Nunca informe preço, prazo, disponibilidade, status de veículo, peça ou diagnóstico definitivo sem dados reais e regra explícita do sistema. Perguntas sobre peças, orçamento particular, vistoria ou casos que exijam avaliação específica devem ser encaminhadas para a equipe humana.', input: message });
   return response.output_text.trim();
 }
 
