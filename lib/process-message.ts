@@ -3,6 +3,7 @@ import { answerGeneralQuestion, planAttendance, type AgentPlan } from '@/lib/age
 import { createOrReuseOperationalTask, type OperationalTaskType } from '@/lib/operational-tasks';
 import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/lib/operational-vehicle';
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
+import { getOfficeProfile } from '@/lib/office-profile';
 import { getDb } from '@/lib/db';
 import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 
@@ -185,17 +186,8 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       reply = 'Recebi sua solicitação de vistoria e encaminhei para a equipe confirmar as orientações e continuar com você por aqui.';
       break;
     case 'horario_endereco': {
-      const hours = process.env.OFICINA_HOURS?.trim();
-      const address = process.env.OFICINA_ADDRESS?.trim();
-      if (hours && address) reply = `Nosso atendimento é ${hours}. Estamos em ${address}.`;
-      else if (hours) reply = `Nosso atendimento é ${hours}. Para confirmar o endereço, a equipe pode continuar com você por aqui.`;
-      else if (address) reply = `Estamos em ${address}. Para confirmar o horário de atendimento, a equipe pode continuar com você por aqui.`;
-      else {
-        needsHuman = true;
-        await createPending(String(client.id), null, 'atendente', 'Cliente pediu horário/endereço, mas os dados oficiais da oficina ainda não estão configurados.', 'normal');
-        await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'horario_endereco' });
-        reply = 'Vou encaminhar sua mensagem para a equipe confirmar nosso horário e endereço oficiais antes de te informar.';
-      }
+      const office = getOfficeProfile();
+      reply = `Nosso atendimento é ${office.hours}. Estamos em ${office.address}. Telefone comercial: ${office.publicPhone}.`;
       break;
     }
     case 'foto':
