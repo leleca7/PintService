@@ -1,6 +1,7 @@
 import 'server-only';
 import OpenAI from 'openai';
 import { z } from 'zod';
+import { getOfficeProfileFacts } from '@/lib/office-profile';
 
 const OperationalTaskSchema = z.object({
   type: z.enum(['confirmar_etapa', 'tirar_foto', 'confirmar_peca', 'verificar_status_fisico', 'informacao_setor', 'nenhuma']),
@@ -82,7 +83,18 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
 }
 
 export async function answerGeneralQuestion(message: string) {
-  const response = await client().responses.create({ model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false, instructions: 'Você atende a PintService, uma oficina de funilaria e pintura, pelo WhatsApp. Responda em português do Brasil, cordialmente, em até 3 frases. Nunca informe preço, prazo, disponibilidade, status de veículo, peça ou diagnóstico definitivo sem dados reais e regra explícita do sistema. Perguntas sobre peças, orçamento particular, vistoria ou casos que exijam avaliação específica devem ser encaminhadas para a equipe humana.', input: message });
+  const officeFacts = getOfficeProfileFacts();
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Você atende a Pint Services pelo WhatsApp. Responda em português do Brasil, cordialmente, em até 3 frases.
+Nunca informe preço, prazo, disponibilidade, status de veículo, peça ou diagnóstico definitivo sem dados reais e regra explícita do sistema. Perguntas sobre peças, orçamento particular, vistoria ou casos que exijam avaliação específica devem ser encaminhadas para a equipe humana.
+Para telefone, endereço, horários, Instagram e localização, use somente os dados oficiais abaixo. Não invente outros canais e não trate o Reclame Aqui como oficial enquanto estiver pendente de confirmação.
+
+DADOS OFICIAIS DISPONÍVEIS:
+${officeFacts}`,
+    input: message,
+  });
   return response.output_text.trim();
 }
 
