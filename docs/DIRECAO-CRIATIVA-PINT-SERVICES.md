@@ -41,6 +41,50 @@ A identidade tem uma base promissora — automotiva, forte e reconhecível — p
 
 Isso deixa a comunicação mais **crua, pesada e artesanal** do que a qualidade e a confiança que a empresa deveria transmitir.
 
+## Auditoria visual do PintService atual
+
+A estrutura funcional do dashboard está no caminho certo: existe visão geral, bloco explícito de atenção, fluxo da oficina, atendimentos recentes e veículos atualizados. Essa hierarquia operacional deve ser preservada.
+
+O problema atual é principalmente de **direção de arte**, não de estrutura básica.
+
+A interface usa hoje:
+
+- Inter como fonte principal;
+- fundo cinza-claro;
+- painéis brancos;
+- sidebar preta/grafite;
+- laranja como cor de destaque;
+- muitos cards, chips e badges arredondados;
+- linguagem visual típica de dashboard SaaS contemporâneo.
+
+É limpa e funcional, mas ainda parece um bom **admin template genérico**, não um software exclusivo que represente a Pint Services.
+
+### O que preservar da UI atual
+
+- separação clara entre navegação e conteúdo;
+- leitura rápida dos indicadores;
+- bloco “O que precisa de atenção” como prioridade da home;
+- etapas visuais da oficina;
+- atalhos diretos para veículos, tarefas e atendimento;
+- estados de prioridade e saúde do sistema;
+- densidade moderada de informação.
+
+### O que deve evoluir
+
+- tipografia mais proprietária e refinada;
+- identidade visual menos genérica;
+- hierarquia de informação mais sofisticada;
+- menos sensação de “coleção de cards”;
+- tratamento melhor de estados críticos e operação saudável;
+- componentes próprios que remetam a precisão automotiva e processo;
+- iconografia mais consistente;
+- tratamento de dados e tabelas mais premium;
+- microinterações úteis, sem efeitos decorativos gratuitos;
+- versão de tablet pensada especificamente para balcão e oficina;
+- mobile pensado como interface operacional, não apenas desktop empilhado.
+
+A responsividade atual é tecnicamente funcional, mas ainda simples: em telas menores a navegação vira uma faixa horizontal e os blocos passam para uma coluna. A versão final deverá ter arquitetura mobile/tablet própria.
+
 ## Sensação desejada
 
 A evolução não deve apagar a personalidade automotiva. O objetivo é transformar a base atual em uma linguagem:
