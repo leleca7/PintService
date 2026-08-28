@@ -61,7 +61,7 @@
 .brandTop strong,
 .brandTop span { display: block; }
 .brandTop strong { font-size: 15px; letter-spacing: -.025em; }
-.brandTop span { margin-top: 5px; color: #777d80; font-size: 8px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
+.brandTop span { margin-top: 5px; color: #a3a8a8; font-size: 9px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase; }
 
 .brandStatement {
   max-width: 760px;
@@ -69,8 +69,8 @@
 }
 .kicker {
   margin: 0 0 16px;
-  color: #c99d55;
-  font-size: 9px;
+  color: #d2a55f;
+  font-size: 10px;
   font-weight: 850;
   letter-spacing: .18em;
   text-transform: uppercase;
@@ -85,14 +85,14 @@
 }
 .brandStatement h1 em {
   display: block;
-  color: #c7c2b9;
+  color: #d0cbc2;
   font-style: normal;
   font-weight: 450;
 }
 .brandStatement > p:not(.kicker) {
   max-width: 590px;
   margin: 24px 0 0;
-  color: #979c9e;
+  color: #b0b5b5;
   font-size: 13px;
   line-height: 1.7;
 }
@@ -103,8 +103,8 @@
   gap: 10px 22px;
   padding-top: 20px;
   border-top: 1px solid #292c2f;
-  color: #777d80;
-  font-size: 8px;
+  color: #a0a5a5;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: .09em;
   text-transform: uppercase;
@@ -128,8 +128,8 @@
 }
 .authContext p {
   margin: 0 0 9px;
-  color: #918d86;
-  font-size: 8px;
+  color: #626860;
+  font-size: 9px;
   font-weight: 850;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -145,9 +145,9 @@
 .authContext span {
   display: block;
   margin-top: 8px;
-  color: #777b76;
+  color: #535a54;
   font-size: 11px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .authFrame {
@@ -157,12 +157,18 @@
 .authFrame :global(input) {
   min-height: 44px !important;
   border-radius: 3px !important;
-  border-color: #d8d5ce !important;
+  border-color: #d2cfc8 !important;
   background: #fbfaf7 !important;
+  color: #242824 !important;
+  -webkit-text-fill-color: #242824 !important;
   box-shadow: none !important;
 }
+.authFrame :global(input::placeholder) {
+  color: #7c827b !important;
+  opacity: 1 !important;
+}
 .authFrame :global(input:focus) {
-  border-color: #aaa69f !important;
+  border-color: #9e9a93 !important;
   background: #fff !important;
   outline: none !important;
   box-shadow: 0 0 0 2px rgba(201,157,85,.12) !important;
@@ -178,8 +184,10 @@
   color: #f5f1e9 !important;
 }
 .authFrame :global(button[type='submit']:hover) { background: #232629 !important; }
-.authFrame :global(a) { color: #9b6f32 !important; }
-.authFrame :global(label) { color: #676b67 !important; font-size: 11px !important; }
+.authFrame :global(a) { color: #80591f !important; font-weight: 700 !important; }
+.authFrame :global(label) { color: #555b55 !important; font-size: 11px !important; }
+.authFrame :global(p),
+.authFrame :global(span) { color: #5d635d; }
 .authFrame :global(h1),
 .authFrame :global(h2) { color: #1d201f !important; letter-spacing: -.035em !important; }
 
@@ -187,11 +195,11 @@
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #d9d6cf;
-  color: #89857e;
-  font-size: 9px;
-  line-height: 1.55;
+  color: #60665f;
+  font-size: 10px;
+  line-height: 1.6;
 }
-.accessNote strong { color: #595c58; }
+.accessNote strong { color: #404640; }
 
 @media (max-width: 920px) {
   .page { grid-template-columns: minmax(0, .88fr) minmax(400px, 1.12fr); }
