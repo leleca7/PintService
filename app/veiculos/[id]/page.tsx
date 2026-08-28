@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import AppShell from '@/app/components/app-shell';
+import styles from '@/app/components/precision-atelier-core.module.css';
 import { getVehicleDetail } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { updateVehicle } from '../actions';
@@ -19,27 +20,49 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
   const vehicle = data.vehicle;
   const canManage = userHasPermission(user, 'gerenciar_veiculos');
   const currentIndex = STAGES.findIndex((stage) => normalize(vehicle.etapa).includes(normalize(stage)));
+  const activeTasks = data.tasks.filter((task) => ['aberta', 'em_execucao', 'aguardando_confirmacao'].includes(task.status));
+  const escalated = activeTasks.filter((task) => ['alta', 'urgente'].includes(task.prioridade));
+  const humanConversations = data.conversations.filter((conversation) => conversation.status.includes('humano'));
 
   return (
     <AppShell active="veiculos" source={data.source}>
-      <header className="topbar"><div><p className="eyebrow">FICHA DO VEÍCULO</p><h1>{vehicle.modelo}</h1><p>{vehicle.placa} · {vehicle.cliente}</p></div><div className="top-actions"><Link className="ghost action-link" href="/veiculos">Voltar</Link></div></header>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerCopy}><p className={styles.kicker}>FICHA OPERACIONAL · {vehicle.placa}</p><h1 className={styles.title}>{vehicle.modelo}</h1><p className={styles.subtitle}>{vehicle.cliente}{vehicle.cor ? ` · ${vehicle.cor}` : ''}</p></div>
+          <Link className={styles.button} href="/veiculos">Voltar aos veículos</Link>
+        </header>
 
-      <section className="vehicle-hero panel">
-        <div className="vehicle-hero-main"><div className="vehicle-big-icon">PS</div><div><span className="mini-label">ETAPA ATUAL</span><h2>{vehicle.etapa}</h2><p>{vehicle.status}{vehicle.cor ? ` · ${vehicle.cor}` : ''}</p></div></div>
-        <div className="vehicle-hero-meta"><div><span>Cliente</span><strong>{vehicle.cliente}</strong></div><div><span>Última atualização</span><strong>{dateTime(vehicle.ultimaAtualizacao)}</strong></div><div><span>Tarefas ligadas</span><strong>{data.tasks.length}</strong></div></div>
-      </section>
+        <section className={styles.darkBand}>
+          <div className={styles.darkCopy}>
+            <p className={styles.darkLabel}>ETAPA ATUAL</p>
+            <h2 className={styles.darkTitle}>{vehicle.etapa}</h2>
+            <p className={styles.darkText}>{vehicle.status}. Última atualização registrada em {dateTime(vehicle.ultimaAtualizacao)}.</p>
+          </div>
+          <div className={styles.darkStats}>
+            <div className={styles.darkStat}><strong>{activeTasks.length}</strong><span>tarefas abertas</span></div>
+            <div className={styles.darkStat}><strong>{escalated.length + humanConversations.length}</strong><span>exceções ligadas</span></div>
+          </div>
+        </section>
 
-      {canManage && <section className="panel page-panel"><div className="panel-head"><div><p className="eyebrow">EDIÇÃO</p><h2>Atualizar cadastro interno</h2></div></div><form action={updateVehicle} className="settings-grid"><input type="hidden" name="id" value={vehicle.id}/><label>Modelo<input name="modelo" defaultValue={vehicle.modelo}/></label><label>Cor<input name="cor" defaultValue={vehicle.cor}/></label><label>Etapa / setor<input name="setor" defaultValue={vehicle.etapa}/></label><label>Status<input name="status" defaultValue={vehicle.status}/></label><label className="form-wide">Observações<textarea name="observacoes" placeholder="Informação interna confirmada pela equipe"/></label><div><button className="ghost action-link" type="submit">Salvar alterações</button></div></form><p className="section-intro">Quando a fonte por link estiver ativa, Fase e Status consultados da planilha continuam sendo a referência operacional para respostas ao cliente.</p></section>}
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryItem}><span>Cliente</span><strong style={{ fontSize: 18 }}>{vehicle.cliente}</strong><small>responsável pelo veículo</small></div>
+          <div className={styles.summaryItem}><span>Placa</span><strong style={{ fontSize: 22 }}>{vehicle.placa}</strong><small>identificação operacional</small></div>
+          <div className={styles.summaryItem}><span>Tarefas abertas</span><strong>{activeTasks.length}</strong><small>{escalated.length} escaladas</small></div>
+          <div className={styles.summaryItem}><span>Conversas ligadas</span><strong>{data.conversations.length}</strong><small>{humanConversations.length} com humano</small></div>
+        </div>
 
-      <section className="panel page-panel"><div className="panel-head"><div><p className="eyebrow">LINHA DE PRODUÇÃO</p><h2>Etapas do veículo</h2></div></div><div className="timeline-stages">{STAGES.map((stage, index) => { const state = currentIndex < 0 ? 'future' : index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'future'; return <div className={`timeline-stage ${state}`} key={stage}><span>{state === 'done' ? '✓' : index + 1}</span><div><strong>{stage}</strong><small>{state === 'done' ? 'Concluída anteriormente' : state === 'current' ? 'Etapa registrada agora' : 'Ainda não registrada'}</small></div></div>; })}</div></section>
+        {canManage && <section className={styles.section}><div className={styles.sectionHead}><div><p>EDIÇÃO INTERNA</p><h2>Atualizar cadastro confirmado</h2></div></div><form action={updateVehicle} className="settings-grid"><input type="hidden" name="id" value={vehicle.id}/><label>Modelo<input name="modelo" defaultValue={vehicle.modelo}/></label><label>Cor<input name="cor" defaultValue={vehicle.cor}/></label><label>Etapa / setor<input name="setor" defaultValue={vehicle.etapa}/></label><label>Status<input name="status" defaultValue={vehicle.status}/></label><label className="form-wide">Observações<textarea name="observacoes" placeholder="Informação interna confirmada pela equipe"/></label><div><button className="ghost action-link" type="submit">Salvar alterações</button></div></form><p className="section-intro">Quando a fonte por link estiver ativa, Fase e Status consultados da planilha continuam sendo a referência operacional para respostas ao cliente.</p></section>}
 
-      <div className="detail-grid">
-        <section className="panel page-panel"><div className="panel-head"><div><p className="eyebrow">TAREFAS</p><h2>Pendências deste veículo</h2></div><Link href="/tarefas" className="link-button">Todas</Link></div><div className="task-list">{data.tasks.map((task) => <article className="task-row" key={task.id}><div className={`task-symbol ${task.prioridade}`}>{task.requerFoto ? 'FT' : 'TK'}</div><div><strong>#{task.codigo} · {task.titulo}</strong><p>{task.setor} · {task.responsavel}</p></div><span className={`task-status ${task.status}`}>{task.status.replaceAll('_', ' ')}</span></article>)}{!data.tasks.length && <div className="empty-state compact-empty">Nenhuma tarefa ligada a este veículo.</div>}</div></section>
+        <section className={styles.section}><div className={styles.sectionHead}><div><p>LINHA DE PRODUÇÃO</p><h2>Etapas do veículo</h2></div></div><div className="timeline-stages">{STAGES.map((stage, index) => { const state = currentIndex < 0 ? 'future' : index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'future'; return <div className={`timeline-stage ${state}`} key={stage}><span>{state === 'done' ? '✓' : index + 1}</span><div><strong>{stage}</strong><small>{state === 'done' ? 'Concluída anteriormente' : state === 'current' ? 'Etapa registrada agora' : 'Ainda não registrada'}</small></div></div>; })}</div></section>
 
-        <section className="panel page-panel"><div className="panel-head"><div><p className="eyebrow">ATENDIMENTO</p><h2>Conversas relacionadas</h2></div><Link href="/atendimento" className="link-button">Central</Link></div><div className="task-list">{data.conversations.map((conversation) => <article className="message-row" key={conversation.id}><div><strong>{conversation.cliente}</strong><small>{dateTime(conversation.criadoEm)}</small></div><p>{conversation.mensagem}</p><span className={conversation.status.includes('humano') ? 'tag human' : 'tag ai'}>{conversation.status}</span></article>)}{!data.conversations.length && <div className="empty-state compact-empty">Nenhuma conversa vinculada a este veículo.</div>}</div></section>
+        <div className={styles.split}>
+          <section className={styles.section}><div className={styles.sectionHead}><div><p>TAREFAS</p><h2>Pendências deste veículo</h2></div><Link href="/tarefas" className="link-button">Todas</Link></div>{data.tasks.length ? <div className={styles.list}>{data.tasks.map((task) => <article className={`${styles.row} ${['alta','urgente'].includes(task.prioridade) ? styles.rowCritical : ''}`} key={task.id}><div className={styles.avatar}>{task.requerFoto ? 'FT' : 'TK'}</div><div className={styles.rowBody}><div className={styles.rowTop}><strong>#{task.codigo} · {task.titulo}</strong><time>{task.status.replaceAll('_', ' ')}</time></div><p className={styles.preview}>{task.setor} · {task.responsavel}</p><div className={styles.meta}><span className={`${styles.badge} ${['alta','urgente'].includes(task.prioridade) ? styles.badgeHot : styles.badgeAi}`}>{task.prioridade}</span></div></div></article>)}</div> : <div className={styles.quiet}><strong>Nenhuma pendência ligada.</strong>Este veículo não possui tarefas no histórico carregado.</div>}</section>
+
+          <section className={styles.section}><div className={styles.sectionHead}><div><p>ATENDIMENTO</p><h2>Conversas relacionadas</h2></div><Link href="/atendimento" className="link-button">Central</Link></div>{data.conversations.length ? <div className={styles.list}>{data.conversations.map((conversation) => <article className={`${styles.row} ${conversation.status.includes('humano') ? styles.rowCritical : ''}`} key={conversation.id}><div className={styles.avatar}>{conversation.cliente.slice(0,2).toUpperCase()}</div><div className={styles.rowBody}><div className={styles.rowTop}><strong>{conversation.cliente}</strong><time>{dateTime(conversation.criadoEm)}</time></div><p className={styles.preview}>{conversation.mensagem}</p><div className={styles.meta}><span className={`${styles.badge} ${conversation.status.includes('humano') ? styles.badgeHuman : styles.badgeAi}`}>{conversation.status}</span></div></div></article>)}</div> : <div className={styles.quiet}><strong>Nenhuma conversa vinculada.</strong>O atendimento deste veículo ainda não aparece no histórico carregado.</div>}</section>
+        </div>
+
+        <section className={styles.section}><div className={styles.sectionHead}><div><p>FOTOS E EVIDÊNCIAS</p><h2>Histórico visual</h2></div></div><div className={styles.quiet}><strong>Armazenamento de mídia ainda será conectado.</strong>Fotos recebidas em tarefas ficarão vinculadas ao histórico operacional quando o WhatsApp e o armazenamento real forem ativados.</div></section>
       </div>
-
-      <section className="panel page-panel evidence-panel"><div className="panel-head"><div><p className="eyebrow">FOTOS E EVIDÊNCIAS</p><h2>Histórico visual</h2></div></div><div className="empty-state">Fotos recebidas em tarefas ficam vinculadas ao histórico operacional. A exibição permanente depende do armazenamento de mídia que será ativado junto com o WhatsApp real.</div></section>
     </AppShell>
   );
 }

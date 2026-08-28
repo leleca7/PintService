@@ -1,5 +1,6 @@
 import AppShell from '@/app/components/app-shell';
 import ReputationClient from '@/app/reputacao/reputation-client';
+import styles from '@/app/components/precision-atelier-core.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 import { getReputationData, type ReputationData } from '@/lib/reputation';
 
@@ -20,14 +21,38 @@ export default async function ReputationPage() {
     },
   };
 
+  const urgent = safeReputation.items.filter((item) => item.priority === 'urgente' || item.priority === 'alta').length;
+  const pendingChannels = safeReputation.channels.filter((channel) => channel.state !== 'ready').length;
+
   return (
     <AppShell active="reputacao" source={dashboard.source}>
-      <header className="topbar"><div><p className="eyebrow">REPUTAÇÃO E CANAIS</p><h1>Central de reputação</h1><p>Google, Instagram, Reclame Aqui e alertas críticos em uma única fila.</p></div><div className="top-actions"><a className="ghost action-link" href="/configuracoes">Integrações</a></div></header>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerCopy}>
+            <p className={styles.kicker}>REPUTAÇÃO · DECISÃO E RESPOSTA</p>
+            <h1 className={styles.title}>Central de reputação</h1>
+            <p className={styles.subtitle}>Google, Instagram, Reclame Aqui e WhatsApp reunidos em uma única leitura — com prioridade para o que pode virar risco de relacionamento.</p>
+          </div>
+          <a className={styles.button} href="/configuracoes">Integrações</a>
+        </header>
 
-      {!safeReputation.items.length && <div className="system-banner info-banner"><strong>Canais aguardando conexão ou novas ocorrências</strong><span>Nenhum exemplo fictício é exibido. Quando as contas oficiais estiverem autorizadas, mensagens, avaliações e reclamações aparecem aqui.</span></div>}
-      {!!safeReputation.errors.length && <div className="system-banner error-banner"><strong>Alguns canais não sincronizaram</strong><span>{safeReputation.errors.slice(0, 2).join(' · ')}</span></div>}
+        <section className={styles.darkBand}>
+          <div className={styles.darkCopy}>
+            <p className={styles.darkLabel}>RISCO DE REPUTAÇÃO</p>
+            <h2 className={styles.darkTitle}>{urgent ? `${urgent} ${urgent === 1 ? 'ocorrência pede' : 'ocorrências pedem'} análise prioritária.` : 'Nenhuma ocorrência crítica exige decisão agora.'}</h2>
+            <p className={styles.darkText}>A fila comum permanece abaixo. Reclamações, notas baixas e situações sensíveis sobem para uma análise mais cuidadosa antes da resposta.</p>
+          </div>
+          <div className={styles.darkStats}>
+            <div className={styles.darkStat}><strong>{urgent}</strong><span>alta ou urgente</span></div>
+            <div className={styles.darkStat}><strong>{pendingChannels}</strong><span>canais pendentes</span></div>
+          </div>
+        </section>
 
-      <ReputationClient data={safeReputation}/>
+        {!safeReputation.items.length && <div className="system-banner info-banner"><strong>Canais aguardando conexão ou novas ocorrências</strong><span>Nenhum exemplo fictício é exibido. Quando as contas oficiais estiverem autorizadas, mensagens, avaliações e reclamações aparecem aqui.</span></div>}
+        {!!safeReputation.errors.length && <div className="system-banner error-banner"><strong>Alguns canais não sincronizaram</strong><span>{safeReputation.errors.slice(0, 2).join(' · ')}</span></div>}
+
+        <div className={styles.reputationWorkspace}><ReputationClient data={safeReputation}/></div>
+      </div>
     </AppShell>
   );
 }
