@@ -8,6 +8,7 @@ import './access.css';
 import './no-emoji.css';
 import './reputation.css';
 import './production-auth.css';
+import './precision-readability.css';
 import { Providers } from './providers';
 
 const manrope = Manrope({
