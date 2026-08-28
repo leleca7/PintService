@@ -6,40 +6,60 @@ import { getDashboardData } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { createVehicle } from './actions';
 
+function normalize(value = '') {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function plateKey(value: string | null | undefined) {
+  return (value || '').trim().toUpperCase();
+}
+
+function timestamp(value: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function relativeTime(value: string | null) {
-  if (!value) return 'Sem atualização';
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  const parsed = timestamp(value);
+  if (parsed === null) return 'Sem atualização';
+  const minutes = Math.max(0, Math.floor((Date.now() - parsed) / 60_000));
   if (minutes < 60) return minutes < 1 ? 'agora' : `há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   return hours < 24 ? `há ${hours}h` : `há ${Math.floor(hours / 24)}d`;
 }
 
 function isStale(value: string | null) {
-  if (!value) return true;
-  return Date.now() - new Date(value).getTime() > 24 * 60 * 60 * 1000;
+  const parsed = timestamp(value);
+  if (parsed === null) return true;
+  return Date.now() - parsed > 24 * 60 * 60 * 1000;
 }
 
 function timeValue(value: string | null) {
-  if (!value) return 0;
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : 0;
+  return timestamp(value) ?? 0;
 }
 
 export default async function VehiclesPage() {
   const [data, user] = await Promise.all([getDashboardData(), getCurrentAppUser()]);
   const canManage = userHasPermission(user, 'gerenciar_veiculos');
-  const stages = new Set(data.vehicles.map((vehicle) => vehicle.etapa).filter(Boolean));
+  const stages = new Set(data.vehicles.map((vehicle) => vehicle.etapa?.trim()).filter(Boolean));
   const stale = data.vehicles.filter((vehicle) => isStale(vehicle.ultimaAtualizacao));
-  const withOpenTasks = new Set(data.tasks.filter((task) => ['aberta', 'em_execucao', 'aguardando_confirmacao'].includes(task.status) && task.placa).map((task) => task.placa));
+  const activeStatuses = new Set(['aberta', 'em_execucao', 'aguardando_confirmacao']);
+  const openTaskPlates = new Set(
+    data.tasks
+      .filter((task) => activeStatuses.has(normalize(task.status)) && plateKey(task.placa))
+      .map((task) => plateKey(task.placa)),
+  );
+  const vehiclesWithOpenTasks = data.vehicles.filter((vehicle) => openTaskPlates.has(plateKey(vehicle.placa)));
 
   const sortedVehicles = [...data.vehicles].sort((a, b) => {
-    const aScore = (withOpenTasks.has(a.placa) ? 2 : 0) + (isStale(a.ultimaAtualizacao) ? 1 : 0);
-    const bScore = (withOpenTasks.has(b.placa) ? 2 : 0) + (isStale(b.ultimaAtualizacao) ? 1 : 0);
+    const aScore = (openTaskPlates.has(plateKey(a.placa)) ? 2 : 0) + (isStale(a.ultimaAtualizacao) ? 1 : 0);
+    const bScore = (openTaskPlates.has(plateKey(b.placa)) ? 2 : 0) + (isStale(b.ultimaAtualizacao) ? 1 : 0);
     if (aScore !== bScore) return bScore - aScore;
     return timeValue(b.ultimaAtualizacao) - timeValue(a.ultimaAtualizacao);
   });
 
-  const attentionCount = sortedVehicles.filter((vehicle) => withOpenTasks.has(vehicle.placa) || isStale(vehicle.ultimaAtualizacao)).length;
+  const attentionCount = sortedVehicles.filter((vehicle) => openTaskPlates.has(plateKey(vehicle.placa)) || isStale(vehicle.ultimaAtualizacao)).length;
 
   return (
     <AppShell active="veiculos" source={data.source}>
@@ -56,7 +76,7 @@ export default async function VehiclesPage() {
         <div className={styles.summaryGrid}>
           <div className={styles.summaryItem}><span>Em acompanhamento</span><strong>{data.vehicles.length}</strong><small>veículos carregados</small></div>
           <div className={styles.summaryItem}><span>Etapas ativas</span><strong>{stages.size}</strong><small>fluxo atual</small></div>
-          <div className={styles.summaryItem}><span>Com pendência</span><strong>{withOpenTasks.size}</strong><small>tarefa operacional aberta</small></div>
+          <div className={styles.summaryItem}><span>Com pendência</span><strong>{vehiclesWithOpenTasks.length}</strong><small>tarefa operacional aberta</small></div>
           <div className={styles.summaryItem}><span>Sem atualização 24h+</span><strong>{stale.length}</strong><small>merecem conferência</small></div>
         </div>
 
@@ -89,7 +109,7 @@ export default async function VehiclesPage() {
         <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>CARTEIRA OPERACIONAL</p><h2>{data.vehicles.length ? 'Acompanhamento atual' : 'Nenhum veículo carregado'}</h2></div><span className={styles.count}>{data.vehicles.length}</span></div>
           {sortedVehicles.length ? <div className={styles.vehicleGrid}>{sortedVehicles.map((vehicle) => {
-            const pending = withOpenTasks.has(vehicle.placa);
+            const pending = openTaskPlates.has(plateKey(vehicle.placa));
             const staleVehicle = isStale(vehicle.ultimaAtualizacao);
             const needsAttention = pending || staleVehicle;
             const signalClass = pending ? ops.signalPending : staleVehicle ? ops.signalStale : ops.signalOk;
