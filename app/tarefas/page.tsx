@@ -3,25 +3,35 @@ import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 
+function normalize(value = '') {
+  return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+}
+
+function timestamp(value: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function relativeTime(value: string | null) {
-  if (!value) return 'sem horário';
-  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  const parsed = timestamp(value);
+  if (parsed === null) return 'sem horário';
+  const minutes = Math.max(0, Math.floor((Date.now() - parsed) / 60_000));
   if (minutes < 60) return minutes < 1 ? 'agora' : `há ${minutes} min`;
   const hours = Math.floor(minutes / 60);
   return hours < 24 ? `há ${hours}h` : `há ${Math.floor(hours / 24)}d`;
 }
 
 function priorityRank(priority: string) {
-  if (priority === 'urgente') return 4;
-  if (priority === 'alta') return 3;
-  if (priority === 'normal') return 2;
+  const value = normalize(priority);
+  if (value === 'urgente') return 4;
+  if (value === 'alta') return 3;
+  if (value === 'normal') return 2;
   return 1;
 }
 
 function timeValue(value: string | null) {
-  if (!value) return Number.MAX_SAFE_INTEGER;
-  const parsed = new Date(value).getTime();
-  return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  return timestamp(value) ?? Number.MAX_SAFE_INTEGER;
 }
 
 function TaskFacts({ task }: { task: { setor: string; responsavel: string; status: string; criadoEm: string | null } }) {
@@ -37,14 +47,15 @@ function TaskFacts({ task }: { task: { setor: string; responsavel: string; statu
 
 export default async function TasksPage() {
   const data = await getDashboardData();
+  const activeStatuses = new Set(['aberta', 'em_execucao', 'aguardando_confirmacao']);
   const active = data.tasks
-    .filter((task) => ['aberta', 'em_execucao', 'aguardando_confirmacao'].includes(task.status))
+    .filter((task) => activeStatuses.has(normalize(task.status)))
     .sort((a, b) => priorityRank(b.prioridade) - priorityRank(a.prioridade) || timeValue(a.criadoEm) - timeValue(b.criadoEm));
-  const escalated = active.filter((task) => ['alta', 'urgente'].includes(task.prioridade));
-  const base = active.filter((task) => !['alta', 'urgente'].includes(task.prioridade));
-  const resolved = data.tasks.filter((task) => task.status === 'resolvida');
-  const unassigned = active.filter((task) => task.responsavel === 'Sem responsável');
-  const waitingConfirmation = active.filter((task) => task.status === 'aguardando_confirmacao');
+  const escalated = active.filter((task) => ['alta', 'urgente'].includes(normalize(task.prioridade)));
+  const base = active.filter((task) => !['alta', 'urgente'].includes(normalize(task.prioridade)));
+  const resolved = data.tasks.filter((task) => normalize(task.status) === 'resolvida');
+  const unassigned = active.filter((task) => !task.responsavel?.trim() || normalize(task.responsavel) === 'sem responsavel');
+  const waitingConfirmation = active.filter((task) => normalize(task.status) === 'aguardando_confirmacao');
   const hasEscalation = escalated.length > 0;
 
   return (
@@ -94,7 +105,7 @@ export default async function TasksPage() {
         {escalated.length > 0 && <section className={`${styles.section} ${ops.queueSection}`}>
           <div className={styles.sectionHead}><div><p>EXCEÇÕES</p><h2>Chegaram ao nível administrativo</h2></div><span className={`${styles.count} ${styles.countHot}`}>{escalated.length}</span></div>
           <div className={styles.taskGrid}>{escalated.map((task) => {
-            const urgent = task.prioridade === 'urgente';
+            const urgent = normalize(task.prioridade) === 'urgente';
             return <article className={`${styles.taskCard} ${ops.escalatedCard} ${urgent ? ops.urgentCard : ''}`} key={task.id}>
               <div className={styles.taskHead}>
                 <div><span className={styles.taskCode}>#{task.codigo || task.id}</span><h3>{task.titulo}</h3></div>
@@ -121,7 +132,7 @@ export default async function TasksPage() {
           <div className={styles.sectionHead}><div><p>HISTÓRICO</p><h2>Resolvidas recentemente</h2></div><span className={styles.count}>{resolved.length}</span></div>
           <div className={styles.list}>{resolved.slice(0, 20).map((task) => <article className={styles.row} key={task.id}>
             <div className={styles.avatar}>OK</div>
-            <div className={styles.rowBody}><div className={styles.rowTop}><strong>#{task.codigo} · {task.titulo}</strong><time>{relativeTime(task.criadoEm)}</time></div><p className={styles.preview}>{task.modelo} {task.placa} · {task.responsavel}</p><div className={styles.meta}><span className={`${styles.badge} ${styles.badgeAi}`}>resolvida</span></div></div>
+            <div className={styles.rowBody}><div className={styles.rowTop}><strong>#{task.codigo || task.id} · {task.titulo}</strong><time>{relativeTime(task.criadoEm)}</time></div><p className={styles.preview}>{task.modelo} {task.placa} · {task.responsavel}</p><div className={styles.meta}><span className={`${styles.badge} ${styles.badgeAi}`}>resolvida</span></div></div>
           </article>)}</div>
         </section>}
       </div>
