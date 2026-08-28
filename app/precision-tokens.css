@@ -1,6 +1,6 @@
 /* Precision Atelier — tokens semânticos globais
  * Fonte única para cor, contraste e microtipografia do sistema visual.
- * Mantém compatibilidade com variáveis legadas enquanto a migração avança.
+ * Não redefine variáveis legadas: a migração deve ser incremental e visualmente neutra.
  */
 
 :root {
@@ -48,11 +48,4 @@
   --pa-focus: rgba(239, 90, 42, .72);
   --pa-font-micro: 9px;
   --pa-font-meta: 10px;
-
-  /* Compatibilidade com a camada legada. */
-  --accent: var(--pa-accent);
-  --dark: var(--pa-dark);
-  --panel: var(--pa-paper);
-  --bg: var(--pa-mineral);
-  --text: var(--pa-ink);
 }

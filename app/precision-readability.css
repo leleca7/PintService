@@ -3,40 +3,6 @@
  * de contraste consistente para superfícies claras, preservando Dark Surface.
  */
 
-:root {
-  --pa-ink: #1d211e;
-  --pa-copy: #4f554f;
-  --pa-muted: #646a63;
-  --pa-meta: #72776f;
-  --pa-faint: #878b84;
-  --pa-paper: #ffffff;
-  --pa-mineral: #f3f1ec;
-  --pa-soft: #fbfaf7;
-  --pa-field-ink: #252925;
-  --pa-placeholder: #7a8079;
-  --pa-label: #595f59;
-  --pa-table-head: #5d635d;
-  --pa-table-copy: #484e48;
-  --pa-ink-strong: #343934;
-  --pa-banner-strong: #292e2a;
-  --pa-banner-copy: #535a54;
-  --pa-banner-info: #f7f2e8;
-  --pa-banner-info-line: #dfd1b9;
-  --pa-nav-ink: #f3f0e9;
-  --pa-nav-muted: #a7aca7;
-  --pa-module-meta: #626860;
-  --pa-module-copy: #505750;
-  --pa-reputation-meta: #60665f;
-  --pa-dark-ink: #f5f2ec;
-  --pa-dark-muted: #b2b7b3;
-  --pa-dark-copy: #d0cdc6;
-  --pa-dark-meta: #aeb3af;
-  --pa-mobile-meta: #626861;
-  --pa-focus: rgba(239, 90, 42, .72);
-  --pa-font-micro: 9px;
-  --pa-font-meta: 10px;
-}
-
 /* Base de leitura */
 .content { color: var(--pa-ink); }
 .topbar p:not(.eyebrow) { color: var(--pa-muted); }
