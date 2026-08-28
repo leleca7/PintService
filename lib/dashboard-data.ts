@@ -16,6 +16,10 @@ function iso(value: unknown): string | null {
   return String(value);
 }
 
+function plateKey(value: string | null | undefined) {
+  return (value || '').trim().toUpperCase();
+}
+
 function setupData(): DashboardData {
   return { source: 'demo', vehicles: [], tasks: [], conversations: [], employees: [] };
 }
@@ -75,8 +79,10 @@ export async function getDashboardData(): Promise<DashboardData> {
 
 export async function getVehicleDetail(id: string) {
   const data = await getDashboardData();
-  const vehicle = data.vehicles.find((item) => item.id === id || item.placa.toUpperCase() === id.toUpperCase()) ?? null;
-  const tasks = vehicle ? data.tasks.filter((task) => task.placa === vehicle.placa) : [];
-  const conversations = vehicle ? data.conversations.filter((conversation) => conversation.placa === vehicle.placa) : [];
+  const requestedPlate = plateKey(id);
+  const vehicle = data.vehicles.find((item) => item.id === id || plateKey(item.placa) === requestedPlate) ?? null;
+  const vehiclePlate = plateKey(vehicle?.placa);
+  const tasks = vehiclePlate ? data.tasks.filter((task) => plateKey(task.placa) === vehiclePlate) : [];
+  const conversations = vehiclePlate ? data.conversations.filter((conversation) => plateKey(conversation.placa) === vehiclePlate) : [];
   return { ...data, vehicle, tasks, conversations };
 }
