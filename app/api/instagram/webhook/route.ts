@@ -6,7 +6,7 @@ import { sendWhatsAppAlert } from '@/lib/whatsapp';
 export const runtime = 'nodejs';
 
 function verifySignature(rawBody: string, signature: string | null) {
-  const secret = process.env.INSTAGRAM_APP_SECRET || process.env.WHATSAPP_APP_SECRET;
+  const secret = process.env.INSTAGRAM_APP_SECRET?.trim();
   if (!secret) return process.env.NODE_ENV !== 'production';
   if (!signature?.startsWith('sha256=')) return false;
   const expected = `sha256=${crypto.createHmac('sha256', secret).update(rawBody).digest('hex')}`;

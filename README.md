@@ -1,20 +1,23 @@
 # PintService
 
-Sistema de atendimento e operação para funilaria e pintura, com painel web, simulador e backend preparado para WhatsApp + IA.
+Sistema de atendimento e operação da Pint Services para funilaria e pintura, com painel web, Neon Postgres, autenticação/RBAC, fila operacional, WhatsApp + IA e Central de reputação.
 
-## Publicar na Vercel agora
+## Estado atual
 
-O projeto está pronto para ser importado diretamente na Vercel. O Next.js fica na raiz do repositório, então não é necessário escolher uma subpasta como Root Directory.
+O core está pronto para produção com **Neon Postgres + Neon Auth**. O sistema continua funcionando mesmo quando integrações externas ainda não estão conectadas.
 
-1. Na Vercel, escolha **Add New → Project**.
-2. Importe o repositório **leleca7/PintService**.
-3. Framework: **Next.js** (detecção automática).
-4. Root Directory: deixe na raiz (`./`).
-5. Pode clicar em **Deploy sem adicionar variáveis de ambiente**.
+Já existem estruturas reais para:
 
-Sem banco configurado, o site funciona em **modo demonstração** com dados de exemplo. Isso permite publicar e testar a interface agora.
+- clientes e histórico de conversas;
+- veículos e status operacional;
+- decisões da IA;
+- pendências e fila de atendimento humano;
+- tarefas operacionais para a equipe;
+- funcionários, usuários, perfis e permissões;
+- auditoria;
+- reputação e respostas assistidas.
 
-## Páginas
+## Páginas principais
 
 - `/` — visão geral da operação
 - `/veiculos` — veículos
@@ -22,20 +25,103 @@ Sem banco configurado, o site funciona em **modo demonstração** com dados de e
 - `/tarefas` — fila operacional
 - `/atendimento` — central de atendimento
 - `/funcionarios` — equipe
+- `/reputacao` — Google, Instagram e Reclame Aqui
 - `/configuracoes` — status das integrações
-- `/simulador` — simulação sem gastar API
-- `/api/health` — status técnico
+- `/simulador` — simulação controlada
+- `/api/health` — status técnico e conexões pendentes
 
-## Integrações futuras
+## O que falta conectar
 
-O painel não exige Supabase para ser publicado. A pasta `supabase/` guarda o esquema para uso futuro. O fluxo real de WhatsApp + IA precisa de persistência de clientes, veículos, conversas e tarefas antes de ser ativado.
+### 1. Fonte operacional dos veículos
 
-As variáveis possíveis estão documentadas em `.env.example`. Nunca coloque chaves reais no GitHub; cadastre-as nas Environment Variables da Vercel.
+Configure `VEHICLE_DATA_URL` com um Google Sheets/CSV somente leitura. Links comuns do Sheets com `#gid=...` são aceitos e a aba selecionada é respeitada.
 
-## Segurança operacional
+A fonte precisa conter ao menos **Placa** e **Modelo**. Para resposta automática de status, também deve existir **Fase/Etapa/Setor** ou **Status**.
 
-A IA não deve inventar preço, prazo ou fatos físicos. Confirmações sobre etapa real do veículo, chegada de peça e evidências dependem de informação registrada ou confirmação humana. Fotos não são interpretadas como confirmação automática de etapa/peça/status.
+O sistema relê a fonte antes da resposta. Se a fonte falhar, a placa não existir ou os dados estiverem incompletos, o atendimento é encaminhado para humano.
 
-## Validação
+### 2. OpenAI
 
-Cada novo commit na `main` roda um build automático do Next.js pelo GitHub Actions. Alterações nas Environment Variables da Vercel exigem um novo deployment para entrarem em vigor.
+Configure:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL`
+
+Se a IA estiver sem chave, crédito ou indisponível, o WhatsApp não perde a mensagem: o PintService cria uma pendência e transfere o atendimento para humano.
+
+### 3. WhatsApp Cloud API
+
+Configure:
+
+- `WHATSAPP_VERIFY_TOKEN`
+- `WHATSAPP_APP_SECRET`
+- `WHATSAPP_ACCESS_TOKEN`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_GRAPH_VERSION`
+
+Callback/webhook:
+
+`https://SEU-DOMINIO/api/whatsapp`
+
+O webhook valida a assinatura da Meta, deduplica mensagens e processa o atendimento após responder o webhook.
+
+### 4. Instagram profissional
+
+Configure:
+
+- `INSTAGRAM_ACCESS_TOKEN`
+- `INSTAGRAM_BUSINESS_ACCOUNT_ID`
+- `INSTAGRAM_VERIFY_TOKEN`
+- `INSTAGRAM_APP_SECRET`
+- `INSTAGRAM_GRAPH_VERSION`
+
+Callback/webhook:
+
+`https://SEU-DOMINIO/api/instagram/webhook`
+
+O segredo do Instagram é independente do segredo do WhatsApp.
+
+### 5. Google Business Profile
+
+Configure token OAuth, account id e location id documentados em `.env.example` para leitura e resposta de avaliações.
+
+### 6. Reclame Aqui
+
+A leitura de indicadores e casos depende das credenciais/endpoints disponibilizados no contrato da RA API. Não tratar o perfil informado como canal oficial antes da confirmação da empresa.
+
+## Regras de segurança operacional da IA
+
+- Nunca inventar preço, orçamento, prazo, data de entrega, status, setor, dano ou disponibilidade.
+- Perguntas sobre **peças/reposição** vão para atendimento humano.
+- **Vistoria**, orçamento particular, reclamações e situações de baixa confiança vão para humano.
+- Confirmações físicas atuais podem virar tarefa operacional para funcionário, mas somente para informações permitidas.
+- Prazo registrado só é comunicado automaticamente após a etapa de desmontagem e quando a fonte oficial contém status de prazo.
+- Se a fonte de verdade estiver indisponível ou incompleta, não usar dado antigo como certeza.
+- Respostas públicas de reputação ficam bloqueadas até `REPUTATION_LIVE_WRITES_ENABLED=true`.
+
+## Segurança de credenciais
+
+O repositório é público. Nunca versionar tokens, senhas ou connection strings.
+
+`DATABASE_URL` e `NEON_AUTH_BASE_URL` são coisas diferentes. `NEON_AUTH_BASE_URL` deve ser uma URL HTTP(S) do Neon Auth e **nunca** uma connection string `postgres://...`.
+
+Uma credencial de banco apareceu anteriormente em logs durante diagnóstico. Ela deve ser rotacionada no Neon e a nova `DATABASE_URL` deve ser cadastrada na Vercel antes do go-live definitivo.
+
+## Checklist de go-live
+
+1. Rotacionar a credencial do Neon e atualizar `DATABASE_URL`.
+2. Confirmar login/logout e perfis Administrador, Gerente e Funcionário.
+3. Conectar e validar `VEHICLE_DATA_URL`.
+4. Confirmar a chave/modelo da OpenAI.
+5. Conectar WhatsApp Cloud API e validar webhook de entrada e saída.
+6. Testar status existente, placa inexistente, peça, vistoria, orçamento, reclamação, foto e falha da IA.
+7. Conectar Instagram e validar webhook.
+8. Conectar Google Business Profile.
+9. Conectar Reclame Aqui se houver contrato/API disponível.
+10. Manter `REPUTATION_LIVE_WRITES_ENABLED=false` até validar respostas em cada canal; ativar somente depois.
+
+## Deploy e validação
+
+A Vercel usa Node.js 24 e o CI do GitHub está alinhado ao mesmo runtime. Cada pull request executa `npm run build` antes de ser integrado.
+
+Alterações em Environment Variables da Vercel exigem um novo deployment para entrarem em vigor.

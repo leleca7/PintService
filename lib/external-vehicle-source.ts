@@ -43,18 +43,38 @@ function googleSheetCsvUrl(input: string) {
 
   const match = url.pathname.match(/\/spreadsheets\/d\/([^/]+)/);
   if (!match) return input;
-  const gid = url.searchParams.get('gid') || '0';
+
+  // Links copiados do Google Sheets normalmente guardam a aba em #gid=..., não na query string.
+  const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
+  const gid = url.searchParams.get('gid') || hashParams.get('gid') || '0';
   return `https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=${encodeURIComponent(gid)}`;
 }
 
 export function sourceFetchUrl(input: string) {
   const trimmed = input.trim();
   if (!trimmed) return '';
-  try { return googleSheetCsvUrl(trimmed); } catch { return trimmed; }
+  try {
+    const url = new URL(trimmed);
+    if (!['https:', 'http:'].includes(url.protocol)) return trimmed;
+    return googleSheetCsvUrl(trimmed);
+  } catch {
+    return trimmed;
+  }
+}
+
+function csvDelimiter(text: string) {
+  const explicit = text.match(/^sep=([,;\t|])\r?\n/i)?.[1];
+  if (explicit) return explicit;
+
+  const firstDataLine = text.split(/\r?\n/).find((line) => line.trim() && !line.toLowerCase().startsWith('sep=')) || '';
+  const commas = (firstDataLine.match(/,/g) || []).length;
+  const semicolons = (firstDataLine.match(/;/g) || []).length;
+  return semicolons > commas ? ';' : ',';
 }
 
 function parseCsv(text: string) {
   const clean = text.replace(/^\uFEFF/, '');
+  const delimiter = csvDelimiter(clean);
   const lines: string[][] = [];
   let row: string[] = [];
   let field = '';
@@ -69,7 +89,7 @@ function parseCsv(text: string) {
       continue;
     }
     if (ch === '"') quoted = true;
-    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === delimiter) { row.push(field); field = ''; }
     else if (ch === '\n') { row.push(field); lines.push(row); row = []; field = ''; }
     else if (ch !== '\r') field += ch;
   }
@@ -103,7 +123,7 @@ function cell(row: string[], index: number) {
 }
 
 export function parseVehicleCsv(csv: string, fetchedAt = new Date().toISOString()): ExternalVehicle[] {
-  const rows = parseCsv(csv).filter((row) => !(row.length === 1 && normalizeText(row[0]).startsWith('sep=')));
+  const rows = parseCsv(csv).filter((row) => !normalizeText(row[0] ?? '').startsWith('sep='));
   const headerRow = findHeaderRow(rows);
   if (headerRow < 0) throw new Error('A fonte não possui uma linha de cabeçalho com Placa e Modelo.');
   const headers = rows[headerRow];
@@ -169,10 +189,11 @@ export async function fetchExternalVehicles(): Promise<ExternalVehicleSourceResu
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const contentType = response.headers.get('content-type') || '';
-    if (contentType.includes('text/html') && !fetchUrl.includes('docs.google.com')) throw new Error('O link retornou uma página HTML, não uma planilha CSV pública.');
+    if (contentType.includes('text/html')) throw new Error('O link retornou HTML. Confirme que a planilha está publicada/compartilhada para leitura e que o link aponta para uma planilha CSV acessível.');
     const text = await response.text();
     const fetchedAt = new Date().toISOString();
     const vehicles = parseVehicleCsv(text, fetchedAt);
+    if (!vehicles.length) throw new Error('A fonte foi lida, mas nenhum veículo válido foi encontrado. Confira a aba selecionada e as colunas Placa/Modelo.');
     return { configured: true, sourceUrl, fetchUrl, fetchedAt, vehicles };
   } catch (error) {
     return { configured: true, sourceUrl, fetchUrl, fetchedAt: null, vehicles: [], error: error instanceof Error ? error.message : 'Falha ao ler a fonte operacional.' };
