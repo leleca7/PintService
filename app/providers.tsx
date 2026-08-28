@@ -30,6 +30,7 @@ const ptBRLocalization = {
   NEW_PASSWORD: 'Nova senha',
   NAME: 'Nome',
   NAME_PLACEHOLDER: 'Nome completo',
+  GO_BACK: 'Voltar',
   OR_CONTINUE_WITH: 'Ou continue com',
 };
 
