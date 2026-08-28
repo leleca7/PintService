@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import AppShell from '@/app/components/app-shell';
+import styles from '@/app/components/precision-atelier-core.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { createVehicle } from './actions';
@@ -12,36 +13,69 @@ function relativeTime(value: string | null) {
   return hours < 24 ? `há ${hours}h` : `há ${Math.floor(hours / 24)}d`;
 }
 
+function isStale(value: string | null) {
+  if (!value) return true;
+  return Date.now() - new Date(value).getTime() > 24 * 60 * 60 * 1000;
+}
+
 export default async function VehiclesPage() {
   const [data, user] = await Promise.all([getDashboardData(), getCurrentAppUser()]);
   const canManage = userHasPermission(user, 'gerenciar_veiculos');
+  const stages = new Set(data.vehicles.map((vehicle) => vehicle.etapa).filter(Boolean));
+  const stale = data.vehicles.filter((vehicle) => isStale(vehicle.ultimaAtualizacao));
+  const withOpenTasks = new Set(data.tasks.filter((task) => ['aberta', 'em_execucao', 'aguardando_confirmacao'].includes(task.status) && task.placa).map((task) => task.placa));
+
   return (
     <AppShell active="veiculos" source={data.source}>
-      <header className="topbar"><div><p className="eyebrow">PRODUÇÃO</p><h1>Veículos</h1><p>Estágio, cliente e última atualização de cada carro.</p></div><div className="top-actions"><Link className="ghost action-link" href="/inicio">Voltar ao início</Link></div></header>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerCopy}>
+            <p className={styles.kicker}>OPERAÇÃO · ACOMPANHAMENTO</p>
+            <h1 className={styles.title}>Veículos</h1>
+            <p className={styles.subtitle}>Uma leitura direta do que está em acompanhamento, em qual etapa cada carro se encontra e onde a operação perdeu atualização.</p>
+          </div>
+          <Link className={styles.button} href="/">Visão geral</Link>
+        </header>
 
-      {canManage && (
-        <section className="panel page-panel">
-          <div className="panel-head"><div><p className="eyebrow">NOVO ATENDIMENTO</p><h2>Cadastrar cliente e veículo</h2></div></div>
-          <form action={createVehicle} className="settings-grid">
-            <label>Cliente<input name="cliente_nome" placeholder="Nome do cliente" /></label>
-            <label>Telefone<input name="telefone" inputMode="tel" required placeholder="55..." /></label>
-            <label>Placa<input name="placa" required placeholder="ABC1D23" /></label>
-            <label>Modelo<input name="modelo" placeholder="Ex.: Toyota Corolla" /></label>
-            <label>Cor<input name="cor" placeholder="Ex.: Branco" /></label>
-            <label>Etapa / setor<input name="setor" placeholder="Ex.: Pintura" /></label>
-            <label>Status<input name="status" placeholder="Ex.: Em produção" /></label>
-            <div><button className="ghost action-link" type="submit">Salvar veículo</button></div>
-          </form>
-        </section>
-      )}
-
-      <section className="panel page-panel">
-        <div className="panel-head"><div><p className="eyebrow">CADASTRO</p><h2>{data.vehicles.length} veículos</h2></div><span className={`source-chip ${data.source}`}>{data.source === 'live' ? 'Dados reais' : data.source === 'demo' ? 'Configuração pendente' : 'Erro no banco'}</span></div>
-        <div className="vehicle-cards">
-          {data.vehicles.map((vehicle) => <Link className="vehicle-card" href={`/veiculos/${encodeURIComponent(vehicle.id)}`} key={vehicle.id}><div className="vehicle-card-top"><span className="vehicle-mark">PS</span><span className="stage-chip">{vehicle.etapa}</span></div><h3>{vehicle.modelo}</h3><strong className="plate">{vehicle.placa}</strong><dl><div><dt>Cliente</dt><dd>{vehicle.cliente}</dd></div><div><dt>Status</dt><dd>{vehicle.status}</dd></div><div><dt>Atualização</dt><dd>{relativeTime(vehicle.ultimaAtualizacao)}</dd></div></dl><span className="open-row">Abrir ficha completa</span></Link>)}
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryItem}><span>Em acompanhamento</span><strong>{data.vehicles.length}</strong><small>veículos carregados</small></div>
+          <div className={styles.summaryItem}><span>Etapas ativas</span><strong>{stages.size}</strong><small>fluxo atual</small></div>
+          <div className={styles.summaryItem}><span>Com pendência</span><strong>{withOpenTasks.size}</strong><small>tarefa operacional aberta</small></div>
+          <div className={styles.summaryItem}><span>Sem atualização 24h+</span><strong>{stale.length}</strong><small>merecem conferência</small></div>
         </div>
-        {!data.vehicles.length && <div className="empty-state">Nenhum veículo cadastrado.</div>}
-      </section>
+
+        {canManage && <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>NOVO ACOMPANHAMENTO</p><h2>Cadastrar cliente e veículo</h2></div></div>
+          <div className={styles.formWrap}>
+            <form action={createVehicle} className={styles.formGrid}>
+              <label className={styles.field}>Cliente<input name="cliente_nome" placeholder="Nome do cliente" /></label>
+              <label className={styles.field}>Telefone<input name="telefone" inputMode="tel" required placeholder="55..." /></label>
+              <label className={styles.field}>Placa<input name="placa" required placeholder="ABC1D23" /></label>
+              <label className={styles.field}>Modelo<input name="modelo" placeholder="Ex.: Toyota Corolla" /></label>
+              <label className={styles.field}>Cor<input name="cor" placeholder="Ex.: Branco" /></label>
+              <label className={styles.field}>Etapa / setor<input name="setor" placeholder="Ex.: Pintura" /></label>
+              <label className={styles.field}>Status<input name="status" placeholder="Ex.: Em produção" /></label>
+              <div className={styles.formAction}><button className={`${styles.button} ${styles.buttonAccent}`} type="submit">Salvar veículo</button></div>
+            </form>
+          </div>
+        </section>}
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>CARTEIRA OPERACIONAL</p><h2>{data.vehicles.length ? 'Acompanhamento atual' : 'Nenhum veículo carregado'}</h2></div><span className={styles.count}>{data.vehicles.length}</span></div>
+          {data.vehicles.length ? <div className={styles.vehicleGrid}>{data.vehicles.map((vehicle) => {
+            const pending = withOpenTasks.has(vehicle.placa);
+            return <Link className={styles.vehicleCard} href={`/veiculos/${encodeURIComponent(vehicle.id)}`} key={vehicle.id}>
+              <div className={styles.vehicleCardTop}><span className={styles.vehicleMark}>{pending ? 'PENDÊNCIA' : 'PINT SERVICES'}</span><span className={styles.vehicleStage}>{vehicle.etapa}</span></div>
+              <h3>{vehicle.modelo}</h3>
+              <span className={styles.plate}>{vehicle.placa || 'SEM PLACA'}</span>
+              <div className={styles.vehicleMeta}>
+                <div><span>Cliente</span><strong>{vehicle.cliente}</strong></div>
+                <div><span>Atualização</span><strong>{relativeTime(vehicle.ultimaAtualizacao)}</strong></div>
+              </div>
+            </Link>;
+          })}</div> : <div className={styles.quiet}><strong>Nenhum veículo cadastrado.</strong>Quando a fonte operacional estiver conectada ou um atendimento for cadastrado, os veículos aparecerão aqui.</div>}
+        </section>
+      </div>
     </AppShell>
   );
 }
