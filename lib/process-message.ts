@@ -1,5 +1,5 @@
 import 'server-only';
-import { answerGeneralQuestion, planAttendance } from '@/lib/agent';
+import { answerGeneralQuestion, planAttendance, type AgentPlan } from '@/lib/agent';
 import { createOrReuseOperationalTask, type OperationalTaskType } from '@/lib/operational-tasks';
 import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/lib/operational-vehicle';
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
@@ -10,6 +10,11 @@ const STAGES = ['Desmontagem', 'Funilaria', 'Preparação de pintura', 'Pintura'
 
 function normalize(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 
+function safeErrorSummary(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error ?? 'erro desconhecido');
+  return raw.replace(/([a-z][a-z0-9+.-]*:\/\/)[^@\s]+@/gi, '$1***@').slice(0, 300);
+}
+
 function statusMessage(vehicle: any) {
   const sector = vehicle.setor ?? vehicle.etapa ?? '';
   const base = normalize(`${vehicle.status ?? ''} ${sector}`);
@@ -17,7 +22,8 @@ function statusMessage(vehicle: any) {
   const label = vehicle.modelo ? `${vehicle.modelo} (${vehicle.placa})` : `veículo ${vehicle.placa}`;
   let text = index >= 0 ? `Seu ${label} está registrado na etapa ${index + 1} de ${STAGES.length} — ${STAGES[index]}.` : `Encontrei seu ${label}. A atualização registrada é ${sector || vehicle.status || 'em acompanhamento pela oficina'}.`;
   if (vehicle.status) text += ` Situação registrada: ${vehicle.status}.`;
-  if (vehicle.statusPrazo) text += ` Situação do prazo registrada: ${vehicle.statusPrazo}.`;
+  // Prazo só é comunicado depois da desmontagem e quando a fonte oficial trouxe status de prazo.
+  if (index > 0 && vehicle.statusPrazo) text += ` Situação do prazo registrada: ${vehicle.statusPrazo}.`;
   if (vehicle.source === 'planilha') text += ' Consultei agora a fonte operacional vinculada pela oficina.';
   text += ' Se a sua pergunta exigir uma confirmação física atual, eu posso pedir para a equipe verificar sem inventar a resposta.';
   return text;
@@ -99,15 +105,28 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
   }));
 
   const plannerVehicles = externalVehicleSourceConfigured() ? [] : vehicles;
-  const plan = await planAttendance({
-    message: message.text,
-    messageType: message.type,
-    waitingFor: state?.aguardando_campo == null ? null : String(state.aguardando_campo),
-    plateContext: state?.placa_contexto == null ? null : String(state.placa_contexto),
-    vehicles: plannerVehicles,
-    history: [...history].reverse(),
-    openTasks,
-  });
+  let plan: AgentPlan;
+  try {
+    plan = await planAttendance({
+      message: message.text,
+      messageType: message.type,
+      waitingFor: state?.aguardando_campo == null ? null : String(state.aguardando_campo),
+      plateContext: state?.placa_contexto == null ? null : String(state.placa_contexto),
+      vehicles: plannerVehicles,
+      history: [...history].reverse(),
+      openTasks,
+    });
+  } catch (error) {
+    const summary = safeErrorSummary(error);
+    console.error('ai_planner_unavailable', { messageId: message.id, error: summary });
+    await createPending(String(client.id), null, 'atendente', `Triagem automática indisponível. Revisar a mensagem do cliente: ${message.text || `[${message.type} recebida]`}`, 'alta');
+    await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'falha_ia' });
+    const fallbackReply = 'Recebi sua mensagem. Nosso atendimento automático está indisponível neste momento, então encaminhei sua solicitação para a equipe continuar com você por aqui.';
+    await sendWhatsAppText(message.phone, fallbackReply);
+    await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},'humano','humano',0,'alta',true,${JSON.stringify({ reason: 'ai_unavailable', error: summary })}::jsonb)`;
+    await sql`INSERT INTO conversas (telefone,cliente_id,mensagem,origem,intencao,atendente_assumiu) VALUES (${message.phone},${client.id},${fallbackReply},'bot','humano',true)`;
+    return { ok: true, action: 'humano', needsHuman: true, fallback: 'ai_unavailable' };
+  }
 
   const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured() });
   await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},${plan.intent},${plan.action},${plan.confidence},${plan.priority},${plan.needsHuman},${decisionData}::jsonb)`;
@@ -147,7 +166,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       const vehicle = resolution.vehicle;
       vehicleId = vehicle.id;
       await sql`UPDATE veiculos SET cliente_id = COALESCE(cliente_id, ${client.id}) WHERE id = ${vehicle.id}`;
-      const taskType: OperationalTaskType = plan.operationalTask.type === 'nenhuma' ? 'verificar_status_fisico' : plan.operationalTask.type;
+      const taskType: OperationalTaskType = plan.operationalTask.type === 'nenhuma' || plan.operationalTask.type === 'confirmar_peca' ? 'verificar_status_fisico' : plan.operationalTask.type;
       const request = { type: taskType, sector: plan.operationalTask.sector || vehicle.setor || '', instruction: plan.operationalTask.instruction || `Verificar fisicamente a situação atual do veículo ${vehicle.placa} e confirmar a informação solicitada pelo cliente.`, requiresPhoto: plan.operationalTask.requiresPhoto };
       const { task, reused } = await createOrReuseOperationalTask({ clientId: String(client.id), vehicle, customerPhone: message.phone, customerMessage: message.text, priority: plan.priority, request });
       const sector = task.setor_responsavel ? ` com o setor de ${task.setor_responsavel}` : ' com a equipe da oficina';
@@ -160,13 +179,23 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       await setState(message.phone, { etapa: 'aguardando_placa', bot_ativo: true, ultima_intencao: 'status', aguardando_campo: 'placa' });
       break;
     case 'vistoria':
-      reply = 'Para vistorias de seguradoras e associações, não é necessário agendamento. O atendimento é por ordem de chegada, das 8h às 16h.';
-      await setState(message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'vistoria' });
+      needsHuman = true;
+      await createPending(String(client.id), null, 'vistoria', message.text || 'Solicitação de vistoria', 'normal');
+      await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'vistoria' });
+      reply = 'Recebi sua solicitação de vistoria e encaminhei para a equipe confirmar as orientações e continuar com você por aqui.';
       break;
     case 'horario_endereco': {
-      const hours = process.env.OFICINA_HOURS || 'das 8h às 16h';
-      const address = process.env.OFICINA_ADDRESS;
-      reply = address ? `Nosso atendimento é ${hours}. Estamos em ${address}.` : `Nosso atendimento é ${hours}. Para confirmar o endereço, vou deixar essa informação disponível assim que cadastrarmos os dados da oficina.`;
+      const hours = process.env.OFICINA_HOURS?.trim();
+      const address = process.env.OFICINA_ADDRESS?.trim();
+      if (hours && address) reply = `Nosso atendimento é ${hours}. Estamos em ${address}.`;
+      else if (hours) reply = `Nosso atendimento é ${hours}. Para confirmar o endereço, a equipe pode continuar com você por aqui.`;
+      else if (address) reply = `Estamos em ${address}. Para confirmar o horário de atendimento, a equipe pode continuar com você por aqui.`;
+      else {
+        needsHuman = true;
+        await createPending(String(client.id), null, 'atendente', 'Cliente pediu horário/endereço, mas os dados oficiais da oficina ainda não estão configurados.', 'normal');
+        await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'horario_endereco' });
+        reply = 'Vou encaminhar sua mensagem para a equipe confirmar nosso horário e endereço oficiais antes de te informar.';
+      }
       break;
     }
     case 'foto':
@@ -179,7 +208,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
       await createPending(String(client.id), null, type, message.text || `[${message.type} recebida]`, plan.priority);
       await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: plan.intent });
       const responses: Record<string, string> = {
-        foto: 'Registrei seu pedido de foto e passei para o atendimento. Se o veículo estiver identificado, a IA também pode transformar pedidos de foto em tarefa operacional da equipe.',
+        foto: 'Registrei seu pedido de foto e passei para o atendimento continuar com você por aqui.',
         orcamento: 'Registrei seu pedido de orçamento. Como o valor depende da avaliação do veículo e do serviço, o atendimento vai continuar com você por aqui.',
         agendamento: 'Registrei seu pedido de agendamento. O atendimento vai verificar a disponibilidade e continuar com você por aqui.',
         midia: 'Recebi o arquivo e deixei registrado para o atendimento analisar e continuar com você por aqui.',
@@ -190,7 +219,16 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
     }
     case 'geral':
     default:
-      reply = await answerGeneralQuestion(message.text);
+      try {
+        reply = await answerGeneralQuestion(message.text);
+      } catch (error) {
+        const summary = safeErrorSummary(error);
+        console.error('ai_general_answer_unavailable', { messageId: message.id, error: summary });
+        needsHuman = true;
+        await createPending(String(client.id), null, 'atendente', `Resposta automática indisponível. Revisar: ${message.text}`, 'normal');
+        await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'geral' });
+        reply = 'Recebi sua mensagem e encaminhei para a equipe continuar com você por aqui.';
+      }
       break;
   }
 
