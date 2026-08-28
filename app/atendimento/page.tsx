@@ -1,10 +1,27 @@
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
+import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 
 function dateTime(value: string | null) {
   if (!value) return 'Sem horário';
   return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'America/Bahia' }).format(new Date(value));
+}
+
+function elapsed(value: string | null) {
+  if (!value) return 'tempo não informado';
+  const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60_000));
+  if (minutes < 1) return 'agora';
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function timeValue(value: string | null, fallback: number) {
+  if (!value) return fallback;
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 function initials(name: string) {
@@ -13,9 +30,14 @@ function initials(name: string) {
 
 export default async function AttendancePage() {
   const data = await getDashboardData();
-  const human = data.conversations.filter((item) => item.status.includes('humano'));
-  const ai = data.conversations.filter((item) => !item.status.includes('humano'));
+  const human = data.conversations
+    .filter((item) => item.status.includes('humano'))
+    .sort((a, b) => timeValue(a.criadoEm, Number.MAX_SAFE_INTEGER) - timeValue(b.criadoEm, Number.MAX_SAFE_INTEGER));
+  const ai = data.conversations
+    .filter((item) => !item.status.includes('humano'))
+    .sort((a, b) => timeValue(b.criadoEm, 0) - timeValue(a.criadoEm, 0));
   const withVehicle = data.conversations.filter((item) => Boolean(item.placa)).length;
+  const hasEscalation = human.length > 0;
 
   return (
     <AppShell active="atendimento" source={data.source}>
@@ -28,17 +50,31 @@ export default async function AttendancePage() {
           </div>
         </header>
 
-        <section className={styles.darkBand}>
-          <div className={styles.darkCopy}>
-            <p className={styles.darkLabel}>FILA ADMINISTRATIVA</p>
-            <h2 className={styles.darkTitle}>{human.length ? `${human.length} ${human.length === 1 ? 'conversa chegou' : 'conversas chegaram'} até a equipe.` : 'Nenhuma conversa chegou ao topo agora.'}</h2>
-            <p className={styles.darkText}>{human.length ? 'Esses casos ultrapassaram a camada automática e precisam de acompanhamento humano.' : 'As conversas carregadas estão sendo tratadas sem necessidade de escalonamento humano.'}</p>
-          </div>
-          <div className={styles.darkStats}>
-            <div className={styles.darkStat}><strong>{human.length}</strong><span>precisam de pessoa</span></div>
-            <div className={styles.darkStat}><strong>{ai.length}</strong><span>seguem na base</span></div>
-          </div>
-        </section>
+        {hasEscalation ? (
+          <section className={styles.darkBand}>
+            <div className={styles.darkCopy}>
+              <p className={styles.darkLabel}>FILA ADMINISTRATIVA</p>
+              <h2 className={styles.darkTitle}>{human.length} {human.length === 1 ? 'conversa chegou' : 'conversas chegaram'} até a equipe.</h2>
+              <p className={styles.darkText}>Esses casos ultrapassaram a camada automática. Os mais antigos aparecem primeiro para reduzir o risco de uma conversa ficar esquecida.</p>
+            </div>
+            <div className={styles.darkStats}>
+              <div className={styles.darkStat}><strong>{human.length}</strong><span>precisam de pessoa</span></div>
+              <div className={styles.darkStat}><strong>{ai.length}</strong><span>seguem na base</span></div>
+            </div>
+          </section>
+        ) : (
+          <section className={ops.calmBand}>
+            <div>
+              <p className={ops.calmLabel}>OPERAÇÃO TRANQUILA</p>
+              <h2 className={ops.calmTitle}>Nenhuma conversa chegou ao topo agora.</h2>
+              <p className={ops.calmText}>As conversas carregadas estão sendo tratadas sem necessidade de escalonamento humano. O sistema permanece silencioso enquanto a base resolve a rotina.</p>
+            </div>
+            <div className={ops.calmStats}>
+              <div className={ops.calmStat}><strong>0</strong><span>escaladas</span></div>
+              <div className={ops.calmStat}><strong>{ai.length}</strong><span>na base</span></div>
+            </div>
+          </section>
+        )}
 
         <div className={styles.summaryGrid}>
           <div className={styles.summaryItem}><span>Conversas carregadas</span><strong>{data.conversations.length}</strong><small>janela recente</small></div>
@@ -48,20 +84,25 @@ export default async function AttendancePage() {
         </div>
 
         <div className={styles.split}>
-          <section className={styles.section}>
+          <section className={`${styles.section} ${hasEscalation ? ops.queueSection : ''}`}>
             <div className={styles.sectionHead}><div><p>PRIORIDADE HUMANA</p><h2>Chegaram até você</h2></div><span className={`${styles.count} ${human.length ? styles.countHot : ''}`}>{human.length}</span></div>
             {human.length ? <div className={styles.list}>{human.map((conversation) => <article className={`${styles.row} ${styles.rowCritical}`} key={conversation.id}>
               <div className={styles.avatar}>{initials(conversation.cliente)}</div>
               <div className={styles.rowBody}>
                 <div className={styles.rowTop}><strong>{conversation.cliente}</strong><time>{dateTime(conversation.criadoEm)}</time></div>
                 <p className={styles.preview}>{conversation.mensagem}</p>
-                <div className={styles.meta}><span className={`${styles.badge} ${styles.badgeHuman}`}>Aguardando humano</span>{conversation.placa && <span>{conversation.placa}</span>}{conversation.intencao && <span>{conversation.intencao}</span>}</div>
+                <div className={styles.meta}>
+                  <span className={`${styles.badge} ${styles.badgeHuman}`}>Aguardando humano</span>
+                  <span className={ops.waiting}>há {elapsed(conversation.criadoEm)}</span>
+                  {conversation.placa && <span>{conversation.placa}</span>}
+                  {conversation.intencao && <span>{conversation.intencao}</span>}
+                </div>
               </div>
               <span className={styles.chevron}>›</span>
             </article>)}</div> : <div className={styles.quiet}><strong>Fila humana limpa.</strong>Nenhuma conversa precisa de intervenção neste momento.</div>}
           </section>
 
-          <section className={styles.section}>
+          <section className={`${styles.section} ${ops.routineSection}`}>
             <div className={styles.sectionHead}><div><p>ROTINA SILENCIOSA</p><h2>Tratadas na base</h2></div><span className={styles.count}>{ai.length}</span></div>
             {ai.length ? <div className={styles.list}>{ai.slice(0, 12).map((conversation) => <article className={styles.row} key={conversation.id}>
               <div className={styles.avatar}>{initials(conversation.cliente)}</div>
