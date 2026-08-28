@@ -1,15 +1,19 @@
 import type { Metadata, Viewport } from 'next';
+import { Manrope } from 'next/font/google';
 import '@neondatabase/auth-ui/css';
 import './globals.css';
 import './operational.css';
 import './system-states.css';
 import './access.css';
-import './pint-services-theme.css';
 import './no-emoji.css';
-import './visual-polish.css';
 import './reputation.css';
 import './production-auth.css';
 import { Providers } from './providers';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 export const dynamic = 'force-dynamic';
 
@@ -21,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#090a0a',
+  themeColor: '#111315',
   width: 'device-width',
   initialScale: 1,
 };
@@ -29,7 +33,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body><Providers>{children}</Providers></body>
+      <body className={manrope.className}><Providers>{children}</Providers></body>
     </html>
   );
 }

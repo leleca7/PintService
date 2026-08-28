@@ -4,6 +4,7 @@ import type { DataSource } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { isDatabaseConfigured } from '@/lib/db';
 import { ROLE_LABELS, type Permission } from '@/lib/permissions';
+import styles from './app-shell.module.css';
 
 type ActiveKey = 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
 type Props = { active: ActiveKey; source: DataSource; children: React.ReactNode };
@@ -21,6 +22,8 @@ const items: NavItem[] = [
   { key: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: 'settings', permission: 'ver_configuracoes' },
 ];
 
+const mobilePrimaryKeys = new Set<ActiveKey>(['visao', 'atendimento', 'veiculos', 'tarefas']);
+
 function NavIcon({ name }: { name: IconName }) {
   const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, className: 'nav-svg' };
   if (name === 'home') return <svg {...common}><path d="M3.5 10.5 12 3.8l8.5 6.7"/><path d="M5.5 9.7V20h13V9.7"/><path d="M9.5 20v-6h5v6"/></svg>;
@@ -33,10 +36,18 @@ function NavIcon({ name }: { name: IconName }) {
   return <svg {...common}><circle cx="12" cy="12" r="3"/><path d="M12 3.8v2M12 18.2v2M3.8 12h2M18.2 12h2M6.2 6.2l1.4 1.4M16.4 16.4l1.4 1.4M17.8 6.2l-1.4 1.4M7.6 16.4l-1.4 1.4"/></svg>;
 }
 
+function MoreIcon() {
+  return <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>;
+}
+
+function BrandSymbol() {
+  return <span className={styles.brandSymbol} aria-hidden="true"/>;
+}
+
 function sourceLabel(source: DataSource) {
-  if (source === 'live') return { text: 'Operação ao vivo', detail: 'Neon conectado', className: 'live-source' };
-  if (source === 'error') return { text: 'Conexão com erro', detail: 'Verifique banco e perfil', className: 'error-source' };
-  return { text: 'Configuração pendente', detail: 'Ambiente ainda não ativado', className: 'demo-source' };
+  if (source === 'live') return { text: 'Operação ao vivo', detail: 'Neon conectado', className: styles.sourceLive };
+  if (source === 'error') return { text: 'Conexão com erro', detail: 'Verifique banco e perfil', className: styles.sourceError };
+  return { text: 'Configuração pendente', detail: 'Ambiente ainda não ativado', className: '' };
 }
 
 function allowed(item: NavItem, user: Awaited<ReturnType<typeof getCurrentAppUser>>) {
@@ -51,19 +62,84 @@ export default async function AppShell({ active, source, children }: Props) {
   const sourceInfo = sourceLabel(source);
   const user = await getCurrentAppUser();
   if (isDatabaseConfigured() && !user) redirect('/sem-acesso');
+
   const visibleItems = user ? items.filter((item) => allowed(item, user)) : [];
   const activeItem = items.find((item) => item.key === active);
   if (user && activeItem && !allowed(activeItem, user)) redirect('/sem-acesso');
+
   const initials = user?.nome ? user.nome.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() : 'PS';
+  const mobilePrimary = visibleItems.filter((item) => mobilePrimaryKeys.has(item.key));
+  const mobileMore = visibleItems.filter((item) => !mobilePrimaryKeys.has(item.key));
+  const moreIsActive = mobileMore.some((item) => item.key === active);
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
-        <Link href="/inicio" className="brand"><div className="brand-mark" aria-hidden="true">PS</div><div><strong>PintService</strong><span>Pint Services Car Center</span></div></Link>
-        <nav className="nav" aria-label="Navegação principal">{visibleItems.map((item) => <Link key={item.key} className={active === item.key ? 'active' : ''} href={item.href}><NavIcon name={item.icon}/><span>{item.label}</span></Link>)}</nav>
-        <div className="sidebar-bottom"><div className={`ia-status ${sourceInfo.className}`}><span className="pulse"/> {sourceInfo.text}<small>{sourceInfo.detail}</small></div><Link className="profile" href="/auth/sign-out"><div className="avatar">{initials}</div><div><strong>{user?.nome || 'PintService'}</strong><span>{user ? ROLE_LABELS[user.perfil] : 'Acesso não vinculado'}</span></div></Link></div>
+    <main className={styles.shell}>
+      <aside className={styles.desktopSidebar}>
+        <Link href="/inicio" className={styles.brand}>
+          <BrandSymbol/>
+          <div className={styles.brandCopy}><strong>PintService</strong><span>Pint Services Car Center</span></div>
+        </Link>
+
+        <nav className={styles.desktopNav} aria-label="Navegação principal">
+          {visibleItems.map((item) => (
+            <Link
+              key={item.key}
+              className={`${styles.navLink} ${active === item.key ? styles.navLinkActive : ''}`}
+              href={item.href}
+              title={item.label}
+              aria-current={active === item.key ? 'page' : undefined}
+            >
+              <NavIcon name={item.icon}/><span className={styles.navText}>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className={styles.sidebarBottom}>
+          <div className={`${styles.sourceCard} ${sourceInfo.className}`}>
+            <div className={styles.sourceTop}><span className={styles.sourceDot}/><span>{sourceInfo.text}</span></div>
+            <small>{sourceInfo.detail}</small>
+          </div>
+          <Link className={styles.profile} href="/auth/sign-out" title="Sair do PintService">
+            <div className={styles.profileMark}>{initials}</div>
+            <div className={styles.profileCopy}><strong>{user?.nome || 'PintService'}</strong><span>{user ? ROLE_LABELS[user.perfil] : 'Acesso não vinculado'}</span></div>
+          </Link>
+        </div>
       </aside>
-      <section className="content">{children}</section>
+
+      <header className={styles.mobileHeader}>
+        <Link href="/inicio" className={styles.mobileBrand}>
+          <BrandSymbol/>
+          <span><strong>PintService</strong><span>Central de operação</span></span>
+        </Link>
+        <Link href="/auth/sign-out" className={styles.mobileAccount} aria-label="Sair do PintService">
+          <span>{source === 'live' ? 'ao vivo' : 'configurando'}</span><div className={styles.profileMark}>{initials}</div>
+        </Link>
+      </header>
+
+      <section className={styles.content}>{children}</section>
+
+      <nav className={styles.mobileBottom} aria-label="Navegação móvel">
+        {mobilePrimary.map((item) => (
+          <Link
+            key={item.key}
+            href={item.href}
+            className={`${styles.mobileNavLink} ${active === item.key ? styles.mobileNavActive : ''}`}
+            aria-current={active === item.key ? 'page' : undefined}
+          >
+            <NavIcon name={item.icon}/><span>{item.key === 'visao' ? 'Início' : item.label}</span>
+          </Link>
+        ))}
+        <details className={styles.moreMenu}>
+          <summary className={`${styles.moreSummary} ${moreIsActive ? styles.mobileNavActive : ''}`}><MoreIcon/><span>Mais</span></summary>
+          <div className={styles.morePanel}>
+            {mobileMore.map((item) => (
+              <Link key={item.key} href={item.href} className={`${styles.moreLink} ${active === item.key ? styles.moreLinkActive : ''}`}>
+                <NavIcon name={item.icon}/><span>{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </details>
+      </nav>
     </main>
   );
 }
