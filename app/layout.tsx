@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Manrope } from 'next/font/google';
 import '@neondatabase/auth-ui/css';
 import './globals.css';
+import './precision-tokens.css';
 import './operational.css';
 import './system-states.css';
 import './access.css';
