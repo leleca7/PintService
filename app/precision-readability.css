@@ -12,12 +12,35 @@
   --pa-paper: #ffffff;
   --pa-mineral: #f3f1ec;
   --pa-soft: #fbfaf7;
+  --pa-field-ink: #252925;
+  --pa-placeholder: #7a8079;
+  --pa-label: #595f59;
+  --pa-table-head: #5d635d;
+  --pa-table-copy: #484e48;
+  --pa-ink-strong: #343934;
+  --pa-banner-strong: #292e2a;
+  --pa-banner-copy: #535a54;
+  --pa-banner-info: #f7f2e8;
+  --pa-banner-info-line: #dfd1b9;
+  --pa-nav-ink: #f3f0e9;
+  --pa-nav-muted: #a7aca7;
+  --pa-module-meta: #626860;
+  --pa-module-copy: #505750;
+  --pa-reputation-meta: #60665f;
+  --pa-dark-ink: #f5f2ec;
+  --pa-dark-muted: #b2b7b3;
+  --pa-dark-copy: #d0cdc6;
+  --pa-dark-meta: #aeb3af;
+  --pa-mobile-meta: #626861;
+  --pa-focus: rgba(239, 90, 42, .72);
+  --pa-font-micro: 9px;
+  --pa-font-meta: 10px;
 }
 
 /* Base de leitura */
 .content { color: var(--pa-ink); }
 .topbar p:not(.eyebrow) { color: var(--pa-muted); }
-.eyebrow { color: #666b65; font-size: 10px; }
+.eyebrow { color: #666b65; font-size: var(--pa-font-meta); }
 
 /* Painéis e superfícies claras legadas */
 .panel,
@@ -81,7 +104,7 @@
 .task-note,
 .task-status,
 .task-priority {
-  font-size: 9px;
+  font-size: var(--pa-font-micro);
 }
 
 .metrics small,
@@ -100,38 +123,38 @@
 .content input:not([type='hidden']),
 .content select,
 .content textarea {
-  color: #252925;
+  color: var(--pa-field-ink);
 }
 
 .content input:not([type='hidden'])::placeholder,
 .content textarea::placeholder {
-  color: #7a8079;
+  color: var(--pa-placeholder);
   opacity: 1;
 }
 
-.content label { color: #595f59; }
+.content label { color: var(--pa-label); }
 
 /* Tabelas */
-.content th { color: #5d635d; font-size: 9px; }
-.content td { color: #484e48; }
-.permission-table td:first-child { color: #343934; }
+.content th { color: var(--pa-table-head); font-size: var(--pa-font-micro); }
+.content td { color: var(--pa-table-copy); }
+.permission-table td:first-child { color: var(--pa-ink-strong); }
 
 /* Banners claros: texto sempre escuro. Dark Surface não usa estas classes. */
 .system-banner { color: var(--pa-ink); }
-.system-banner strong { color: #292e2a; }
-.system-banner span { color: #535a54; }
-.info-banner { background: #f7f2e8; border-color: #dfd1b9; }
-.demo-banner { background: #fff5df; }
-.error-banner { background: #fff0ee; }
+.system-banner strong { color: var(--pa-banner-strong); }
+.system-banner span { color: var(--pa-banner-copy); }
+.info-banner { background: var(--pa-banner-info); border-color: var(--pa-banner-info-line); }
+.demo-banner { background: var(--yellow-soft); }
+.error-banner { background: var(--red-soft); }
 
 /* Navegação escura permanece deliberadamente clara */
 .sidebar,
 .sidebar .brand,
 .sidebar .profile,
-.sidebar .ia-status { color: #f3f0e9; }
+.sidebar .ia-status { color: var(--pa-nav-ink); }
 .sidebar .brand span,
 .sidebar .profile span,
-.sidebar .ia-status small { color: #a7aca7; }
+.sidebar .ia-status small { color: var(--pa-nav-muted); }
 
 /* CSS Modules do Precision Atelier — superfícies claras. */
 [class*='sectionHead'] > div > p,
@@ -144,7 +167,7 @@
 [class*='taskCode'],
 [class*='taskFooter'],
 [class*='kicker']:not([class*='darkLabel']) {
-  color: #626860;
+  color: var(--pa-module-meta);
 }
 
 [class*='sectionHead'] > div > p,
@@ -156,17 +179,17 @@
 [class*='meta'],
 [class*='taskCode'],
 [class*='taskFooter'] {
-  font-size: 9px;
+  font-size: var(--pa-font-micro);
 }
 
-[class*='kicker']:not([class*='darkLabel']) { font-size: 10px; }
+[class*='kicker']:not([class*='darkLabel']) { font-size: var(--pa-font-meta); }
 
 [class*='subtitle'],
 [class*='preview'],
 [class*='quiet'],
 [class*='taskInstruction'],
 [class*='taskVehicle'] > span {
-  color: #505750;
+  color: var(--pa-module-copy);
 }
 
 [class*='sectionHead'] h2,
@@ -185,22 +208,22 @@
 [class*='roleCard'] h2 { color: var(--pa-ink); }
 [class*='connection'] p,
 [class*='infoCard'] ul,
-[class*='roleCard'] p { color: #505750; }
+[class*='roleCard'] p { color: var(--pa-module-copy); }
 [class*='connection'] small,
 [class*='roleCard'] strong,
-[class*='infoCard'] > p { color: #626860; }
+[class*='infoCard'] > p { color: var(--pa-module-meta); }
 
 /* Reputação: fila clara */
 .reputation-queue { color: var(--pa-ink); }
 .reputation-item-top strong { color: var(--pa-ink); }
-.reputation-preview { color: #505750; }
+.reputation-preview { color: var(--pa-module-copy); }
 .reputation-author,
 .reputation-item-top time,
 .channel-status small,
 .reputation-metrics span,
 .reputation-metrics small,
 .ra-grid span,
-.ra-problems > span { color: #60665f; }
+.ra-problems > span { color: var(--pa-reputation-meta); }
 
 .reputation-item-top time,
 .reputation-author,
@@ -208,7 +231,7 @@
 .reputation-metrics span,
 .reputation-metrics small,
 .ra-grid span,
-.ra-problems > span { font-size: 9px; }
+.ra-problems > span { font-size: var(--pa-font-micro); }
 
 /* Dark Surface: restaura contraste claro de propósito */
 [class*='darkBand'],
@@ -217,7 +240,7 @@
 .pa-command,
 .pa-system-health,
 .auth-page {
-  color: #f5f2ec;
+  color: var(--pa-dark-ink);
 }
 
 [class*='darkBand'] [class*='darkLabel'],
@@ -226,16 +249,16 @@
 [class*='taskCardCritical'] [class*='taskCode'],
 [class*='taskCardCritical'] [class*='taskInstruction'],
 [class*='taskCardCritical'] [class*='taskFooter'] {
-  color: #b2b7b3;
+  color: var(--pa-dark-muted);
 }
 
 [class*='darkBand'] [class*='darkLabel'],
-[class*='darkBand'] [class*='darkStat'] span { font-size: 9px; }
+[class*='darkBand'] [class*='darkStat'] span { font-size: var(--pa-font-micro); }
 
-.reputation-detail .customer-message p { color: #d0cdc6; }
+.reputation-detail .customer-message p { color: var(--pa-dark-copy); }
 .reputation-detail .reputation-detail-head span,
 .reputation-detail .rating-row span,
-.reputation-detail .composer-actions span { color: #aeb3af; }
+.reputation-detail .composer-actions span { color: var(--pa-dark-meta); }
 
 /* Foco de teclado mais visível sem depender apenas de cor. */
 a:focus-visible,
@@ -243,7 +266,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid rgba(239, 90, 42, .72);
+  outline: 2px solid var(--pa-focus);
   outline-offset: 2px;
 }
 
@@ -251,5 +274,5 @@ textarea:focus-visible {
   .content { color: var(--pa-ink); }
   [class*='meta'],
   [class*='summaryItem'] > small,
-  .chat-meta { color: #626861; }
+  .chat-meta { color: var(--pa-mobile-meta); }
 }
