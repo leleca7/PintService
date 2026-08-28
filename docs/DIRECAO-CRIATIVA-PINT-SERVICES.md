@@ -214,6 +214,45 @@ O sistema interno não deve receber o mesmo volume de animação de uma landing 
 
 No PintService, **motion deve reduzir esforço cognitivo**, não competir com a operação.
 
+## Regra de intensidade visual: landing pública x sistema interno
+
+Os dois produtos devem compartilhar o mesmo **DNA de marca**, mas não a mesma intensidade de execução.
+
+### Landing page / site público
+
+Pode ser mais ousado, cinematográfico e memorável. É o espaço para explorar:
+
+- cenas full-screen;
+- imagens e vídeos de alta qualidade;
+- motion mais elaborado;
+- scroll narrativo;
+- transições entre estados;
+- objetos atravessando camadas;
+- tipografia em grande escala;
+- momentos de impacto visual;
+- experiência mais “babadeira”, desde que continue sofisticada e coerente com a marca.
+
+Aqui a função principal é **encantar, construir percepção de valor e converter**.
+
+### PintService interno
+
+Deve parecer parte da mesma marca, mas ser mais leve, rápido e silencioso. A prioridade é **performance operacional**.
+
+Regras:
+
+- não depender de vídeos pesados para compor telas de trabalho;
+- evitar animações longas, 3D contínuo ou efeitos que consumam processamento;
+- priorizar CSS, transforms e transições curtas quando motion for útil;
+- lazy-load de mídia e recursos não essenciais;
+- carregamento progressivo com skeletons discretos;
+- preservar resposta imediata de botões, busca, filtros, atendimento e tarefas;
+- reduzir ou eliminar motion em conexões lentas, dispositivos modestos ou `prefers-reduced-motion`;
+- medir performance como requisito de design, não como correção posterior.
+
+A regra é: **mesma sofisticação visual, menos peso computacional**.
+
+O usuário deve reconhecer a mesma Pint Services no site público e no sistema interno, mas sentir que o sistema foi desenhado para trabalhar durante horas sem cansar nem atrasar a operação.
+
 ### O que poderá ser explorado com mais força no futuro site público
 
 No site público da Pint Services, a intensidade pode subir significativamente:
