@@ -1,0 +1,58 @@
+/* Precision Atelier — tokens semânticos globais
+ * Fonte única para cor, contraste e microtipografia do sistema visual.
+ * Mantém compatibilidade com variáveis legadas enquanto a migração avança.
+ */
+
+:root {
+  /* Marca e superfícies */
+  --pa-accent: #ef5a2a;
+  --pa-paper: #ffffff;
+  --pa-mineral: #f3f1ec;
+  --pa-soft: #fbfaf7;
+  --pa-dark: #111315;
+
+  /* Texto em superfícies claras */
+  --pa-ink: #1d211e;
+  --pa-copy: #4f554f;
+  --pa-muted: #646a63;
+  --pa-meta: #72776f;
+  --pa-faint: #878b84;
+  --pa-field-ink: #252925;
+  --pa-placeholder: #7a8079;
+  --pa-label: #595f59;
+  --pa-table-head: #5d635d;
+  --pa-table-copy: #484e48;
+  --pa-ink-strong: #343934;
+
+  /* Banners e estados informativos */
+  --pa-banner-strong: #292e2a;
+  --pa-banner-copy: #535a54;
+  --pa-banner-info: #f7f2e8;
+  --pa-banner-info-line: #dfd1b9;
+
+  /* Navegação e Dark Surface */
+  --pa-nav-ink: #f3f0e9;
+  --pa-nav-muted: #a7aca7;
+  --pa-dark-ink: #f5f2ec;
+  --pa-dark-muted: #b2b7b3;
+  --pa-dark-copy: #d0cdc6;
+  --pa-dark-meta: #aeb3af;
+
+  /* Módulos e operação */
+  --pa-module-meta: #626860;
+  --pa-module-copy: #505750;
+  --pa-reputation-meta: #60665f;
+  --pa-mobile-meta: #626861;
+
+  /* Interação e tipografia */
+  --pa-focus: rgba(239, 90, 42, .72);
+  --pa-font-micro: 9px;
+  --pa-font-meta: 10px;
+
+  /* Compatibilidade com a camada legada. */
+  --accent: var(--pa-accent);
+  --dark: var(--pa-dark);
+  --panel: var(--pa-paper);
+  --bg: var(--pa-mineral);
+  --text: var(--pa-ink);
+}
