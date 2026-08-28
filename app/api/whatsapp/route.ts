@@ -1,7 +1,7 @@
 import { after, NextRequest, NextResponse } from 'next/server';
 import { isDatabaseConfigured } from '@/lib/db';
 import { safeStringEqual } from '@/lib/security';
-import { processQueuedWhatsAppMessage } from '@/lib/whatsapp-event-queue';
+import { processQueuedWhatsAppMessage, retryRecoverableWhatsAppEvents } from '@/lib/whatsapp-event-queue';
 import { extractIncomingMessages, verifyMetaSignature } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
@@ -29,6 +29,10 @@ export async function POST(request: NextRequest) {
       try { await processQueuedWhatsAppMessage(message); }
       catch (error) { console.error('whatsapp_process_error', { messageId: message.id, error }); }
     }
+    // No plano Hobby, o cron frequente não é permitido. Cada webhook também tenta
+    // recuperar um pequeno lote de falhas antigas; o cron diário fica como rede de segurança.
+    try { await retryRecoverableWhatsAppEvents(5); }
+    catch (error) { console.error('whatsapp_opportunistic_retry_error', { error }); }
   });
   return NextResponse.json({ received: true });
 }
