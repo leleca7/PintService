@@ -1,0 +1,204 @@
+/* Precision Atelier — legibilidade e contraste
+ * Carregado por último. Corrige resíduos de temas anteriores e cria uma hierarquia
+ * de contraste consistente para superfícies claras, preservando Dark Surface.
+ */
+
+:root {
+  --pa-ink: #1d211e;
+  --pa-copy: #4f554f;
+  --pa-muted: #646a63;
+  --pa-meta: #72776f;
+  --pa-faint: #878b84;
+  --pa-paper: #ffffff;
+  --pa-mineral: #f3f1ec;
+  --pa-soft: #fbfaf7;
+}
+
+/* Base de leitura */
+.content { color: var(--pa-ink); }
+.topbar p:not(.eyebrow) { color: var(--pa-muted); }
+.eyebrow { color: #6c706a; }
+
+/* Painéis e superfícies claras legadas */
+.panel,
+.metrics article,
+.vehicle-card,
+.employee-card,
+.connection-card,
+.loading-card,
+.not-found-card {
+  color: var(--pa-ink);
+}
+
+.panel-head h2,
+.vehicle-card h3,
+.employee-card h3,
+.connection-card h3,
+.attention-item strong,
+.chat-card strong,
+.message-row strong,
+.task-card h3 {
+  color: var(--pa-ink);
+}
+
+.metrics span,
+.metrics small,
+.vehicle-card dt,
+.employee-card dt,
+.task-meta dt,
+.connection-card p,
+.settings-card ul,
+.attention-item p,
+.chat-card p,
+.message-row p,
+.task-instruction,
+.task-note {
+  color: var(--pa-muted);
+}
+
+.vehicle-card dd,
+.employee-card dd,
+.task-meta dd,
+.connection-card small,
+.attention-item small,
+.chat-meta,
+.chat-card time,
+.message-row small,
+.plate {
+  color: var(--pa-meta);
+}
+
+/* Formulários claros */
+.content input:not([type='hidden']),
+.content select,
+.content textarea {
+  color: #252925;
+}
+
+.content input:not([type='hidden'])::placeholder,
+.content textarea::placeholder {
+  color: #81867f;
+  opacity: 1;
+}
+
+.content label { color: #5f655f; }
+
+/* Tabelas */
+.content th { color: #626760; }
+.content td { color: #4d534d; }
+.permission-table td:first-child { color: #343934; }
+
+/* Banners claros: texto sempre escuro. Dark Surface não usa estas classes. */
+.system-banner { color: var(--pa-ink); }
+.system-banner strong { color: #292e2a; }
+.system-banner span { color: #59605a; }
+.info-banner { background: #f7f2e8; border-color: #dfd1b9; }
+.demo-banner { background: #fff5df; }
+.error-banner { background: #fff0ee; }
+
+/* Navegação escura permanece deliberadamente clara */
+.sidebar,
+.sidebar .brand,
+.sidebar .profile,
+.sidebar .ia-status { color: #f3f0e9; }
+.sidebar .brand span,
+.sidebar .profile span,
+.sidebar .ia-status small { color: #9ca19c; }
+
+/* CSS Modules do Precision Atelier — superfícies claras.
+ * O nome local permanece presente no className compilado do Next e permite
+ * estabilizar contraste sem contaminar os blocos Dark Surface. */
+[class*='sectionHead'] > div > p,
+[class*='summaryItem'] > span,
+[class*='summaryItem'] > small,
+[class*='vehicleStage'],
+[class*='vehicleMeta'] > span,
+[class*='rowTop'] > time,
+[class*='meta'],
+[class*='taskCode'],
+[class*='taskFooter'],
+[class*='kicker']:not([class*='darkLabel']) {
+  color: #686d66;
+}
+
+[class*='subtitle'],
+[class*='preview'],
+[class*='quiet'],
+[class*='taskInstruction'],
+[class*='taskVehicle'] > span {
+  color: #555c56;
+}
+
+[class*='sectionHead'] h2,
+[class*='summaryItem'] strong,
+[class*='vehicleCard'] h3,
+[class*='rowTop'] strong,
+[class*='quiet'] strong,
+[class*='taskHead'] h3,
+[class*='vehicleMeta'] strong {
+  color: var(--pa-ink);
+}
+
+/* Administração */
+[class*='connection'] h3,
+[class*='infoCard'] h2,
+[class*='roleCard'] h2 { color: var(--pa-ink); }
+[class*='connection'] p,
+[class*='infoCard'] ul,
+[class*='roleCard'] p { color: #555c56; }
+[class*='connection'] small,
+[class*='roleCard'] strong,
+[class*='infoCard'] > p { color: #6b7069; }
+
+/* Reputação: fila clara */
+.reputation-queue { color: var(--pa-ink); }
+.reputation-item-top strong { color: var(--pa-ink); }
+.reputation-preview { color: #555c56; }
+.reputation-author,
+.reputation-item-top time,
+.channel-status small,
+.reputation-metrics span,
+.reputation-metrics small,
+.ra-grid span,
+.ra-problems > span { color: #666c65; }
+
+/* Dark Surface: restaura contraste claro de propósito */
+[class*='darkBand'],
+[class*='taskCardCritical'],
+.reputation-detail,
+.pa-command,
+.pa-system-health,
+.auth-page {
+  color: #f5f2ec;
+}
+
+[class*='darkBand'] [class*='darkLabel'],
+[class*='darkBand'] [class*='darkText'],
+[class*='darkBand'] [class*='darkStat'] span,
+[class*='taskCardCritical'] [class*='taskCode'],
+[class*='taskCardCritical'] [class*='taskInstruction'],
+[class*='taskCardCritical'] [class*='taskFooter'] {
+  color: #aeb3b0;
+}
+
+.reputation-detail .customer-message p { color: #d0cdc6; }
+.reputation-detail .reputation-detail-head span,
+.reputation-detail .rating-row span,
+.reputation-detail .composer-actions span { color: #a7aca8; }
+
+/* Foco de teclado mais visível sem depender apenas de cor. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid rgba(239, 90, 42, .72);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .content { color: var(--pa-ink); }
+  [class*='meta'],
+  [class*='summaryItem'] > small,
+  .chat-meta { color: #696f68; }
+}
