@@ -51,7 +51,7 @@ export default async function ReputationPage() {
         {!safeReputation.items.length && <div className="system-banner info-banner"><strong>Canais aguardando conexão ou novas ocorrências</strong><span>Nenhum exemplo fictício é exibido. Quando as contas oficiais estiverem autorizadas, mensagens, avaliações e reclamações aparecem aqui.</span></div>}
         {!!safeReputation.errors.length && <div className="system-banner error-banner"><strong>Alguns canais não sincronizaram</strong><span>{safeReputation.errors.slice(0, 2).join(' · ')}</span></div>}
 
-        <ReputationClient data={safeReputation}/>
+        <div className={styles.reputationWorkspace}><ReputationClient data={safeReputation}/></div>
       </div>
     </AppShell>
   );
