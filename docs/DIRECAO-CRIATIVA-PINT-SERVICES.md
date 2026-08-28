@@ -157,6 +157,78 @@ Desktop, tablet e mobile não serão apenas a mesma tela encolhida.
 - **Tablet:** uso em balcão/oficina, touch, leitura rápida e ações maiores.
 - **Mobile:** atendimento, alertas, tarefas, aprovação e consulta rápida.
 
+## Referências de imersão e motion
+
+Referências recebidas em vídeo:
+
+- `qclaydesign_pindown.io_1787930269.mp4`
+- `canuzunnn__pindown.io_1787930305.mp4`
+- `jboscodesign_pindown.io_1787930298.mp4`
+- `sandhillstudio1_pindown.io_1787930283.mp4`
+
+Essas referências **não devem ser copiadas na estrutura**. O valor principal delas é a sensação de site/produto dirigido, vivo e coreografado.
+
+### Padrões percebidos nas referências
+
+**1. Movimento com função narrativa**
+
+Elementos não apenas aparecem: o conteúdo muda de estado, atravessa a tela, revela a próxima seção e cria continuidade entre blocos. A página parece uma experiência contínua, não uma coleção de seções empilhadas.
+
+**2. Transições espaciais**
+
+Uso de wipes, deslocamentos laterais, mudanças de plano, objetos que atravessam divisões e transições que conectam uma seção à outra. Isso cria sensação de profundidade e direção.
+
+**3. Tipografia como elemento de cena**
+
+Títulos grandes participam da composição, ficam parcialmente atrás de objetos, mudam de escala, entram e saem do enquadramento e ajudam a conduzir o olhar.
+
+**4. Objeto/produto como protagonista**
+
+Em vez de uma imagem simplesmente dentro de um card, o objeto ocupa o espaço e interage com tipografia, fundo e movimento.
+
+**5. Contraste de ritmo**
+
+Existem momentos de impacto e momentos de pausa. A imersão não vem de animar tudo ao mesmo tempo, mas de controlar quando algo deve chamar atenção e quando a tela precisa respirar.
+
+**6. Scroll como direção**
+
+A rolagem funciona como parte da narrativa. Mudanças de posição, escala, máscara e composição acompanham a progressão da página.
+
+**7. Microdetalhes de acabamento**
+
+Hover, easing, entradas suaves, máscaras, camadas, sombras muito controladas e movimentos curtos fazem a experiência parecer construída sob medida.
+
+### O que aproveitar especificamente no PintService
+
+O sistema interno não deve receber o mesmo volume de animação de uma landing page, porque é uma ferramenta de uso diário. A imersão deverá ser mais contida e funcional:
+
+- entrada inicial do dashboard com hierarquia progressiva;
+- destaque visual suave quando surge algo crítico;
+- expansão contextual de tarefa/veículo sem troca brusca de página quando fizer sentido;
+- transições entre estados do fluxo da oficina;
+- números e status atualizados com motion discreto;
+- drawers, painéis laterais e detalhes que parecem parte do mesmo espaço;
+- feedback visual imediato em aprovação, conclusão e mudança de status;
+- pequenas transições que guiem o olhar até a próxima ação;
+- animações reduzidas ou desativadas automaticamente quando performance/acessibilidade exigirem.
+
+No PintService, **motion deve reduzir esforço cognitivo**, não competir com a operação.
+
+### O que poderá ser explorado com mais força no futuro site público
+
+No site público da Pint Services, a intensidade pode subir significativamente:
+
+- hero cinematográfico;
+- carro/peça/processo atravessando camadas;
+- antes/depois com transição dirigida;
+- seções que mudam de atmosfera durante o scroll;
+- tipografia grande integrada às imagens;
+- transições entre funilaria, preparação, pintura e acabamento;
+- storytelling visual de um veículo entrando danificado e saindo restaurado;
+- motion associado a precisão, superfície, luz, pintura e transformação.
+
+A referência de imersão deve ser **sofisticação e narrativa**, não excesso de efeitos.
+
 ## Site público — etapa posterior
 
 Quando a Pint Services aprovar o sistema, criar um projeto separado para o site institucional público. Ele deve compartilhar o mesmo DNA visual, mas não a mesma arquitetura de interface.
