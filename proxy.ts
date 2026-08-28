@@ -10,6 +10,6 @@ export default function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/whatsapp|api/instagram/webhook|api/health|api/reputacao/check|auth|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)',
+    '/((?!api/auth|api/whatsapp|api/instagram/webhook|api/health|api/reputacao/check|api/blinko/summary|auth|_next/static|_next/image|favicon.ico|manifest.webmanifest).*)',
   ],
 };
