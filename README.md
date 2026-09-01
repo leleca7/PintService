@@ -2,6 +2,14 @@
 
 Sistema de atendimento e operação da Pint Services para funilaria e pintura, com painel web, Neon Postgres, autenticação/RBAC, fila operacional, WhatsApp + IA e Central de reputação.
 
+> **Memória oficial do projeto:** antes de alterar arquitetura, fluxo operacional, veículos ou IA, ler [`docs/PROJECT_CONTEXT_CHECKPOINT.md`](docs/PROJECT_CONTEXT_CHECKPOINT.md). Esse arquivo consolida as decisões de produto e continuidade do **Sistema da Pint**.
+
+## Direção operacional atual
+
+A arquitetura preferida é fazer o **banco do Sistema da Pint ser a fonte oficial da operação**, com um **Modo Operação** simples para o funcionário atualizar veículos diretamente no sistema. A experiência do aplicativo que o funcionário já utiliza deve servir como referência de usabilidade e, preferencialmente, ser incorporada ao Sistema da Pint em vez de manter mais uma plataforma obrigatória.
+
+Google Sheets/CSV permanece suportado como fonte externa e pode ser usado em transição, importação ou contingência, mas não é mais a arquitetura preferida para o fluxo diário se o Modo Operação nativo atender a equipe.
+
 ## Estado atual
 
 O core está pronto para produção com **Neon Postgres + Neon Auth**. O sistema continua funcionando mesmo quando integrações externas ainda não estão conectadas.
@@ -30,15 +38,19 @@ Já existem estruturas reais para:
 - `/simulador` — simulação controlada
 - `/api/health` — status técnico e conexões pendentes
 
-## O que falta conectar
+## O que falta conectar / evoluir
 
-### 1. Fonte operacional dos veículos
+### 1. Operação dos veículos
 
-Configure `VEHICLE_DATA_URL` com um Google Sheets/CSV somente leitura. Links comuns do Sheets com `#gid=...` são aceitos e a aba selecionada é respeitada.
+**Direção preferida:** ampliar o cadastro nativo do Sistema da Pint e criar um Modo Operação simples para que a equipe atualize os veículos diretamente no banco.
 
-A fonte precisa conter ao menos **Placa** e **Modelo**. Para resposta automática de status, também deve existir **Fase/Etapa/Setor** ou **Status**.
+**Fonte externa existente:** `VEHICLE_DATA_URL` continua aceitando Google Sheets/CSV somente leitura. Links comuns do Sheets com `#gid=...` são aceitos e a aba selecionada é respeitada.
 
-O sistema relê a fonte antes da resposta. Se a fonte falhar, a placa não existir ou os dados estiverem incompletos, o atendimento é encaminhado para humano.
+A fonte externa precisa conter ao menos **Placa** e **Modelo**. Para resposta automática de status, também deve existir **Fase/Etapa/Setor** ou **Status**.
+
+Quando a fonte externa estiver configurada, o sistema relê a fonte antes da resposta. Se a fonte falhar, a placa não existir ou os dados estiverem incompletos, o atendimento é encaminhado para humano.
+
+Detalhes da decisão arquitetural, campos operacionais reais e próximos passos estão em [`docs/PROJECT_CONTEXT_CHECKPOINT.md`](docs/PROJECT_CONTEXT_CHECKPOINT.md).
 
 ### 2. OpenAI
 
@@ -111,7 +123,7 @@ Uma credencial de banco apareceu anteriormente em logs durante diagnóstico. Ela
 
 1. Rotacionar a credencial do Neon e atualizar `DATABASE_URL`.
 2. Confirmar login/logout e perfis Administrador, Gerente e Funcionário.
-3. Conectar e validar `VEHICLE_DATA_URL`.
+3. Definir/implementar a fonte operacional definitiva dos veículos: preferencialmente Modo Operação nativo; fonte externa apenas quando necessária.
 4. Confirmar a chave/modelo da OpenAI.
 5. Conectar WhatsApp Cloud API e validar webhook de entrada e saída.
 6. Testar status existente, placa inexistente, peça, vistoria, orçamento, reclamação, foto e falha da IA.
