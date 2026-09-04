@@ -130,6 +130,11 @@ export default async function Dashboard() {
     { label: 'Veículos', ready: Boolean(process.env.VEHICLE_DATA_URL?.trim()) },
   ];
   const integrationsWithIssue = systemChecks.filter((item) => !item.ready).length;
+  const integrationsMessage = integrationsWithIssue === 0
+    ? 'Todos os serviços operacionais.'
+    : integrationsWithIssue === 1
+      ? '1 conexão ainda pendente.'
+      : `${integrationsWithIssue} conexões ainda pendentes.`;
 
   return (
     <AppShell active="visao" source={data.source}>
@@ -268,7 +273,7 @@ export default async function Dashboard() {
         </article>
 
         <article className="pa-system-health">
-          <div><p className="pa-kicker">SISTEMA</p><h3>{integrationsWithIssue ? `${integrationsWithIssue} conexão${integrationsWithIssue > 1 ? 'ões' : ''} ainda pendente${integrationsWithIssue > 1 ? 's' : ''}.` : 'Todos os serviços operacionais.'}</h3></div>
+          <div><p className="pa-kicker">SISTEMA</p><h3>{integrationsMessage}</h3></div>
           <div className="pa-health-list">
             {systemChecks.map((item) => <span key={item.label}><i className={item.ready ? 'ready' : 'pending'}/>{item.label}</span>)}
           </div>
