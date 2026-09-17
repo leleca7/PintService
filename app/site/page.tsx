@@ -2,201 +2,276 @@ import type { Metadata } from 'next';
 import styles from './site.module.css';
 
 export const metadata: Metadata = {
-  title: 'Pint Services | Car Center',
-  description: 'Funilaria, pintura e recuperação automotiva em Lauro de Freitas, Bahia.',
+  title: 'Pint Services | Seu carro novo de novo',
+  description:
+    'Funilaria, pintura e recuperação automotiva em Lauro de Freitas. Atendimento particular e todas as seguradoras.',
 };
 
-const services = [
-  {
-    number: '01',
-    title: 'Funilaria e pintura',
-    text: 'Recuperação de peças e superfícies com preparação cuidadosa, pintura e acabamento orientados ao resultado final.',
-  },
-  {
-    number: '02',
-    title: 'Martelinho de ouro',
-    text: 'Correção de amassados com abordagem precisa para preservar ao máximo a originalidade da peça quando o reparo permite.',
-  },
-  {
-    number: '03',
-    title: 'Pintura de rodas',
-    text: 'Renovação visual das rodas com preparação, correção estética e acabamento consistente com o conjunto do veículo.',
-  },
-  {
-    number: '04',
-    title: 'Polimento',
-    text: 'Refino do acabamento e recuperação do brilho para valorizar a pintura e entregar uma leitura visual mais uniforme.',
-  },
-  {
-    number: '05',
-    title: 'Higienização',
-    text: 'Cuidado interno e externo pensado para completar a experiência de entrega do veículo.',
-  },
-  {
-    number: '06',
-    title: 'Recuperação automotiva',
-    text: 'Uma sequência organizada de reparo, pintura, montagem e acabamento para devolver o carro com atenção a cada etapa.',
-  },
+const whatsappUrl = 'https://wa.me/5571994000097';
+
+const insurers = [
+  'Bradesco Seguros',
+  'Tokio Marine',
+  'MSIG',
+  'Allianz',
+  'Suhai',
+  'SulAmérica',
+  'Generali',
+  'Liberty Seguros',
+  'Azul Seguros',
+  'HDI Seguros',
+  'Porto Seguro',
 ];
 
-const process = [
-  ['01', 'Avaliação', 'Entendimento do dano, escopo do reparo e orientação inicial do atendimento.'],
-  ['02', 'Preparação', 'Desmontagem, funilaria e preparação de pintura conforme a necessidade do veículo.'],
-  ['03', 'Execução', 'Pintura, correções e montagem seguindo uma sequência de produção organizada.'],
-  ['04', 'Acabamento', 'Polimento, revisão visual e finalização antes da entrega.'],
+const phases = [
+  ['01', 'Desmontagem'],
+  ['02', 'Funilaria'],
+  ['03', 'Prep. Pintura'],
+  ['04', 'Pintura'],
+  ['05', 'Polimento de Pint.'],
+  ['06', 'Montagem'],
+  ['07', 'Lavagem & Acabamento'],
 ];
 
 function Brand() {
   return (
-    <div className={styles.brand} aria-label="Pint Services Car Center">
+    <span className={styles.brand} aria-label="Pint Services Car Center">
       <span className={styles.brandMark} aria-hidden="true">
-        <span />
+        <i />
       </span>
-      <span className={styles.brandCopy}>
+      <span className={styles.brandName}>
         <strong>Pint Services</strong>
         <small>car center</small>
       </span>
-    </div>
+    </span>
   );
 }
 
+function Arrow() {
+  return <span aria-hidden="true">↗</span>;
+}
+
 export default function PintServicesSite() {
+  const ticker = [...insurers, ...insurers];
+
   return (
     <main id="top" className={styles.site}>
       <header className={styles.header}>
-        <a href="#top" className={styles.brandLink} aria-label="Ir para o início">
+        <a href="#top" className={styles.brandLink} aria-label="Pint Services — início">
           <Brand />
         </a>
         <nav className={styles.nav} aria-label="Navegação principal">
-          <a href="#servicos">Serviços</a>
+          <a href="#experiencia">A Pint</a>
           <a href="#processo">Processo</a>
-          <a href="#sobre">Sobre</a>
-          <a href="#contato" className={styles.navCta}>Fale com a Pint</a>
+          <a href="#seguradoras">Seguradoras</a>
+          <a href="#contato" className={styles.navCta}>
+            Orçamento <Arrow />
+          </a>
         </nav>
       </header>
 
       <section className={styles.hero}>
+        <div className={styles.heroImage} aria-hidden="true" />
+        <div className={styles.heroShade} aria-hidden="true" />
+        <div className={styles.heroGrid} aria-hidden="true" />
+
+        <div className={styles.heroTopline}>
+          <span>LAURO DE FREITAS · BAHIA</span>
+          <span>FUNILARIA · PINTURA · RECUPERAÇÃO</span>
+        </div>
+
         <div className={styles.heroCopy}>
           <p className={styles.eyebrow}>PINT SERVICES · CAR CENTER</p>
-          <h1>Precisão que devolve forma, acabamento e confiança.</h1>
-          <p className={styles.heroText}>
-            Funilaria, pintura e recuperação automotiva com uma rotina organizada,
-            cuidado técnico e atenção ao acabamento em cada etapa do processo.
+          <h1>
+            <span>SEU CARRO</span>
+            <span className={styles.gold}>NOVO DE NOVO.</span>
+          </h1>
+          <p>
+            Técnica, estrutura e cuidado para recuperar o seu carro do início ao fim.
+            Atendimento particular e todas as seguradoras.
           </p>
           <div className={styles.heroActions}>
-            <a href="#servicos" className={styles.primary}>Conheça os serviços</a>
-            <a href="#processo" className={styles.secondary}>Como trabalhamos</a>
+            <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.primaryCta}>
+              Solicitar orçamento <Arrow />
+            </a>
+            <a href="#experiencia" className={styles.textCta}>
+              Conhecer a Pint ↓
+            </a>
           </div>
         </div>
 
-        <div className={styles.heroVisual} aria-hidden="true">
-          <div className={styles.heroGrid} />
-          <div className={styles.carSilhouette}>
-            <span className={styles.carRoof} />
-            <span className={styles.carBody} />
-            <span className={styles.wheelLeft} />
-            <span className={styles.wheelRight} />
-          </div>
-          <div className={styles.visualLabel}>RECUPERAÇÃO · PINTURA · ACABAMENTO</div>
+        <div className={styles.scrollCue} aria-hidden="true">
+          <span>SCROLL</span>
+          <i />
         </div>
       </section>
 
-      <section className={styles.introStrip} aria-label="Diferenciais">
-        <div>
-          <span>Especialidade</span>
-          <strong>Funilaria &amp; pintura</strong>
-        </div>
-        <div>
-          <span>Atendimento</span>
-          <strong>Seguradoras &amp; particulares</strong>
-        </div>
-        <div>
-          <span>Localização</span>
-          <strong>Lauro de Freitas · BA</strong>
-        </div>
-      </section>
-
-      <section id="servicos" className={styles.section}>
-        <div className={styles.sectionHead}>
+      <section className={styles.statement} id="experiencia">
+        <p className={styles.sectionIndex}>01 — A PINT SERVICES</p>
+        <div className={styles.statementGrid}>
+          <h2>
+            Não é só reparar.
+            <br />
+            É <em>devolver confiança.</em>
+          </h2>
           <div>
-            <p className={styles.eyebrow}>SERVIÇOS</p>
-            <h2>Cuidado completo do reparo ao acabamento.</h2>
+            <p>
+              Da avaliação ao acabamento, cada etapa precisa conversar com a próxima.
+              Equipe, estrutura, transparência e prazo fazem parte do mesmo serviço.
+            </p>
+            <span>Seu carro novo de novo.</span>
           </div>
-          <p className={styles.sectionLead}>
-            Soluções para recuperar forma, pintura e apresentação do veículo com atenção técnica em cada etapa.
-          </p>
-        </div>
-
-        <div className={styles.servicesGrid}>
-          {services.map((service) => (
-            <article key={service.number} className={styles.serviceCard}>
-              <span className={styles.serviceNumber}>{service.number}</span>
-              <h3>{service.title}</h3>
-              <p>{service.text}</p>
-              <span className={styles.serviceLine} />
-            </article>
-          ))}
         </div>
       </section>
 
-      <section id="processo" className={styles.processSection}>
-        <div className={styles.processIntro}>
-          <p className={styles.eyebrow}>PROCESSO</p>
-          <h2>O resultado final começa em uma sequência bem executada.</h2>
+      <section className={`${styles.scene} ${styles.sceneDark}`}>
+        <div className={`${styles.sceneVisual} ${styles.teamVisual}`} aria-hidden="true" />
+        <div className={styles.sceneOverlay} aria-hidden="true" />
+        <span className={styles.sceneNumber}>01</span>
+        <div className={styles.sceneCopy}>
+          <p>CONFIANÇA COMEÇA POR QUEM EXECUTA</p>
+          <h2>Equipe qualificada.</h2>
+          <span>
+            Técnica e experiência para conduzir o reparo com atenção em cada detalhe.
+          </span>
+        </div>
+      </section>
+
+      <section className={`${styles.scene} ${styles.sceneLight}`}>
+        <div className={`${styles.sceneVisual} ${styles.boothVisual}`} aria-hidden="true" />
+        <div className={styles.sceneLightPanel}>
+          <span className={styles.sceneNumberLight}>02</span>
+          <div className={styles.sceneCopyLight}>
+            <p>ESTRUTURA &amp; EQUIPAMENTOS</p>
+            <h2>O ambiente também faz parte do resultado.</h2>
+            <span>
+              Uma estrutura preparada para apoiar as diferentes etapas da recuperação automotiva.
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.transparencyScene}>
+        <span className={styles.giantWord} aria-hidden="true">CLAREZA</span>
+        <div className={styles.transparencyContent}>
+          <p className={styles.sectionIndex}>03 — TRANSPARÊNCIA</p>
+          <h2>
+            Você entende o que será feito.
+            <br />
+            <em>Antes de acontecer.</em>
+          </h2>
           <p>
-            O veículo avança por etapas definidas. Isso melhora a leitura do serviço,
-            organiza a produção e mantém o foco no que precisa acontecer até a entrega.
+            Orçamento claro, comunicação direta e acompanhamento do processo para que o cliente saiba como o veículo está evoluindo.
           </p>
         </div>
-        <div className={styles.processList}>
-          {process.map(([number, title, text]) => (
-            <article key={number} className={styles.processItem}>
+      </section>
+
+      <section className={`${styles.scene} ${styles.sceneDark}`}>
+        <div className={`${styles.sceneVisual} ${styles.aerialVisual}`} aria-hidden="true" />
+        <div className={styles.sceneOverlayStrong} aria-hidden="true" />
+        <span className={styles.sceneNumber}>04</span>
+        <div className={`${styles.sceneCopy} ${styles.sceneCopyWide}`}>
+          <p>ESTRUTURA · TÉCNICA · COMPROMISSO</p>
+          <h2>Uma operação pensada para o carro avançar.</h2>
+          <span>
+            Organização de produção e acompanhamento de prazo para conduzir cada veículo até a entrega.
+          </span>
+        </div>
+      </section>
+
+      <section className={styles.process} id="processo">
+        <div className={styles.processLead}>
+          <p className={styles.sectionIndex}>02 — O PROCESSO</p>
+          <h2>Do primeiro toque ao último acabamento.</h2>
+          <p>
+            Cada veículo percorre uma sequência de produção. O trabalho muda de mãos; o objetivo continua o mesmo.
+          </p>
+        </div>
+        <div className={styles.phaseList}>
+          {phases.map(([number, title]) => (
+            <div className={styles.phase} key={number}>
               <span>{number}</span>
-              <div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </div>
-            </article>
+              <strong>{title}</strong>
+              <i aria-hidden="true">↘</i>
+            </div>
           ))}
         </div>
       </section>
 
-      <section id="sobre" className={styles.aboutSection}>
-        <div className={styles.aboutStatement}>
-          <p className={styles.eyebrow}>PINT SERVICES</p>
-          <h2>Não é só reparar. É cuidar da experiência do carro até a entrega.</h2>
-        </div>
-        <div className={styles.aboutCopy}>
-          <p>
-            Cada serviço passa por uma sequência de avaliação, preparação, execução e acabamento.
-            O objetivo é reunir técnica, organização e atenção aos detalhes em um processo claro para o cliente.
-          </p>
-          <p>
-            A Pint Services atende demandas de recuperação automotiva para clientes particulares e operações com seguradoras,
-            mantendo o foco na qualidade visual e na evolução correta de cada veículo dentro da oficina.
-          </p>
+      <section className={styles.servicesManifesto}>
+        <p>FUNILARIA</p>
+        <p className={styles.outlineText}>PINTURA</p>
+        <p>POLIMENTO</p>
+        <p className={styles.outlineText}>HIGIENIZAÇÃO</p>
+        <div>
+          <span>RECUPERAÇÃO AUTOMOTIVA</span>
+          <span>MARTELINHO DE OURO</span>
+          <span>PINTURA DE RODAS</span>
         </div>
       </section>
 
-      <section id="contato" className={styles.contactSection}>
-        <div>
-          <p className={styles.eyebrow}>ATENDIMENTO</p>
-          <h2>Seu carro merece um processo à altura do resultado.</h2>
+      <section className={styles.insurers} id="seguradoras">
+        <div className={styles.insurerIntro}>
+          <p className={styles.sectionIndex}>03 — ATENDIMENTO</p>
+          <h2>
+            Particular.
+            <br />
+            <span>E todas as seguradoras.</span>
+          </h2>
+          <p>
+            A Pint Services atende clientes particulares e trabalha com seguradoras para conduzir o reparo do veículo com uma única preocupação: fazer o processo avançar corretamente.
+          </p>
         </div>
-        <div className={styles.contactSide}>
-          <p>Atendimento em Lauro de Freitas, Bahia.</p>
-          <a href="#servicos" className={styles.primary}>Conhecer os serviços</a>
-          <small>Avaliações e orçamentos são realizados diretamente com a equipe da Pint Services.</small>
+
+        <div className={styles.marquee} aria-label={insurers.join(', ')}>
+          <div className={styles.marqueeTrack} aria-hidden="true">
+            {ticker.map((name, index) => (
+              <span key={`${name}-${index}`}>
+                {name} <b>✦</b>
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.finalCta} id="contato">
+        <div className={styles.finalEyebrow}>
+          <span>PINT SERVICES · LAURO DE FREITAS</span>
+          <span>SEG — SEX 08:00–17:00 · SÁB 08:00–12:00</span>
+        </div>
+        <h2>
+          VAMOS DEIXAR
+          <br />
+          SEU CARRO <em>NOVO DE NOVO?</em>
+        </h2>
+        <a href={whatsappUrl} target="_blank" rel="noreferrer" className={styles.bigCta}>
+          <span>Solicitar orçamento</span>
+          <Arrow />
+        </a>
+
+        <div className={styles.contactGrid}>
+          <div>
+            <small>TELEFONES</small>
+            <a href="tel:+557135087781">(71) 3508-7781</a>
+            <a href="tel:+5571994000097">(71) 99400-0097</a>
+          </div>
+          <div>
+            <small>ENDEREÇO</small>
+            <p>Rua Leonardo R da Silva, Pitangueiras, 480 · Galpão 03</p>
+            <p>Lauro de Freitas · BA · 42701-420</p>
+          </div>
+          <div>
+            <small>ATENDIMENTO</small>
+            <p>Segunda a sexta · 08:00–17:00</p>
+            <p>Sábado · 08:00–12:00</p>
+          </div>
         </div>
       </section>
 
       <footer className={styles.footer}>
         <Brand />
-        <div>
-          <strong>pintservices.com.br</strong>
-          <span>Lauro de Freitas · Bahia</span>
-        </div>
-        <a href="#top">Voltar ao início ↑</a>
+        <span>© Pint Services Car Center</span>
+        <a href="#top">Voltar ao topo ↑</a>
       </footer>
     </main>
   );
