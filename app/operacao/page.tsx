@@ -61,7 +61,11 @@ export default async function OperationPage() {
             <h1 className={styles.title}>Modo Operação</h1>
             <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
           </div>
-          <Link className={styles.button} href="/operacao/capacidade">Ver capacidade por fase</Link>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>
+            <Link className={styles.button} href="/operacao/agenda">Agenda</Link>
+            <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
+          </div>
         </header>
 
         <div className={styles.summaryGrid}>
