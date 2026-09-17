@@ -12,8 +12,16 @@ function formatDate(value: string | null) {
   return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia' }).format(new Date(`${value}T12:00:00-03:00`));
 }
 
+function partsClass(status: string) {
+  if (status === 'Completo') return local.partsComplete;
+  if (status === 'Parcial') return local.partsPartial;
+  if (status === 'Nenhuma Recebida') return local.partsNone;
+  return local.partsNoOrder;
+}
+
 export default async function EntryQueuePage() {
   const data = await getEntryQueueData();
+  const released = data.queue.filter((item) => item.liberadoEntrada).length;
 
   return (
     <AppShell active="operacao" source={data.source}>
@@ -25,6 +33,7 @@ export default async function EntryQueuePage() {
             <p className={styles.subtitle}>Organize os veículos autorizados antes de entrarem na oficina. A ordem padrão é a data de autorização; a prioridade manual pode antecipar casos específicos.</p>
           </div>
           <div className={local.headerActions}>
+            <Link className={styles.button} href="/operacao/pecas">Controle de peças</Link>
             <Link className={styles.button} href="/operacao/agenda">Agenda de entradas</Link>
             <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
           </div>
@@ -34,7 +43,7 @@ export default async function EntryQueuePage() {
           <div className={styles.summaryItem}><span>Na fila</span><strong>{data.queue.length}</strong><small>autorizações aguardando entrada</small></div>
           <div className={styles.summaryItem}><span>Vagas hoje</span><strong>{data.vagasHoje}</strong><small>disponíveis em Desmontagem</small></div>
           <div className={styles.summaryItem}><span>Desmontagem</span><strong>{data.emDesmontagem}/{data.capacidadeDesmontagem}</strong><small>ocupação atual</small></div>
-          <div className={styles.summaryItem}><span>Com data combinada</span><strong>{data.agenda.length}</strong><small>aparecem na agenda</small></div>
+          <div className={styles.summaryItem}><span>Liberados por peças</span><strong>{released}</strong><small>decisão humana registrada</small></div>
         </div>
 
         {data.error && <section className={styles.section}><div className={styles.quiet}><strong>Fila indisponível.</strong>{data.error}</div></section>}
@@ -73,6 +82,13 @@ export default async function EntryQueuePage() {
                       </span>
                     </div>
 
+                    <div className={local.partsBar}>
+                      <div><span>Peças</span><strong className={`${local.partsBadge} ${partsClass(item.statusPecas)}`}>{item.statusPecas}</strong></div>
+                      <div><span>Recebidas</span><strong>{item.pecasRecebidas}/{item.pecasTotal}</strong></div>
+                      <div><span>Liberação</span><strong className={item.liberadoEntrada ? local.releaseYes : local.releaseNo}>{item.liberadoEntrada ? 'Liberado' : 'Não liberado'}</strong></div>
+                      <Link href="/operacao/pecas">Abrir peças</Link>
+                    </div>
+
                     <div className={local.infoGrid}>
                       <div><span>Autorização</span><strong>{formatDate(item.dataAutorizacao)}</strong></div>
                       <div><span>Dias aguardando</span><strong>{item.diasAguardando}</strong></div>
@@ -96,8 +112,15 @@ export default async function EntryQueuePage() {
                     </form>
 
                     <div className={local.promoteRow}>
-                      <div><strong>O veículo chegou fisicamente?</strong><span>Registrar entrada move o carro para Desmontagem e encerra este item da fila.</span></div>
-                      <form action={registerVehicleEntry}><input type="hidden" name="id" value={item.id}/><button className={local.primaryButton} type="submit">Registrar entrada</button></form>
+                      <div>
+                        <strong>{item.liberadoEntrada ? 'O veículo chegou fisicamente?' : 'Entrada aguardando liberação de peças'}</strong>
+                        <span>{item.liberadoEntrada ? 'Registrar entrada move o carro para Desmontagem e encerra este item da fila.' : 'O responsável por peças precisa marcar “Liberado para entrada”. Não é necessário que todas as peças estejam completas.'}</span>
+                      </div>
+                      {item.liberadoEntrada ? (
+                        <form action={registerVehicleEntry}><input type="hidden" name="id" value={item.id}/><button className={local.primaryButton} type="submit">Registrar entrada</button></form>
+                      ) : (
+                        <Link className={local.secondaryLink} href="/operacao/pecas">Revisar peças</Link>
+                      )}
                     </div>
                   </div>
                 </article>
