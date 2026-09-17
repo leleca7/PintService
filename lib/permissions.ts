@@ -7,6 +7,7 @@ export type Permission =
   | 'responder_reputacao'
   | 'ver_todos_veiculos'
   | 'ver_veiculos_setor'
+  | 'atualizar_operacao_veiculos'
   | 'ver_todas_tarefas'
   | 'ver_proprias_tarefas'
   | 'ver_funcionarios'
@@ -37,6 +38,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'responder_reputacao',
     'ver_todos_veiculos',
     'ver_veiculos_setor',
+    'atualizar_operacao_veiculos',
     'ver_todas_tarefas',
     'ver_proprias_tarefas',
     'ver_funcionarios',
@@ -54,6 +56,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'responder_reputacao',
     'ver_todos_veiculos',
     'ver_veiculos_setor',
+    'atualizar_operacao_veiculos',
     'ver_todas_tarefas',
     'ver_proprias_tarefas',
     'ver_funcionarios',
@@ -63,6 +66,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   funcionario: [
     'ver_veiculos_setor',
+    'atualizar_operacao_veiculos',
     'ver_proprias_tarefas',
   ],
 };
@@ -74,6 +78,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   responder_reputacao: 'Responder Google, Instagram e Reclame Aqui',
   ver_todos_veiculos: 'Todos os veículos',
   ver_veiculos_setor: 'Veículos do próprio setor',
+  atualizar_operacao_veiculos: 'Atualizar operação dos veículos do setor',
   ver_todas_tarefas: 'Todas as tarefas',
   ver_proprias_tarefas: 'Próprias tarefas',
   ver_funcionarios: 'Lista de funcionários',

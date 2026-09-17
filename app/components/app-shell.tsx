@@ -6,13 +6,14 @@ import { isDatabaseConfigured } from '@/lib/db';
 import { ROLE_LABELS, type Permission } from '@/lib/permissions';
 import styles from './app-shell.module.css';
 
-type ActiveKey = 'visao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
+type ActiveKey = 'visao' | 'operacao' | 'atendimento' | 'reputacao' | 'veiculos' | 'tarefas' | 'funcionarios' | 'acessos' | 'configuracoes';
 type Props = { active: ActiveKey; source: DataSource; children: React.ReactNode };
 type IconName = 'home' | 'chat' | 'reputation' | 'car' | 'tasks' | 'team' | 'access' | 'settings';
 type NavItem = { key: ActiveKey; href: string; label: string; icon: IconName; permission?: Permission; anyPermission?: Permission[]; adminOnly?: boolean };
 
 const items: NavItem[] = [
   { key: 'visao', href: '/', label: 'Visão geral', icon: 'home', permission: 'ver_visao_geral' },
+  { key: 'operacao', href: '/operacao', label: 'Operação', icon: 'car', permission: 'atualizar_operacao_veiculos' },
   { key: 'atendimento', href: '/atendimento', label: 'Atendimento', icon: 'chat', permission: 'ver_atendimento' },
   { key: 'reputacao', href: '/reputacao', label: 'Reputação', icon: 'reputation', permission: 'ver_reputacao' },
   { key: 'veiculos', href: '/veiculos', label: 'Veículos', icon: 'car', anyPermission: ['ver_todos_veiculos', 'ver_veiculos_setor'] },
@@ -22,7 +23,7 @@ const items: NavItem[] = [
   { key: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: 'settings', permission: 'ver_configuracoes' },
 ];
 
-const mobilePrimaryKeys = new Set<ActiveKey>(['visao', 'atendimento', 'veiculos', 'tarefas']);
+const mobilePrimaryKeys = new Set<ActiveKey>(['visao', 'operacao', 'veiculos', 'tarefas']);
 
 function NavIcon({ name }: { name: IconName }) {
   const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, className: 'nav-svg' };

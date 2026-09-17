@@ -5,10 +5,9 @@ import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getVehicleDetail } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
+import { normalizeOperationalStage, OPERATION_STAGES } from '@/lib/operation-stages';
 import { updateVehicle } from '../actions';
 
-const STAGES = ['Desmontagem', 'Funilaria', 'Preparação de pintura', 'Pintura', 'Montagem', 'Polimento', 'Lavagem'];
-function normalize(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
 function dateTime(value: string | null) {
   if (!value) return 'Não informado';
   return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'America/Bahia' }).format(new Date(value));
@@ -20,7 +19,8 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
   if (!data.vehicle) notFound();
   const vehicle = data.vehicle;
   const canManage = userHasPermission(user, 'gerenciar_veiculos');
-  const currentIndex = STAGES.findIndex((stage) => normalize(vehicle.etapa).includes(normalize(stage)));
+  const currentStage = normalizeOperationalStage(vehicle.etapa);
+  const currentIndex = currentStage ? OPERATION_STAGES.indexOf(currentStage) : -1;
   const activeTasks = data.tasks.filter((task) => ['aberta', 'em_execucao', 'aguardando_confirmacao'].includes(task.status));
   const escalated = activeTasks.filter((task) => ['alta', 'urgente'].includes(task.prioridade));
   const humanConversations = data.conversations.filter((conversation) => conversation.status.includes('humano'));
@@ -36,7 +36,7 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
         <section className={styles.darkBand}>
           <div className={styles.darkCopy}>
             <p className={styles.darkLabel}>ETAPA ATUAL</p>
-            <h2 className={styles.darkTitle}>{vehicle.etapa || 'Etapa não informada'}</h2>
+            <h2 className={styles.darkTitle}>{currentStage || vehicle.etapa || 'Etapa não informada'}</h2>
             <p className={styles.darkText}>{vehicle.status || 'Status não informado'}. Última atualização registrada em {dateTime(vehicle.ultimaAtualizacao)}.</p>
           </div>
           <div className={styles.darkStats}>
@@ -58,17 +58,17 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
             <input type="hidden" name="id" value={vehicle.id}/>
             <label className={ops.detailField}>Modelo<input name="modelo" defaultValue={vehicle.modelo}/></label>
             <label className={ops.detailField}>Cor<input name="cor" defaultValue={vehicle.cor}/></label>
-            <label className={ops.detailField}>Etapa / setor<input name="setor" defaultValue={vehicle.etapa}/></label>
+            <label className={ops.detailField}>Etapa / setor<select name="setor" defaultValue={currentStage ?? ''}><option value="">Não informada</option>{OPERATION_STAGES.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
             <label className={ops.detailField}>Status<input name="status" defaultValue={vehicle.status}/></label>
             <label className={`${ops.detailField} ${ops.detailFieldWide}`}>Observações<textarea name="observacoes" placeholder="Informação interna confirmada pela equipe"/></label>
             <div className={ops.detailFormActions}><button className={styles.button} type="submit">Salvar alterações</button></div>
           </form>
-          <p className={ops.detailHint}>Quando a fonte por link estiver ativa, Fase e Status consultados da planilha continuam sendo a referência operacional para respostas ao cliente.</p>
+          <p className={ops.detailHint}>A atualização operacional diária deve ser feita pelo Modo Operação. Esta edição permanece disponível para ajustes administrativos confirmados.</p>
         </section>}
 
         <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>LINHA DE PRODUÇÃO</p><h2>Etapas do veículo</h2></div></div>
-          <div className={ops.timeline}>{STAGES.map((stage, index) => {
+          <div className={ops.timeline}>{OPERATION_STAGES.map((stage, index) => {
             const state = currentIndex < 0 ? 'future' : index < currentIndex ? 'done' : index === currentIndex ? 'current' : 'future';
             const stateClass = state === 'done' ? ops.timelineDone : state === 'current' ? ops.timelineCurrent : ops.timelineFuture;
             return <div className={`${ops.timelineStep} ${stateClass}`} key={stage}>

@@ -4,7 +4,10 @@ import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
+import { OPERATION_STAGES } from '@/lib/operation-stages';
 import { createVehicle } from './actions';
+
+const STATUS_OPTIONS = ['Em serviço', 'Aguardando peças', 'Aguardando aprovação', 'Parado', 'Pronto para entrega'];
 
 function relativeTime(value: string | null) {
   if (!value) return 'Sem atualização';
@@ -79,8 +82,11 @@ export default async function VehiclesPage() {
               <label className={styles.field}>Placa<input name="placa" required placeholder="ABC1D23" /></label>
               <label className={styles.field}>Modelo<input name="modelo" placeholder="Ex.: Toyota Corolla" /></label>
               <label className={styles.field}>Cor<input name="cor" placeholder="Ex.: Branco" /></label>
-              <label className={styles.field}>Etapa / setor<input name="setor" placeholder="Ex.: Pintura" /></label>
-              <label className={styles.field}>Status<input name="status" placeholder="Ex.: Em produção" /></label>
+              <label className={styles.field}>Seguradora<input name="seguradora" placeholder="Ex.: Porto Seguro ou Particular" /></label>
+              <label className={styles.field}>Data de entrada<input name="data_entrada" type="date" /></label>
+              <label className={styles.field}>Previsão de saída<input name="previsao_saida" type="date" /></label>
+              <label className={styles.field}>Etapa / setor<select name="setor" defaultValue=""><option value="">Não informada</option>{OPERATION_STAGES.map((stage) => <option key={stage} value={stage}>{stage}</option>)}</select></label>
+              <label className={styles.field}>Status<select name="status" defaultValue="Em serviço">{STATUS_OPTIONS.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
               <div className={styles.formAction}><button className={`${styles.button} ${styles.buttonAccent}`} type="submit">Salvar veículo</button></div>
             </form>
           </div>
