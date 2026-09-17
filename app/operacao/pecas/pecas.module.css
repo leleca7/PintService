@@ -1,0 +1,282 @@
+.headerActions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.startForm {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.field,
+.compactField {
+  display: grid;
+  gap: 5px;
+}
+
+.field span,
+.compactField span {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .62;
+}
+
+.field input,
+.field select,
+.compactField input,
+.orderStatusForm select {
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 10px;
+  padding: 9px 10px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.controlList {
+  display: grid;
+  gap: 18px;
+}
+
+.controlCard {
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  padding: 18px;
+  box-shadow: 0 8px 24px rgba(19, 27, 38, .05);
+}
+
+.controlHead,
+.orderHead,
+.releaseCheck,
+.orderStatusForm,
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.controlHead h3 {
+  margin: 4px 0 2px;
+}
+
+.plate {
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.statusStack {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.statusStack > strong {
+  font-size: 1.3rem;
+}
+
+.statusBadge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: .75rem;
+  font-weight: 800;
+}
+
+.statusComplete { background: #dcfce7; color: #166534; }
+.statusPartial { background: #fef3c7; color: #92400e; }
+.statusNone { background: #fee2e2; color: #991b1b; }
+.statusNoOrder { background: #e5e7eb; color: #374151; }
+
+.releaseBox {
+  margin: 16px 0;
+  display: grid;
+  grid-template-columns: minmax(260px, 1.2fr) minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 14px;
+  background: rgba(15, 23, 42, .025);
+}
+
+.releaseOn {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.releaseCheck {
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.releaseCheck input {
+  margin-top: 4px;
+}
+
+.releaseCheck span {
+  display: grid;
+  gap: 3px;
+}
+
+.releaseCheck small {
+  opacity: .7;
+}
+
+.orders {
+  display: grid;
+  gap: 14px;
+}
+
+.orderCard {
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.orderHead > div {
+  display: grid;
+  gap: 3px;
+}
+
+.orderHead > div:last-child {
+  justify-items: end;
+}
+
+.orderStatusForm {
+  justify-content: flex-end;
+  margin: 10px 0 12px;
+}
+
+.itemsList {
+  display: grid;
+  gap: 8px;
+}
+
+.itemRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.4fr) 70px 90px 155px minmax(120px, 1fr) auto;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, .035);
+}
+
+.itemName,
+.itemQty {
+  display: grid;
+  gap: 3px;
+}
+
+.itemName span,
+.itemQty span {
+  font-size: .75rem;
+  opacity: .65;
+}
+
+.addItemForm,
+.newOrderForm {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 90px 1.4fr auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.newOrder {
+  margin-top: 14px;
+  border: 1px dashed var(--line, #d9dde3);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.newOrder summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.newOrderForm {
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.primaryButton,
+.secondaryButton,
+.miniButton {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryButton {
+  background: #111827;
+  color: #fff;
+}
+
+.secondaryButton,
+.miniButton {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.miniButton {
+  padding: 8px 10px;
+  white-space: nowrap;
+}
+
+.empty,
+.emptyOrder {
+  padding: 18px;
+  border: 1px dashed var(--line, #d9dde3);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.emptyOrder {
+  padding: 10px;
+  font-size: .85rem;
+  opacity: .72;
+}
+
+@media (max-width: 950px) {
+  .releaseBox,
+  .itemRow,
+  .addItemForm,
+  .newOrderForm {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .controlHead,
+  .orderHead {
+    align-items: flex-start;
+  }
+  .releaseBox,
+  .itemRow,
+  .addItemForm,
+  .newOrderForm {
+    grid-template-columns: 1fr;
+  }
+  .fieldWide {
+    grid-column: auto;
+  }
+  .statusStack,
+  .orderHead > div:last-child {
+    justify-items: start;
+  }
+  .primaryButton,
+  .secondaryButton,
+  .miniButton {
+    width: 100%;
+  }
+}

@@ -38,6 +38,7 @@ function revalidateEntryPaths() {
   revalidatePath('/operacao');
   revalidatePath('/operacao/fila');
   revalidatePath('/operacao/agenda');
+  revalidatePath('/operacao/pecas');
   revalidatePath('/veiculos');
 }
 
@@ -85,6 +86,24 @@ export async function createEntryQueueItem(formData: FormData) {
       RETURNING id
     `;
     id = String(inserted[0].id);
+  }
+
+  const existingParts = await sql`
+    SELECT id FROM controle_pecas
+    WHERE upper(placa) = upper(${placa}) AND encerrado_em IS NULL
+    LIMIT 1
+  `;
+  if (existingParts[0]) {
+    await sql`
+      UPDATE controle_pecas
+      SET fila_entrada_id = ${id}, atualizado_em = now()
+      WHERE id = ${existingParts[0].id}
+    `;
+  } else {
+    await sql`
+      INSERT INTO controle_pecas (placa, fila_entrada_id, criado_por)
+      VALUES (${placa}, ${id}, ${user.id})
+    `;
   }
 
   await writeAudit(user, existing[0] ? 'editar_fila_entrada' : 'criar_fila_entrada', 'fila_entrada', id, {
@@ -144,6 +163,18 @@ export async function registerVehicleEntry(formData: FormData) {
   if (!item) throw new Error('Item da fila não encontrado.');
   if (['Movido para Produção', 'Cancelado'].includes(String(item.status))) throw new Error('Este item não pode mais ser registrado como entrada.');
 
+  const partsRows = await sql`
+    SELECT id, liberado_entrada
+    FROM controle_pecas
+    WHERE encerrado_em IS NULL
+      AND (fila_entrada_id = ${id} OR upper(placa) = upper(${item.placa}))
+    ORDER BY (fila_entrada_id = ${id}) DESC, atualizado_em DESC
+    LIMIT 1
+  `;
+  const partsControl = partsRows[0];
+  if (!partsControl) throw new Error('Inicie o controle de peças antes de registrar a entrada.');
+  if (!partsControl.liberado_entrada) throw new Error('Entrada bloqueada: o responsável por peças ainda não marcou este veículo como Liberado para entrada.');
+
   let clienteId: string | null = null;
   const telefone = normalizedPhone(String(item.telefone ?? ''));
   if (telefone) {
@@ -187,13 +218,19 @@ export async function registerVehicleEntry(formData: FormData) {
   `;
 
   await sql`
+    UPDATE controle_pecas
+    SET fila_entrada_id = ${id}, veiculo_id = ${vehicleId}, atualizado_em = now()
+    WHERE id = ${partsControl.id}
+  `;
+
+  await sql`
     INSERT INTO historico_veiculos (veiculo_id, usuario_app_id, evento, dados_anteriores, dados_novos)
     VALUES (${vehicleId}, ${user.id}, 'entrada_registrada', '{}'::jsonb,
-      ${JSON.stringify({ setor: 'Desmontagem', status: 'Em serviço', data_entrada: today, origem_fila_id: id })}::jsonb)
+      ${JSON.stringify({ setor: 'Desmontagem', status: 'Em serviço', data_entrada: today, origem_fila_id: id, liberado_pecas: true })}::jsonb)
   `;
 
   await writeAudit(user, 'registrar_entrada', 'veiculo', vehicleId, {
-    placa: item.placa, filaEntradaId: id, dataEntrada: today, setor: 'Desmontagem',
+    placa: item.placa, filaEntradaId: id, dataEntrada: today, setor: 'Desmontagem', liberadoPecas: true,
   });
   revalidateEntryPaths();
   revalidatePath(`/veiculos/${vehicleId}`);
