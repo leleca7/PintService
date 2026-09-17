@@ -1,0 +1,172 @@
+/*
+ * Paleta institucional de trabalho — Pint Services
+ * Referência: identidade visual fornecida pela empresa.
+ *
+ * Regra: dourado, preto/grafite, branco e cinzas formam a identidade.
+ * Verde e vermelho são reservados a estados semânticos de operação.
+ * Laranja não deve ser usado como cor decorativa ou de marca.
+ */
+
+:root {
+  --brand-gold: #bd9558;
+  --brand-gold-deep: #765b34;
+  --brand-gold-soft: #f4ecdf;
+  --brand-gold-rgb: 189, 149, 88;
+  --brand-black: #090a0a;
+  --brand-graphite: #17191c;
+  --brand-gray: #8f918d;
+  --brand-light: #f3f1ec;
+  --brand-white: #ffffff;
+
+  /* Tokens legados passam a apontar para a identidade Pint Services. */
+  --accent: var(--brand-gold);
+  --accent-soft: var(--brand-gold-soft);
+  --yellow: var(--brand-gold);
+  --yellow-soft: var(--brand-gold-soft);
+  --pa-accent: var(--brand-gold);
+  --pa-focus: rgba(var(--brand-gold-rgb), .72);
+}
+
+/* Dashboard legado: remove resíduos laranja que não dependiam dos tokens. */
+.stage-bar i {
+  background: linear-gradient(90deg, #d8be92, var(--brand-gold));
+}
+.stage-chip {
+  background: var(--brand-gold-soft);
+  color: var(--brand-gold-deep);
+}
+.pa-command::before {
+  background:
+    radial-gradient(circle at 78% 12%, rgba(var(--brand-gold-rgb), .13), transparent 27%),
+    linear-gradient(115deg, transparent 64%, rgba(255,255,255,.025));
+}
+.pa-command::after {
+  background: linear-gradient(90deg, transparent, rgba(var(--brand-gold-rgb), .55), transparent);
+}
+.ia-status.demo-source .pulse {
+  background: var(--brand-gold);
+  box-shadow: 0 0 0 5px rgba(var(--brand-gold-rgb), .10);
+}
+.timeline-stage.current {
+  background: var(--brand-gold-soft);
+  border-color: rgba(var(--brand-gold-rgb), .38);
+}
+.human-chat {
+  background: linear-gradient(90deg, rgba(var(--brand-gold-rgb), .10), transparent);
+}
+
+/* Precision Atelier Core — os nomes originais são preservados pelo CSS Modules. */
+[class*='darkBand']::before {
+  background:
+    radial-gradient(circle at 88% 18%, rgba(var(--brand-gold-rgb), .14), transparent 28%),
+    linear-gradient(118deg, transparent 64%, rgba(255,255,255,.025));
+}
+[class*='countHot'] {
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='rowCritical'] {
+  box-shadow: inset 2px 0 0 var(--red, #b9473f) !important;
+}
+[class*='badgeHuman'] {
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='badgeHot'] {
+  background: var(--red-soft, #fff0ee) !important;
+  color: var(--red, #b9473f) !important;
+}
+[class*='vehicleMark'],
+[class*='vehicleCard'] [class*='plate'] {
+  color: var(--brand-gold-deep) !important;
+}
+[class*='buttonAccent'] {
+  background: var(--brand-gold) !important;
+  color: #111 !important;
+}
+[class*='priorityHot'] {
+  color: var(--red, #b9473f) !important;
+}
+
+/* Administração. */
+[class*='state']:not([class*='stateReady']) {
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='infoCard'] a,
+[class*='roleIcon'] {
+  color: var(--brand-gold-deep) !important;
+}
+
+/* Operação: pendência/atenção usa dourado; urgência real continua vermelha. */
+[class*='queueSection'] {
+  box-shadow: inset 0 2px 0 var(--brand-gold) !important;
+}
+[class*='waiting'],
+[class*='signalPending'],
+[class*='signalStale'],
+[class*='priorityHigh'] {
+  color: var(--brand-gold-deep) !important;
+}
+[class*='vehicleNotice'] {
+  border-color: rgba(var(--brand-gold-rgb), .35) !important;
+  background: rgba(var(--brand-gold-rgb), .08) !important;
+}
+[class*='vehicleNoticeCount'] {
+  background: rgba(var(--brand-gold-rgb), .18) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='vehicleCardAttention'] {
+  background: rgba(var(--brand-gold-rgb), .035) !important;
+}
+[class*='vehicleCardAttention']:hover {
+  background: rgba(var(--brand-gold-rgb), .07) !important;
+}
+[class*='escalatedCard'] {
+  background: rgba(var(--brand-gold-rgb), .055) !important;
+  box-shadow: inset 2px 0 0 var(--brand-gold) !important;
+}
+[class*='timelineCurrent'] {
+  background: rgba(var(--brand-gold-rgb), .08) !important;
+  box-shadow: inset 0 3px 0 var(--brand-gold) !important;
+}
+[class*='timelineCurrent'] [class*='timelineIndex'] {
+  border-color: rgba(var(--brand-gold-rgb), .45) !important;
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
+
+/* Capacidade. */
+[class*='capacityLimit'] {
+  border-color: rgba(var(--brand-gold-rgb), .34) !important;
+  background: rgba(var(--brand-gold-rgb), .08) !important;
+}
+[class*='meter'] [class*='statusLimit'] {
+  background: var(--brand-gold) !important;
+}
+[class*='statusLimit'] {
+  color: var(--brand-gold-deep) !important;
+}
+
+/* Fila de entrada. */
+[class*='signalWait'] {
+  background: rgba(var(--brand-gold-rgb), .13) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='partsPartial'] {
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
+[class*='releaseNo'] {
+  color: var(--brand-gold-deep) !important;
+}
+[class*='forecastWarning'] {
+  background: rgba(var(--brand-gold-rgb), .11) !important;
+  border: 1px solid rgba(var(--brand-gold-rgb), .22);
+}
+
+/* Controle de peças. */
+[class*='statusPartial'] {
+  background: var(--brand-gold-soft) !important;
+  color: var(--brand-gold-deep) !important;
+}
