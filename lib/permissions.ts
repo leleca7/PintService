@@ -9,6 +9,7 @@ export type Permission =
   | 'ver_veiculos_setor'
   | 'atualizar_operacao_veiculos'
   | 'gerenciar_capacidade'
+  | 'gerenciar_fila_entrada'
   | 'ver_todas_tarefas'
   | 'ver_proprias_tarefas'
   | 'ver_funcionarios'
@@ -41,6 +42,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ver_veiculos_setor',
     'atualizar_operacao_veiculos',
     'gerenciar_capacidade',
+    'gerenciar_fila_entrada',
     'ver_todas_tarefas',
     'ver_proprias_tarefas',
     'ver_funcionarios',
@@ -60,6 +62,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'ver_veiculos_setor',
     'atualizar_operacao_veiculos',
     'gerenciar_capacidade',
+    'gerenciar_fila_entrada',
     'ver_todas_tarefas',
     'ver_proprias_tarefas',
     'ver_funcionarios',
@@ -83,6 +86,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   ver_veiculos_setor: 'Veículos do próprio setor',
   atualizar_operacao_veiculos: 'Atualizar operação dos veículos do setor',
   gerenciar_capacidade: 'Definir capacidade máxima das fases',
+  gerenciar_fila_entrada: 'Gerenciar fila e agenda de entrada',
   ver_todas_tarefas: 'Todas as tarefas',
   ver_proprias_tarefas: 'Próprias tarefas',
   ver_funcionarios: 'Lista de funcionários',

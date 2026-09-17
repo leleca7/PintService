@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
+import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { getCapacityData } from '@/lib/capacity-data';
 import { getOperationData } from '@/lib/operation-data';
 import { OPERATION_STAGES } from '@/lib/operation-stages';
@@ -46,11 +47,12 @@ function capacityClass(status: 'ok' | 'limit' | 'over') {
 }
 
 export default async function OperationPage() {
-  const [data, capacity] = await Promise.all([getOperationData(), getCapacityData()]);
+  const [data, capacity, user] = await Promise.all([getOperationData(), getCapacityData(), getCurrentAppUser()]);
   const today = todayInBahia();
   const capacityByStage = new Map(capacity.phases.map((phase) => [phase.fase, phase]));
   const overCapacity = capacity.phases.filter((phase) => phase.situacao === 'over').length;
   const blockedQueues = capacity.phases.filter((phase) => phase.filaTravada).length;
+  const canManageEntryQueue = userHasPermission(user, 'gerenciar_fila_entrada');
 
   return (
     <AppShell active="operacao" source={data.source}>
@@ -61,7 +63,11 @@ export default async function OperationPage() {
             <h1 className={styles.title}>Modo Operação</h1>
             <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
           </div>
-          <Link className={styles.button} href="/operacao/capacidade">Ver capacidade por fase</Link>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>}
+            {canManageEntryQueue && <Link className={styles.button} href="/operacao/agenda">Agenda</Link>}
+            <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
+          </div>
         </header>
 
         <div className={styles.summaryGrid}>
