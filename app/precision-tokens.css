@@ -1,11 +1,11 @@
 /* Precision Atelier — tokens semânticos globais
  * Fonte única para cor, contraste e microtipografia do sistema visual.
- * Não redefine variáveis legadas: a migração deve ser incremental e visualmente neutra.
+ * A cor de marca segue o dourado extraído da identidade visual da Pint Services.
  */
 
 :root {
   /* Marca e superfícies */
-  --pa-accent: #ef5a2a;
+  --pa-accent: #bd9558;
   --pa-paper: #ffffff;
   --pa-mineral: #f3f1ec;
   --pa-soft: #fbfaf7;
@@ -45,7 +45,7 @@
   --pa-mobile-meta: #626861;
 
   /* Interação e tipografia */
-  --pa-focus: rgba(239, 90, 42, .72);
+  --pa-focus: rgba(189, 149, 88, .72);
   --pa-font-micro: 9px;
   --pa-font-meta: 10px;
 }
