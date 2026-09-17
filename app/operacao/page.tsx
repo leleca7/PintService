@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
+import { getCapacityData } from '@/lib/capacity-data';
 import { getOperationData } from '@/lib/operation-data';
 import { OPERATION_STAGES } from '@/lib/operation-stages';
 import { updateOperationalVehicle } from './actions';
@@ -26,8 +28,29 @@ function daysInShop(value: string | null) {
   return Math.max(0, Math.floor((localToday - start) / 86_400_000));
 }
 
+function todayInBahia() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Bahia',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+
+function capacityClass(status: 'ok' | 'limit' | 'over') {
+  if (status === 'over') return local.capacityOver;
+  if (status === 'limit') return local.capacityLimit;
+  return local.capacityOk;
+}
+
 export default async function OperationPage() {
-  const data = await getOperationData();
+  const [data, capacity] = await Promise.all([getOperationData(), getCapacityData()]);
+  const today = todayInBahia();
+  const capacityByStage = new Map(capacity.phases.map((phase) => [phase.fase, phase]));
+  const overCapacity = capacity.phases.filter((phase) => phase.situacao === 'over').length;
+  const blockedQueues = capacity.phases.filter((phase) => phase.filaTravada).length;
 
   return (
     <AppShell active="operacao" source={data.source}>
@@ -38,16 +61,29 @@ export default async function OperationPage() {
             <h1 className={styles.title}>Modo Operação</h1>
             <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
           </div>
+          <Link className={styles.button} href="/operacao/capacidade">Ver capacidade por fase</Link>
         </header>
 
         <div className={styles.summaryGrid}>
           <div className={styles.summaryItem}><span>Em andamento</span><strong>{data.vehicles.length}</strong><small>veículos visíveis para seu acesso</small></div>
-          <div className={styles.summaryItem}><span>Etapas oficiais</span><strong>{OPERATION_STAGES.length}</strong><small>fluxo padronizado da produção</small></div>
+          <div className={styles.summaryItem}><span>Acima da capacidade</span><strong>{overCapacity}</strong><small>fases com sobrecarga agora</small></div>
           <div className={styles.summaryItem}><span>Sem previsão</span><strong>{data.vehicles.filter((v) => !v.previsaoSaida).length}</strong><small>precisam de definição operacional</small></div>
-          <div className={styles.summaryItem}><span>Aguardando peças</span><strong>{data.vehicles.filter((v) => v.status.toLowerCase().includes('peç')).length}</strong><small>atenção antes de avançar</small></div>
+          <div className={styles.summaryItem}><span>Fila possivelmente travada</span><strong>{blockedQueues}</strong><small>sobrecarga somada a atraso</small></div>
         </div>
 
-        {data.error && <section className={styles.section}><div className={styles.quiet}><strong>Não foi possível carregar a operação.</strong>{data.error}</div></section>}
+        {capacity.phases.length > 0 && (
+          <section className={local.capacityStrip} aria-label="Resumo da capacidade por fase">
+            {capacity.phases.map((phase) => (
+              <Link href="/operacao/capacidade" className={`${local.capacityItem} ${capacityClass(phase.situacao)}`} key={phase.fase}>
+                <span>{phase.fase}</span>
+                <strong>{phase.emAndamento}/{phase.capacidadeMaxima}</strong>
+                <small>{phase.situacao === 'over' ? 'Acima' : phase.situacao === 'limit' ? 'No limite' : `${phase.vagasLivres} vaga${phase.vagasLivres === 1 ? '' : 's'}`}</small>
+              </Link>
+            ))}
+          </section>
+        )}
+
+        {(data.error || capacity.error) && <section className={styles.section}><div className={styles.quiet}><strong>Há uma informação operacional indisponível.</strong>{data.error || capacity.error}</div></section>}
 
         <section className={styles.section}>
           <div className={local.toolbar}>
@@ -58,8 +94,11 @@ export default async function OperationPage() {
             <div className={local.grid}>
               {data.vehicles.map((vehicle) => {
                 const days = daysInShop(vehicle.dataEntrada);
+                const phaseCapacity = capacityByStage.get(vehicle.etapa);
+                const overdue = Boolean(vehicle.previsaoSaida && vehicle.previsaoSaida < today);
+                const queueAlert = Boolean(overdue && phaseCapacity?.situacao === 'over');
                 return (
-                  <article className={local.card} key={vehicle.id}>
+                  <article className={`${local.card} ${queueAlert ? local.cardQueueAlert : ''}`} key={vehicle.id}>
                     <div className={local.cardHead}>
                       <div>
                         <span className={styles.badge}>{vehicle.etapa || 'Etapa não informada'}</span>
@@ -67,6 +106,13 @@ export default async function OperationPage() {
                       </div>
                       <span className={local.plate}>{vehicle.placa}</span>
                     </div>
+
+                    {queueAlert && (
+                      <div className={local.queueAlert}>
+                        <strong>Alerta de fila</strong>
+                        <span>Veículo atrasado em uma fase acima da capacidade. Pode estar impactando os carros seguintes.</span>
+                      </div>
+                    )}
 
                     <div className={local.meta}>
                       <div><span>Cliente</span><strong>{vehicle.cliente}</strong></div>
