@@ -49,9 +49,9 @@ export async function updateOperationalVehicle(formData: FormData) {
   if (!current) throw new Error('Veículo não encontrado.');
 
   if (user.perfil === 'funcionario') {
-    const userSector = (user.setor ?? '').trim().toLowerCase();
-    const vehicleSector = String(current.setor ?? '').trim().toLowerCase();
-    if (!userSector || vehicleSector !== userSector) throw new Error('FORBIDDEN');
+    const userSector = normalizeOperationalStage(user.setor ?? '');
+    const vehicleSector = normalizeOperationalStage(String(current.setor ?? ''));
+    if (!userSector || !vehicleSector || vehicleSector !== userSector) throw new Error('FORBIDDEN');
   }
 
   const responsavelId = user.funcionarioId ?? current.responsavel_id ?? null;
