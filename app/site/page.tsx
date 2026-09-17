@@ -123,7 +123,7 @@ export default function PintServicesSite() {
             <h2>Cuidado completo do reparo ao acabamento.</h2>
           </div>
           <p className={styles.sectionLead}>
-            Uma apresentação clara do que a Pint Services já comunica publicamente e do que faz parte da sua rotina de recuperação automotiva.
+            Soluções para recuperar forma, pintura e apresentação do veículo com atenção técnica em cada etapa.
           </p>
         </div>
 
@@ -168,13 +168,12 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.aboutCopy}>
           <p>
-            A proposta visual desta página acompanha a própria marca: preto e grafite como base,
-            branco para leitura e o dourado da Pint Services como destaque. A mesma lógica orienta
-            a apresentação do serviço — menos ruído, mais clareza, técnica e percepção de cuidado.
+            Cada serviço passa por uma sequência de avaliação, preparação, execução e acabamento.
+            O objetivo é reunir técnica, organização e atenção aos detalhes em um processo claro para o cliente.
           </p>
           <p>
-            A versão definitiva pode receber fotos reais da estrutura, antes e depois, equipe,
-            avaliações, seguradoras parceiras e integração direta com WhatsApp e Maps.
+            A Pint Services atende demandas de recuperação automotiva para clientes particulares e operações com seguradoras,
+            mantendo o foco na qualidade visual e na evolução correta de cada veículo dentro da oficina.
           </p>
         </div>
       </section>
@@ -186,8 +185,8 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.contactSide}>
           <p>Atendimento em Lauro de Freitas, Bahia.</p>
-          <a href="#servicos" className={styles.primary}>Solicitar uma avaliação</a>
-          <small>Na publicação final, este CTA será conectado ao WhatsApp oficial da Pint Services.</small>
+          <a href="#servicos" className={styles.primary}>Conhecer os serviços</a>
+          <small>Avaliações e orçamentos são realizados diretamente com a equipe da Pint Services.</small>
         </div>
       </section>
 
