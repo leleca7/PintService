@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import styles from './site.module.css';
+import extra from './immersive-extra.module.css';
 
 export const metadata: Metadata = {
   title: 'Pint Services | Seu carro novo de novo',
@@ -127,21 +128,21 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <section id="seguradoras" className={styles.insurersSection}>
-        <div className={styles.insurersIntro}>
+      <section id="seguradoras" className={extra.insurersSection}>
+        <div className={extra.insurersIntro}>
           <p className={styles.eyebrow}>SEGURADORAS</p>
           <h2>Teve problema com o seu carro? A Pint resolve.</h2>
           <p>Atendemos particular e todas as seguradoras. Acione sua seguradora e leve o veículo para uma avaliação com a equipe Pint Services.</p>
         </div>
-        <div className={styles.insurerRail} aria-label="Seguradoras atendidas">
+        <div className={extra.insurerRail} aria-label="Seguradoras atendidas">
           {insurers.map((insurer, index) => (
-            <div key={insurer} className={styles.insurerItem}>
+            <div key={insurer} className={extra.insurerItem}>
               <span>{String(index + 1).padStart(2, '0')}</span>
               <strong>{insurer}</strong>
             </div>
           ))}
         </div>
-        <p className={styles.insurerNote}>Marcas listadas com base nos materiais institucionais já publicados pela própria Pint Services.</p>
+        <p className={extra.insurerNote}>Marcas listadas com base nos materiais institucionais já publicados pela própria Pint Services.</p>
       </section>
 
       <section id="processo" className={styles.story}>
@@ -172,14 +173,14 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <section className={styles.trustSection} aria-label="Por que escolher a Pint Services">
-        <div className={styles.trustIntro}>
+      <section className={extra.trustSection} aria-label="Por que escolher a Pint Services">
+        <div className={extra.trustIntro}>
           <p className={styles.eyebrow}>ESCOLHA CONFIANÇA</p>
           <h2>Quatro coisas que precisam estar certas antes de entregar a chave.</h2>
         </div>
-        <div className={styles.trustGrid}>
+        <div className={extra.trustGrid}>
           {trustPillars.map(([number, title, text]) => (
-            <article key={number} className={styles.trustCard}>
+            <article key={number} className={extra.trustCard}>
               <span>{number}</span>
               <h3>{title}</h3>
               <p>{text}</p>
@@ -241,7 +242,7 @@ export default function PintServicesSite() {
         <div className={styles.contactCore}>
           <p className={styles.eyebrow}>ATENDIMENTO</p>
           <h2>Seu carro.<br />Nosso processo.<br /><span>Novo de novo.</span></h2>
-          <div className={styles.contactActions}>
+          <div className={extra.contactActions}>
             <a
               href="https://wa.me/5571994000097?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Pint%20Services%20e%20gostaria%20de%20solicitar%20uma%20avalia%C3%A7%C3%A3o."
               className={styles.contactButton}
@@ -250,22 +251,22 @@ export default function PintServicesSite() {
             >
               Solicitar avaliação <span>↗</span>
             </a>
-            <a href="tel:+557135087781" className={styles.contactSecondary}>Ligar agora · (71) 3508-7781</a>
+            <a href="tel:+557135087781" className={extra.contactSecondary}>Ligar agora · (71) 3508-7781</a>
           </div>
         </div>
 
-        <div className={styles.contactInfoGrid}>
-          <div className={styles.contactInfoBlock}>
+        <div className={extra.contactInfoGrid}>
+          <div className={extra.contactInfoBlock}>
             <span>ENDEREÇO</span>
             <strong>Rua Leonardo R da Silva, Pitangueiras, 480 · Galpão 03</strong>
             <small>Lauro de Freitas · BA · 42701-420</small>
           </div>
-          <div className={styles.contactInfoBlock}>
+          <div className={extra.contactInfoBlock}>
             <span>HORÁRIO</span>
             <strong>Segunda a sexta · 8:00 — 17:00</strong>
             <small>Sábado · 8:00 — 12:00</small>
           </div>
-          <div className={styles.contactInfoBlock}>
+          <div className={extra.contactInfoBlock}>
             <span>CONTATO</span>
             <strong>(71) 3508-7781</strong>
             <small>WhatsApp · (71) 99400-0097</small>
