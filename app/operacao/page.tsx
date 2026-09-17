@@ -1,0 +1,121 @@
+import AppShell from '@/app/components/app-shell';
+import styles from '@/app/components/precision-atelier-core.module.css';
+import { getOperationData } from '@/lib/operation-data';
+import { OPERATION_STAGES } from '@/lib/operation-stages';
+import { updateOperationalVehicle } from './actions';
+import local from './operacao.module.css';
+
+const STATUS_OPTIONS = [
+  'Em serviço',
+  'Aguardando peças',
+  'Aguardando aprovação',
+  'Parado',
+  'Pronto para entrega',
+];
+
+function formatDate(value: string | null) {
+  if (!value) return 'Não informada';
+  return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia' }).format(new Date(`${value}T12:00:00-03:00`));
+}
+
+function daysInShop(value: string | null) {
+  if (!value) return null;
+  const start = new Date(`${value}T12:00:00-03:00`).getTime();
+  const today = new Date();
+  const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).getTime();
+  return Math.max(0, Math.floor((localToday - start) / 86_400_000));
+}
+
+export default async function OperationPage() {
+  const data = await getOperationData();
+
+  return (
+    <AppShell active="operacao" source={data.source}>
+      <div className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.headerCopy}>
+            <p className={styles.kicker}>CHÃO DE OFICINA · ATUALIZAÇÃO RÁPIDA</p>
+            <h1 className={styles.title}>Modo Operação</h1>
+            <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
+          </div>
+        </header>
+
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryItem}><span>Em andamento</span><strong>{data.vehicles.length}</strong><small>veículos visíveis para seu acesso</small></div>
+          <div className={styles.summaryItem}><span>Etapas oficiais</span><strong>{OPERATION_STAGES.length}</strong><small>fluxo padronizado da produção</small></div>
+          <div className={styles.summaryItem}><span>Sem previsão</span><strong>{data.vehicles.filter((v) => !v.previsaoSaida).length}</strong><small>precisam de definição operacional</small></div>
+          <div className={styles.summaryItem}><span>Aguardando peças</span><strong>{data.vehicles.filter((v) => v.status.toLowerCase().includes('peç')).length}</strong><small>atenção antes de avançar</small></div>
+        </div>
+
+        {data.error && <section className={styles.section}><div className={styles.quiet}><strong>Não foi possível carregar a operação.</strong>{data.error}</div></section>}
+
+        <section className={styles.section}>
+          <div className={local.toolbar}>
+            <div className={styles.sectionHead}><div><p>CARTEIRA DO SETOR</p><h2>Veículos para atualizar</h2></div><span className={styles.count}>{data.vehicles.length}</span></div>
+          </div>
+
+          {data.vehicles.length ? (
+            <div className={local.grid}>
+              {data.vehicles.map((vehicle) => {
+                const days = daysInShop(vehicle.dataEntrada);
+                return (
+                  <article className={local.card} key={vehicle.id}>
+                    <div className={local.cardHead}>
+                      <div>
+                        <span className={styles.badge}>{vehicle.etapa || 'Etapa não informada'}</span>
+                        <h2>{vehicle.modelo}</h2>
+                      </div>
+                      <span className={local.plate}>{vehicle.placa}</span>
+                    </div>
+
+                    <div className={local.meta}>
+                      <div><span>Cliente</span><strong>{vehicle.cliente}</strong></div>
+                      <div><span>Seguradora</span><strong>{vehicle.seguradora || 'Não informada'}</strong></div>
+                      <div><span>Entrada</span><strong>{formatDate(vehicle.dataEntrada)}</strong></div>
+                      <div><span>Dias em casa</span><strong>{days == null ? '—' : days}</strong></div>
+                      <div><span>Previsão</span><strong>{formatDate(vehicle.previsaoSaida)}</strong></div>
+                      <div><span>Responsável</span><strong>{vehicle.responsavel || 'Não definido'}</strong></div>
+                    </div>
+
+                    <form action={updateOperationalVehicle} className={local.form}>
+                      <input type="hidden" name="id" value={vehicle.id}/>
+
+                      <label className={local.field}>
+                        <span>Etapa atual</span>
+                        <select name="setor" defaultValue={vehicle.etapa} required>
+                          <option value="" disabled>Selecione</option>
+                          {OPERATION_STAGES.map((stage) => <option value={stage} key={stage}>{stage}</option>)}
+                        </select>
+                      </label>
+
+                      <label className={local.field}>
+                        <span>Status</span>
+                        <select name="status" defaultValue={vehicle.status || 'Em serviço'}>
+                          {STATUS_OPTIONS.map((status) => <option value={status} key={status}>{status}</option>)}
+                        </select>
+                      </label>
+
+                      <label className={local.field}>
+                        <span>Previsão de saída</span>
+                        <input type="date" name="previsao_saida" defaultValue={vehicle.previsaoSaida ?? ''}/>
+                      </label>
+
+                      <label className={`${local.field} ${local.fieldWide}`}>
+                        <span>Observação interna</span>
+                        <textarea name="observacoes" defaultValue={vehicle.observacoes} placeholder="Ex.: aguardando encaixe, peça secundária pendente, veículo liberado para próxima etapa"/>
+                      </label>
+
+                      <div className={local.actions}><button className={local.save} type="submit">Salvar atualização</button></div>
+                    </form>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={local.empty}><strong>Nenhum veículo disponível para este setor.</strong><p>Quando houver veículos vinculados ao seu setor, eles aparecerão aqui.</p></div>
+          )}
+        </section>
+      </div>
+    </AppShell>
+  );
+}
