@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import styles from './site.module.css';
 
 export const metadata: Metadata = {
-  title: 'Pint Services | Car Center',
-  description: 'Funilaria, pintura e recuperação automotiva em Lauro de Freitas, Bahia.',
+  title: 'Pint Services | Seu carro novo de novo',
+  description: 'Funilaria, repintura e recuperação automotiva em Lauro de Freitas. Atendimento particular e todas as seguradoras.',
 };
 
 const stages = [
@@ -23,7 +23,7 @@ const stages = [
     number: '03',
     kicker: 'PINTURA',
     title: 'Cor, cobertura e leitura visual precisam conversar.',
-    text: 'A pintura entra quando a base está pronta. O objetivo é devolver uniformidade e presença ao conjunto do veículo.',
+    text: 'A pintura entra quando a base está pronta. O objetivo é devolver uniformidade, brilho e presença ao conjunto do veículo.',
   },
   {
     number: '04',
@@ -34,10 +34,31 @@ const stages = [
 ];
 
 const services = [
-  ['01', 'Funilaria & pintura', 'Recuperação de forma, preparação de superfície, pintura e acabamento em uma sequência única de trabalho.'],
+  ['01', 'Funilaria & repintura', 'Recuperação de forma, preparação de superfície, pintura e acabamento em uma sequência única de trabalho.'],
   ['02', 'Martelinho de ouro', 'Correção localizada de amassados quando o tipo de dano permite preservar melhor a peça e o acabamento original.'],
   ['03', 'Rodas & acabamento', 'Pintura de rodas, polimento e cuidados finais para devolver leitura uniforme ao conjunto do veículo.'],
   ['04', 'Higienização', 'Cuidado interno e externo para que a percepção de entrega acompanhe o resultado do reparo.'],
+];
+
+const trustPillars = [
+  ['01', 'Equipe qualificada', 'Técnica e experiência aplicadas ao cuidado de cada veículo, do diagnóstico à finalização.'],
+  ['02', 'Estrutura e equipamentos', 'Ambiente de trabalho e equipamentos adequados para apoiar um processo de reparo organizado.'],
+  ['03', 'Transparência no orçamento', 'Clareza sobre o que será feito, quais etapas estão envolvidas e como o reparo será conduzido.'],
+  ['04', 'Prazo de entrega', 'Compromisso com acompanhamento e comunicação para que o cliente saiba onde o serviço está e o que falta.'],
+];
+
+const insurers = [
+  'Bradesco Seguros',
+  'Tokio Marine',
+  'MSIG',
+  'Allianz',
+  'Suhai',
+  'SulAmérica',
+  'Generali',
+  'Liberty Seguros',
+  'Azul Seguros',
+  'HDI Seguros',
+  'Porto Seguro',
 ];
 
 function Brand() {
@@ -60,7 +81,7 @@ export default function PintServicesSite() {
         <nav className={styles.nav} aria-label="Navegação principal">
           <a href="#processo">Processo</a>
           <a href="#servicos">Serviços</a>
-          <a href="#sobre">Sobre</a>
+          <a href="#seguradoras">Seguradoras</a>
           <a href="#contato" className={styles.navCta}>Fale com a Pint <span>↗</span></a>
         </nav>
       </header>
@@ -71,24 +92,23 @@ export default function PintServicesSite() {
         <div className={styles.heroContent}>
           <p className={styles.eyebrow}>PINT SERVICES · CAR CENTER · LAURO DE FREITAS</p>
           <h1>
-            <span>De volta</span>
-            <span>à forma.</span>
-            <span className={styles.heroGold}>De volta à estrada.</span>
+            <span>Seu carro.</span>
+            <span className={styles.heroGold}>Novo de novo.</span>
           </h1>
           <div className={styles.heroBottom}>
             <p>
-              Funilaria, pintura e recuperação automotiva conduzidas por etapas —
-              do primeiro diagnóstico ao último detalhe antes da entrega.
+              Especialista em repintura e funilaria automotiva. Atendimento particular e todas as seguradoras,
+              com um processo conduzido do diagnóstico ao acabamento final.
             </p>
             <a href="#processo" className={styles.circleLink} aria-label="Conhecer o processo">↓</a>
           </div>
         </div>
-        <div className={styles.heroIndex}>01 / 05</div>
+        <div className={styles.heroIndex}>01 / 06</div>
         <div className={styles.scrollLabel}>ROLE PARA DESCOBRIR</div>
       </section>
 
       <section id="sobre" className={styles.manifesto}>
-        <div className={styles.manifestoLabel}>UMA OFICINA. UM PROCESSO.</div>
+        <div className={styles.manifestoLabel}>ESTRUTURA · TÉCNICA · COMPROMISSO</div>
         <div className={styles.manifestoCopy}>
           <p className={styles.eyebrow}>PINT SERVICES</p>
           <h2>
@@ -96,15 +116,32 @@ export default function PintServicesSite() {
             <span> Mas a experiência termina na confiança.</span>
           </h2>
           <p className={styles.manifestoText}>
-            Cada veículo passa por uma sequência de avaliação, preparação, execução e acabamento.
-            Menos ruído entre etapas. Mais clareza sobre o que precisa acontecer até a entrega.
+            A proposta é simples: cuidar do carro com técnica, explicar o processo com clareza e conduzir cada etapa
+            com organização até a entrega. É isso que transforma um reparo em confiança do início ao fim.
           </p>
         </div>
         <div className={styles.manifestoFacts}>
-          <div><span>01</span><strong>Funilaria &amp; pintura</strong><small>Especialidade central</small></div>
-          <div><span>02</span><strong>Seguradoras &amp; particulares</strong><small>Atendimento</small></div>
+          <div><span>01</span><strong>Funilaria &amp; repintura</strong><small>Especialidade central</small></div>
+          <div><span>02</span><strong>Particular &amp; seguradoras</strong><small>Atendimento</small></div>
           <div><span>03</span><strong>Lauro de Freitas · BA</strong><small>Localização</small></div>
         </div>
+      </section>
+
+      <section id="seguradoras" className={styles.insurersSection}>
+        <div className={styles.insurersIntro}>
+          <p className={styles.eyebrow}>SEGURADORAS</p>
+          <h2>Teve problema com o seu carro? A Pint resolve.</h2>
+          <p>Atendemos particular e todas as seguradoras. Acione sua seguradora e leve o veículo para uma avaliação com a equipe Pint Services.</p>
+        </div>
+        <div className={styles.insurerRail} aria-label="Seguradoras atendidas">
+          {insurers.map((insurer, index) => (
+            <div key={insurer} className={styles.insurerItem}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <strong>{insurer}</strong>
+            </div>
+          ))}
+        </div>
+        <p className={styles.insurerNote}>Marcas listadas com base nos materiais institucionais já publicados pela própria Pint Services.</p>
       </section>
 
       <section id="processo" className={styles.story}>
@@ -135,13 +172,29 @@ export default function PintServicesSite() {
         </div>
       </section>
 
+      <section className={styles.trustSection} aria-label="Por que escolher a Pint Services">
+        <div className={styles.trustIntro}>
+          <p className={styles.eyebrow}>ESCOLHA CONFIANÇA</p>
+          <h2>Quatro coisas que precisam estar certas antes de entregar a chave.</h2>
+        </div>
+        <div className={styles.trustGrid}>
+          {trustPillars.map(([number, title, text]) => (
+            <article key={number} className={styles.trustCard}>
+              <span>{number}</span>
+              <h3>{title}</h3>
+              <p>{text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
       <section className={styles.transitionScene} aria-label="Precisão no acabamento">
         <div className={styles.transitionImage} />
         <div className={styles.transitionVeil} />
         <div className={styles.transitionCopy}>
           <p className={styles.eyebrow}>PRECISÃO NO DETALHE</p>
           <h2>Não basta parecer pronto de longe.</h2>
-          <p>Preparação e acabamento são onde o resultado começa a se sustentar de verdade.</p>
+          <p>Preparação, repintura e acabamento são onde o resultado começa a se sustentar de verdade.</p>
         </div>
         <span className={styles.transitionWord}>PINT</span>
       </section>
@@ -176,7 +229,7 @@ export default function PintServicesSite() {
         <div className={styles.compareCopy}>
           <p className={styles.eyebrow}>ANTES / DEPOIS</p>
           <h2>A diferença precisa ser percebida.</h2>
-          <p>Na versão final, esta área recebe casos reais da Pint Services com comparação visual interativa.</p>
+          <p>Esta área está preparada para receber casos reais da Pint Services com comparação visual interativa.</p>
         </div>
       </section>
 
@@ -187,8 +240,36 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.contactCore}>
           <p className={styles.eyebrow}>ATENDIMENTO</p>
-          <h2>Seu carro.<br />Nosso processo.<br /><span>Sua confiança de volta.</span></h2>
-          <a href="#top" className={styles.contactButton}>Solicitar avaliação <span>↗</span></a>
+          <h2>Seu carro.<br />Nosso processo.<br /><span>Novo de novo.</span></h2>
+          <div className={styles.contactActions}>
+            <a
+              href="https://wa.me/5571994000097?text=Ol%C3%A1%2C%20vim%20pelo%20site%20da%20Pint%20Services%20e%20gostaria%20de%20solicitar%20uma%20avalia%C3%A7%C3%A3o."
+              className={styles.contactButton}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Solicitar avaliação <span>↗</span>
+            </a>
+            <a href="tel:+557135087781" className={styles.contactSecondary}>Ligar agora · (71) 3508-7781</a>
+          </div>
+        </div>
+
+        <div className={styles.contactInfoGrid}>
+          <div className={styles.contactInfoBlock}>
+            <span>ENDEREÇO</span>
+            <strong>Rua Leonardo R da Silva, Pitangueiras, 480 · Galpão 03</strong>
+            <small>Lauro de Freitas · BA · 42701-420</small>
+          </div>
+          <div className={styles.contactInfoBlock}>
+            <span>HORÁRIO</span>
+            <strong>Segunda a sexta · 8:00 — 17:00</strong>
+            <small>Sábado · 8:00 — 12:00</small>
+          </div>
+          <div className={styles.contactInfoBlock}>
+            <span>CONTATO</span>
+            <strong>(71) 3508-7781</strong>
+            <small>WhatsApp · (71) 99400-0097</small>
+          </div>
         </div>
       </section>
 
@@ -196,7 +277,7 @@ export default function PintServicesSite() {
         <Brand />
         <div className={styles.footerCenter}>
           <strong>pintservices.com.br</strong>
-          <span>Site conceito · direção imersiva</span>
+          <span>Seu carro novo de novo</span>
         </div>
         <div className={styles.footerRight}>
           <a href="#top">Topo ↑</a>
