@@ -1,0 +1,274 @@
+.insurersSection {
+  min-height: 92svh;
+  padding: 118px max(32px, calc((100vw - 1440px) / 2));
+  display: grid;
+  grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr);
+  gap: 80px;
+  align-items: center;
+  background: #080909;
+  color: #f7f7f4;
+  border-top: 1px solid rgba(255,255,255,.1);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.insurersIntro h2 {
+  margin: 24px 0 0;
+  max-width: 720px;
+  font-size: clamp(50px, 5.8vw, 92px);
+  line-height: .9;
+  letter-spacing: -.067em;
+  font-weight: 560;
+}
+
+.insurersIntro > p:last-child {
+  max-width: 590px;
+  margin: 30px 0 0;
+  color: #8f928f;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.insurerRail {
+  border-top: 1px solid rgba(255,255,255,.14);
+}
+
+.insurerItem {
+  min-height: 82px;
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  align-items: center;
+  gap: 18px;
+  border-bottom: 1px solid rgba(255,255,255,.11);
+  transition: padding .2s ease, background .2s ease;
+}
+
+.insurerItem:hover {
+  padding-left: 16px;
+  background: rgba(189,149,88,.06);
+}
+
+.insurerItem span {
+  color: #bd9558;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.insurerItem strong {
+  font-size: clamp(20px, 2vw, 31px);
+  font-weight: 560;
+  letter-spacing: -.035em;
+}
+
+.insurerNote {
+  grid-column: 2;
+  margin: -50px 0 0;
+  color: #5f625f;
+  font-size: 8px;
+  line-height: 1.6;
+  letter-spacing: .06em;
+}
+
+.trustSection {
+  min-height: 100svh;
+  padding: 125px max(32px, calc((100vw - 1440px) / 2));
+  background: #efede7;
+  color: #111212;
+}
+
+.trustIntro {
+  display: grid;
+  grid-template-columns: .4fr 1fr;
+  gap: 56px;
+  align-items: start;
+  margin-bottom: 84px;
+}
+
+.trustIntro h2 {
+  margin: 0;
+  max-width: 1060px;
+  font-size: clamp(52px, 6.8vw, 108px);
+  line-height: .89;
+  letter-spacing: -.072em;
+  font-weight: 570;
+}
+
+.trustGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-top: 1px solid rgba(0,0,0,.18);
+  border-left: 1px solid rgba(0,0,0,.14);
+}
+
+.trustCard {
+  position: relative;
+  min-height: 330px;
+  padding: 34px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid rgba(0,0,0,.14);
+  border-bottom: 1px solid rgba(0,0,0,.14);
+  overflow: hidden;
+  transition: background .25s ease;
+}
+
+.trustCard:hover {
+  background: rgba(189,149,88,.1);
+}
+
+.trustCard::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 180px;
+  height: 180px;
+  border: 1px solid rgba(189,149,88,.35);
+  border-radius: 50%;
+}
+
+.trustCard > span {
+  color: #bd9558;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
+
+.trustCard h3 {
+  margin: auto 0 16px;
+  max-width: 520px;
+  font-size: clamp(30px, 3vw, 48px);
+  line-height: .95;
+  letter-spacing: -.05em;
+  font-weight: 620;
+}
+
+.trustCard p {
+  max-width: 520px;
+  margin: 0;
+  color: #6d6a65;
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.contactActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  margin-top: 54px;
+}
+
+.contactSecondary {
+  color: #aaaCA8 !important;
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.contactSecondary:hover {
+  color: #d9bc8d !important;
+}
+
+.contactInfoGrid {
+  margin-top: 74px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid rgba(255,255,255,.14);
+  border-left: 1px solid rgba(255,255,255,.1);
+}
+
+.contactInfoBlock {
+  min-height: 162px;
+  padding: 26px 28px;
+  display: grid;
+  align-content: center;
+  gap: 9px;
+  border-right: 1px solid rgba(255,255,255,.1);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+
+.contactInfoBlock > span {
+  color: #bd9558;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .17em;
+}
+
+.contactInfoBlock strong {
+  max-width: 430px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 660;
+}
+
+.contactInfoBlock small {
+  color: #777a77;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+@supports (animation-timeline: view()) {
+  .insurersIntro,
+  .trustIntro {
+    animation: extraRise both linear;
+    animation-timeline: view();
+    animation-range: entry 10% cover 34%;
+  }
+
+  .insurerItem,
+  .trustCard {
+    animation: extraFade both linear;
+    animation-timeline: view();
+    animation-range: entry 0% cover 28%;
+  }
+}
+
+@keyframes extraRise {
+  from { opacity: .08; transform: translateY(50px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes extraFade {
+  from { opacity: .12; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 900px) {
+  .insurersSection {
+    min-height: auto;
+    padding: 94px 24px;
+    grid-template-columns: 1fr;
+    gap: 54px;
+  }
+
+  .insurerNote {
+    grid-column: 1;
+    margin: -24px 0 0;
+  }
+
+  .trustSection { padding: 96px 24px; }
+  .trustIntro { grid-template-columns: 1fr; gap: 22px; margin-bottom: 58px; }
+  .trustGrid { grid-template-columns: 1fr; }
+  .trustCard { min-height: 280px; }
+
+  .contactInfoGrid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .insurersIntro h2 { font-size: clamp(46px, 13vw, 72px); }
+  .insurerItem { min-height: 72px; grid-template-columns: 45px 1fr; }
+  .trustIntro h2 { font-size: clamp(46px, 13vw, 74px); }
+  .trustCard { min-height: 250px; padding: 26px; }
+  .contactActions { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .insurersIntro,
+  .trustIntro,
+  .insurerItem,
+  .trustCard { animation: none !important; }
+}
