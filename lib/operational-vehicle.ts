@@ -102,7 +102,7 @@ export async function resolveOperationalVehicle(plate: string): Promise<VehicleR
   if (!external) return dbVehicle ? { ok: false, reason: 'incomplete' } : { ok: false, reason: 'not_found' };
   if (!external.status.trim() && !external.etapa.trim()) return { ok: false, reason: 'incomplete' };
 
-  const normalizedStage = normalizeOperationalStage(external.etapa) ?? external.etapa.trim() || null;
+  const normalizedStage = (normalizeOperationalStage(external.etapa) ?? external.etapa.trim()) || null;
   const dataEntrada = parseExternalDate(external.dataEntrada);
   const previsaoSaida = parseExternalDate(external.dataProducao);
   const dataSaidaReal = parseExternalDate(external.dataSaidaReal);
