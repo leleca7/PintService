@@ -3,6 +3,7 @@ import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { getDb, isDatabaseConfigured } from '@/lib/db';
 import type { DataSource } from '@/lib/dashboard-data';
 import { normalizeOperationalStage } from '@/lib/operation-stages';
+import type { PartsStatus } from '@/lib/parts-data';
 
 export type EntryQueueStatus = 'Aguardando' | 'Contato realizado' | 'Confirmado' | 'Movido para Produção' | 'Cancelado';
 
@@ -24,6 +25,10 @@ export type EntryQueueItem = {
   podeEntrarHoje: boolean;
   dataSugerida: string | null;
   sugestaoConfiavel: boolean;
+  statusPecas: PartsStatus;
+  pecasRecebidas: number;
+  pecasTotal: number;
+  liberadoEntrada: boolean;
 };
 
 export type EntryAgendaItem = Pick<EntryQueueItem,
@@ -66,6 +71,14 @@ function daysBetween(start: string, end: string) {
   return Math.max(0, Math.floor((endMs - startMs) / 86_400_000));
 }
 
+function derivePartsStatus(orderCount: number, total: number, recebidas: number): PartsStatus {
+  if (orderCount === 0) return 'Sem Pedido';
+  if (recebidas === 0) return 'Nenhuma Recebida';
+  if (total > 0 && recebidas < total) return 'Parcial';
+  if (total > 0 && recebidas >= total) return 'Completo';
+  return 'Nenhuma Recebida';
+}
+
 export async function getEntryQueueData(): Promise<EntryQueueData> {
   const empty: EntryQueueData = {
     source: 'demo', queue: [], agenda: [], capacidadeDesmontagem: 0, emDesmontagem: 0,
@@ -80,7 +93,7 @@ export async function getEntryQueueData(): Promise<EntryQueueData> {
     }
 
     const sql = getDb();
-    const [queueRows, capacityRows, vehicleRows] = await Promise.all([
+    const [queueRows, capacityRows, vehicleRows, partsRows] = await Promise.all([
       sql`
         SELECT id, placa, modelo, cliente_nome, telefone, origem, seguradora, data_autorizacao,
                prioridade_manual, status, data_entrada_combinada, observacoes, criado_em
@@ -91,7 +104,25 @@ export async function getEntryQueueData(): Promise<EntryQueueData> {
       `,
       sql`SELECT capacidade_maxima FROM capacidade_fases WHERE fase = 'Desmontagem' LIMIT 1`,
       sql`SELECT setor, previsao_saida FROM veiculos WHERE data_saida_real IS NULL`,
+      sql`
+        SELECT c.fila_entrada_id, c.placa, c.liberado_entrada,
+               COUNT(DISTINCT p.id) FILTER (WHERE p.status <> 'Cancelado')::int AS pedidos_ativos,
+               COALESCE(SUM(i.quantidade) FILTER (WHERE p.status <> 'Cancelado'), 0)::int AS total,
+               COALESCE(SUM(i.quantidade_recebida) FILTER (WHERE p.status <> 'Cancelado'), 0)::int AS recebidas
+        FROM controle_pecas c
+        LEFT JOIN pedidos_pecas p ON p.controle_pecas_id = c.id
+        LEFT JOIN itens_pedido_pecas i ON i.pedido_id = p.id
+        WHERE c.encerrado_em IS NULL
+        GROUP BY c.id, c.fila_entrada_id, c.placa, c.liberado_entrada
+      `,
     ]);
+
+    const partsByQueue = new Map<string, any>();
+    const partsByPlate = new Map<string, any>();
+    for (const row of partsRows) {
+      if (row.fila_entrada_id) partsByQueue.set(String(row.fila_entrada_id), row);
+      partsByPlate.set(String(row.placa ?? '').toUpperCase(), row);
+    }
 
     const today = todayInBahia();
     const capacidadeDesmontagem = Number(capacityRows[0]?.capacidade_maxima ?? 0);
@@ -120,6 +151,11 @@ export async function getEntryQueueData(): Promise<EntryQueueData> {
       }
 
       const dataAutorizacao = dateOnly(row.data_autorizacao) ?? today;
+      const parts = partsByQueue.get(String(row.id)) ?? partsByPlate.get(String(row.placa ?? '').toUpperCase());
+      const pedidosAtivos = Number(parts?.pedidos_ativos ?? 0);
+      const pecasTotal = Number(parts?.total ?? 0);
+      const pecasRecebidas = Number(parts?.recebidas ?? 0);
+
       return {
         id: String(row.id),
         placa: String(row.placa ?? ''),
@@ -138,6 +174,10 @@ export async function getEntryQueueData(): Promise<EntryQueueData> {
         podeEntrarHoje,
         dataSugerida,
         sugestaoConfiavel,
+        statusPecas: derivePartsStatus(pedidosAtivos, pecasTotal, pecasRecebidas),
+        pecasRecebidas,
+        pecasTotal,
+        liberadoEntrada: Boolean(parts?.liberado_entrada),
       };
     });
 
