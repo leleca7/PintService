@@ -65,11 +65,13 @@ const insurers = [
 function Brand() {
   return (
     <div className={styles.brand} aria-label="Pint Services Car Center">
-      <span className={styles.brandMark} aria-hidden="true"><span /></span>
-      <span className={styles.brandCopy}>
-        <strong>Pint Services</strong>
-        <small>car center</small>
-      </span>
+      <img
+        src="/pint-services-logo.webp"
+        alt="Pint Services Car Center"
+        width={360}
+        height={100}
+        style={{ width: 'clamp(158px, 14vw, 205px)', height: 'auto', display: 'block' }}
+      />
     </div>
   );
 }
