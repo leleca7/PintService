@@ -23,7 +23,7 @@ const items: NavItem[] = [
   { key: 'configuracoes', href: '/configuracoes', label: 'Configurações', icon: 'settings', permission: 'ver_configuracoes' },
 ];
 
-const mobilePrimaryKeys = new Set<ActiveKey>(['operacao', 'veiculos', 'tarefas', 'atendimento']);
+const mobilePrimaryKeys = new Set<ActiveKey>(['visao', 'operacao', 'veiculos', 'tarefas']);
 
 function NavIcon({ name }: { name: IconName }) {
   const common = { width: 18, height: 18, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true, className: 'nav-svg' };
