@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { priorityFor } from '@/lib/reputation';
+import { safeStringEqual } from '@/lib/security';
 import { sendWhatsAppAlert } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
@@ -55,7 +56,8 @@ export async function GET(request: Request) {
   const mode = url.searchParams.get('hub.mode');
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
-  if (mode === 'subscribe' && token && token === process.env.INSTAGRAM_VERIFY_TOKEN) return new Response(challenge ?? '', { status: 200 });
+  const expectedToken = process.env.INSTAGRAM_VERIFY_TOKEN?.trim();
+  if (mode === 'subscribe' && safeStringEqual(token, expectedToken)) return new Response(challenge ?? '', { status: 200 });
   return new Response('forbidden', { status: 403 });
 }
 

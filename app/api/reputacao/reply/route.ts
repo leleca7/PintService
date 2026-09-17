@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { requirePermission } from '@/lib/auth/current-user';
 import { writeAudit } from '@/lib/audit';
 import {
+  getReputationData,
   replyGoogleReview,
   replyInstagramComment,
   replyInstagramDm,
@@ -16,14 +17,26 @@ export async function POST(request: Request) {
   try {
     const user = await requirePermission('responder_reputacao');
     const body = await request.json();
-    const item = body?.item as ReputationItem | undefined;
+    const requestedItem = body?.item as Partial<ReputationItem> | undefined;
     const text = String(body?.text ?? '').trim();
-    if (!item?.id || !item.replyTarget || !text) return NextResponse.json({ error: 'Resposta incompleta.' }, { status: 400 });
+    if (!requestedItem?.id || !requestedItem.channel || !text) return NextResponse.json({ error: 'Resposta incompleta.' }, { status: 400 });
     if (text.length > 3000) return NextResponse.json({ error: 'Resposta longa demais.' }, { status: 400 });
 
-    if (item.source === 'demo' || item.id.startsWith('demo-')) return NextResponse.json({ ok: true, demo: true });
+    if (requestedItem.id.startsWith('demo-')) return NextResponse.json({ ok: true, demo: true });
     if (process.env.REPUTATION_LIVE_WRITES_ENABLED !== 'true') {
       return NextResponse.json({ error: 'Respostas reais estão bloqueadas até a conexão do canal ser validada.', code: 'live_writes_locked' }, { status: 503 });
+    }
+
+    // O navegador só identifica o item. O alvo externo usado para escrever no canal
+    // sempre é reobtido das integrações confiáveis no servidor.
+    const reputation = await getReputationData({ demoFallback: false });
+    const item = reputation.items.find((candidate) => candidate.id === requestedItem.id && candidate.channel === requestedItem.channel);
+    if (!item) {
+      if (reputation.errors.length) return NextResponse.json({ error: 'Não foi possível revalidar o item no canal de origem. Tente novamente.', code: 'canonical_lookup_unavailable' }, { status: 503 });
+      return NextResponse.json({ error: 'Item de reputação não encontrado no canal de origem.', code: 'canonical_item_not_found' }, { status: 404 });
+    }
+    if (item.source !== 'live' || !item.canReply || !item.replyTarget) {
+      return NextResponse.json({ error: 'Este item não possui um alvo de resposta válido no canal de origem.', code: 'canonical_reply_unavailable' }, { status: 409 });
     }
 
     if (item.replyTarget.kind === 'google_review') await replyGoogleReview(item.replyTarget.reviewId, text);

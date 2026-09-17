@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from 'next/server';
-import { processIncomingMessage } from '@/lib/process-message';
 import { isDatabaseConfigured } from '@/lib/db';
+import { safeStringEqual } from '@/lib/security';
+import { processQueuedWhatsAppMessage, retryRecoverableWhatsAppEvents } from '@/lib/whatsapp-event-queue';
 import { extractIncomingMessages, verifyMetaSignature } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
@@ -10,7 +11,8 @@ export async function GET(request: NextRequest) {
   const mode = request.nextUrl.searchParams.get('hub.mode');
   const token = request.nextUrl.searchParams.get('hub.verify_token');
   const challenge = request.nextUrl.searchParams.get('hub.challenge');
-  if (mode === 'subscribe' && token && token === process.env.WHATSAPP_VERIFY_TOKEN) return new NextResponse(challenge ?? '', { status: 200 });
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN?.trim();
+  if (mode === 'subscribe' && safeStringEqual(token, expectedToken)) return new NextResponse(challenge ?? '', { status: 200 });
   return NextResponse.json({ error: 'Verificação inválida' }, { status: 403 });
 }
 
@@ -24,9 +26,13 @@ export async function POST(request: NextRequest) {
   const messages = extractIncomingMessages(payload);
   after(async () => {
     for (const message of messages) {
-      try { await processIncomingMessage(message); }
+      try { await processQueuedWhatsAppMessage(message); }
       catch (error) { console.error('whatsapp_process_error', { messageId: message.id, error }); }
     }
+    // No plano Hobby, o cron frequente não é permitido. Cada webhook também tenta
+    // recuperar um pequeno lote de falhas antigas; o cron diário fica como rede de segurança.
+    try { await retryRecoverableWhatsAppEvents(5); }
+    catch (error) { console.error('whatsapp_opportunistic_retry_error', { error }); }
   });
   return NextResponse.json({ received: true });
 }

@@ -3,6 +3,10 @@
     {
       "path": "/api/reputacao/check",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/whatsapp/retry",
+      "schedule": "30 3 * * *"
     }
   ]
 }
