@@ -437,9 +437,15 @@ export async function getOperationalIntelligenceData() {
       GROUP BY 1 ORDER BY 2 DESC
     `,
     sql`
-      SELECT setor, COUNT(*)::int AS quantidade,
-             ROUND(AVG(EXTRACT(EPOCH FROM (now()-COALESCE(etapa_iniciada_em,ultima_atualizacao)))/3600))::int AS media_horas
-      FROM veiculos WHERE data_saida_real IS NULL GROUP BY setor ORDER BY setor
+      SELECT v.setor, COUNT(*)::int AS quantidade,
+             ROUND(AVG(EXTRACT(EPOCH FROM (now()-COALESCE(v.etapa_iniciada_em,v.ultima_atualizacao)))/3600))::int AS media_horas,
+             MAX(cfg.horas_alerta)::int AS horas_alerta,
+             MAX(cfg.horas_critico)::int AS horas_critico
+      FROM veiculos v
+      LEFT JOIN configuracao_tempo_etapas cfg ON cfg.fase=v.setor
+      WHERE v.data_saida_real IS NULL
+      GROUP BY v.setor
+      ORDER BY v.setor
     `,
     sql`
       SELECT COALESCE(seguradora,'Não informada') AS seguradora,
