@@ -2,7 +2,7 @@ import Link from 'next/link';
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
 import { getOperationalIntelligenceData } from '@/lib/operational-intelligence';
-import { markOperationalAlertResolved, markSupplierChargeSent, saveSupplierContact } from './actions';
+import { markOperationalAlertResolved, markSupplierChargeSent, saveSupplierContact, updateStageTiming } from './actions';
 
 function asObject(value:any){
   if(!value) return {};
@@ -64,7 +64,16 @@ export default async function OperationalIntelligencePage(){
       <div className={styles.split}>
         <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>ETAPAS</p><h2>Carga e permanência</h2></div></div>
-          <div className={styles.list}>{data.stages.map((row:any)=><div className={styles.row} key={String(row.setor??'sem-setor')}><div className={styles.rowBody}><div className={styles.rowTop}><strong>{String(row.setor??'Sem etapa')}</strong><span>{Number(row.quantidade)} carro(s)</span></div><p className={styles.preview}>Média atual: {Number(row.media_horas??0)}h nesta etapa</p></div></div>)}</div>
+          <div className={styles.list}>{data.stages.map((row:any)=><div className={styles.row} key={String(row.setor??'sem-setor')}><div className={styles.rowBody}>
+            <div className={styles.rowTop}><strong>{String(row.setor??'Sem etapa')}</strong><span>{Number(row.quantidade)} carro(s)</span></div>
+            <p className={styles.preview}>Média atual: {Number(row.media_horas??0)}h · alerta em {Number(row.horas_alerta??0)}h · crítico em {Number(row.horas_critico??0)}h</p>
+            {row.setor&&<form action={updateStageTiming} style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8,alignItems:'end'}}>
+              <input type="hidden" name="fase" value={String(row.setor)}/>
+              <label style={{display:'grid',gap:3}}><small>Alerta (h)</small><input type="number" min="1" name="horas_alerta" defaultValue={Number(row.horas_alerta??24)} style={{width:92,padding:8,border:'1px solid #d9dde3',borderRadius:8}}/></label>
+              <label style={{display:'grid',gap:3}}><small>Crítico (h)</small><input type="number" min="1" name="horas_critico" defaultValue={Number(row.horas_critico??48)} style={{width:92,padding:8,border:'1px solid #d9dde3',borderRadius:8}}/></label>
+              <button className={styles.button} type="submit">Salvar limites</button>
+            </form>}
+          </div></div>)}</div>
         </section>
         <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>CAUSAS</p><h2>Por que os carros param</h2></div></div>
