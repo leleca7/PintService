@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { buildOperationsExceptionSummary } from '@/lib/operations-summary';
+import { buildOperationsExceptionSummary, buildSectorSupervisorSummaries } from '@/lib/operations-summary';
 import { sendWhatsAppAlert } from '@/lib/whatsapp';
 
 export const runtime = 'nodejs';
@@ -23,5 +23,20 @@ export async function GET(request: Request) {
   }
 
   await sendWhatsAppAlert(phone, summary.text);
-  return NextResponse.json({ ok: true, exceptions: summary.total });
+
+  let sectorSummaries = 0;
+  if (process.env.SECTOR_SUMMARY_WHATSAPP_ENABLED === 'true') {
+    const supervisors = await buildSectorSupervisorSummaries();
+    for (const supervisor of supervisors) {
+      if (!supervisor.phone) continue;
+      try {
+        await sendWhatsAppAlert(supervisor.phone, supervisor.text);
+        sectorSummaries += 1;
+      } catch (error) {
+        console.error('Falha ao enviar resumo de setor:', { sector: supervisor.sector, error });
+      }
+    }
+  }
+
+  return NextResponse.json({ ok: true, exceptions: summary.total, sectorSummaries });
 }
