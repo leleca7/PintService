@@ -151,9 +151,16 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
   const responseText = incomingText || previousText || (hasImage ? 'Foto enviada pela equipe.' : 'Confirmação enviada pela equipe.');
   const evidenceMediaId = hasImage ? message.mediaId : task.evidencia_media_id ?? null;
 
-  let proposedUpdate: { newVehicleSector: string | null; newVehicleStatus: string | null } = {
+  let proposedUpdate: {
+    newVehicleSector: string | null;
+    newVehicleStatus: string | null;
+    newVehicleStopReason: string | null;
+    newVehicleStopDetail: string | null;
+  } = {
     newVehicleSector: null,
     newVehicleStatus: null,
+    newVehicleStopReason: null,
+    newVehicleStopDetail: null,
   };
   if (['confirmar_etapa', 'verificar_status_fisico', 'informacao_setor'].includes(String(task.tipo)) && responseText.trim()) {
     try {
@@ -165,9 +172,12 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
       });
       const normalizedStage = suggestion.updateStage ? normalizeOperationalStage(suggestion.stage) : null;
       const allowedStatuses = ['Em serviço', 'Aguardando peças', 'Aguardando aprovação', 'Parado', 'Pronto para entrega'];
+      const allowedStopReasons = ['Aguardando peça','Aguardando seguradora','Aguardando cliente','Retrabalho','Capacidade interna','Problema técnico','Outro'];
       proposedUpdate = {
         newVehicleSector: normalizedStage,
         newVehicleStatus: suggestion.updateStatus && allowedStatuses.includes(suggestion.status) ? suggestion.status : null,
+        newVehicleStopReason: suggestion.updateStopReason && allowedStopReasons.includes(suggestion.stopReason) ? suggestion.stopReason : null,
+        newVehicleStopDetail: suggestion.updateStopReason ? suggestion.stopDetail.trim() || null : null,
       };
     } catch (error) {
       console.error('Falha ao sugerir atualização operacional pela resposta do funcionário:', error);
@@ -186,6 +196,7 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
   const systemUpdate = [
     proposedUpdate.newVehicleSector ? `Etapa: ${proposedUpdate.newVehicleSector}` : '',
     proposedUpdate.newVehicleStatus ? `Status: ${proposedUpdate.newVehicleStatus}` : '',
+    proposedUpdate.newVehicleStopReason ? `Motivo: ${proposedUpdate.newVehicleStopReason}${proposedUpdate.newVehicleStopDetail ? ` — ${proposedUpdate.newVehicleStopDetail}` : ''}` : '',
   ].filter(Boolean);
   if (employee.telefone) await sendMappedTaskText({
     taskId: String(task.id),
