@@ -82,6 +82,93 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
   return { ...plan, plate };
 }
 
+const PartsReceiptSchema = z.object({
+  documentType: z.enum(['nota_fiscal', 'romaneio', 'pedido', 'outro']),
+  documentNumber: z.string(),
+  supplier: z.string(),
+  plate: z.string(),
+  claimNumber: z.string(),
+  date: z.string(),
+  items: z.array(z.object({
+    description: z.string(),
+    code: z.string(),
+    quantity: z.number().int().min(1),
+  })),
+  confidence: z.number().min(0).max(1),
+  notes: z.string(),
+});
+
+export type ExtractedPartsReceipt = z.infer<typeof PartsReceiptSchema>;
+
+export async function transcribeOperationalAudio(input: { buffer: Buffer; mimeType: string; filename: string }) {
+  const file = new File([new Uint8Array(input.buffer)], input.filename, { type: input.mimeType });
+  const transcription = await client().audio.transcriptions.create({
+    model: process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-transcribe',
+    file,
+    prompt: 'Áudio de funcionário de oficina automotiva brasileira. Vocabulário frequente: Pint Services, placa, desmontagem, funilaria, preparação de pintura, pintura, polimento, montagem, lavagem, acabamento, peça, fornecedor, sinistro, seguradora.',
+  });
+  return String(transcription.text ?? '').trim();
+}
+
+export async function extractPartsReceiptFromMedia(input: { buffer: Buffer; mimeType: string; filename: string }): Promise<ExtractedPartsReceipt> {
+  const receiptSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      documentType: { type: 'string', enum: ['nota_fiscal', 'romaneio', 'pedido', 'outro'] },
+      documentNumber: { type: 'string' },
+      supplier: { type: 'string' },
+      plate: { type: 'string' },
+      claimNumber: { type: 'string' },
+      date: { type: 'string' },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            description: { type: 'string' },
+            code: { type: 'string' },
+            quantity: { type: 'integer', minimum: 1 },
+          },
+          required: ['description', 'code', 'quantity'],
+        },
+      },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      notes: { type: 'string' },
+    },
+    required: ['documentType', 'documentNumber', 'supplier', 'plate', 'claimNumber', 'date', 'items', 'confidence', 'notes'],
+  };
+
+  const base64 = input.buffer.toString('base64');
+  const dataUrl = `data:${input.mimeType};base64,${base64}`;
+  const mediaContent: any = input.mimeType.startsWith('image/')
+    ? { type: 'input_image', image_url: dataUrl, detail: 'high' }
+    : { type: 'input_file', filename: input.filename, file_data: dataUrl, ...(input.mimeType === 'application/pdf' ? { detail: 'high' } : {}) };
+
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Extraia dados de um documento de recebimento de peças automotivas.
+Use somente o que estiver visível no arquivo. Não invente placa, número, fornecedor, código ou quantidade.
+Em plate, normalize para letras/números sem hífen somente se houver uma placa legível; caso contrário use string vazia.
+Em date, use YYYY-MM-DD somente se a data estiver clara; caso contrário use string vazia.
+Liste somente itens que pareçam peças/produtos efetivamente presentes no documento.
+Se uma quantidade não estiver clara, use 1 e explique a incerteza em notes.
+confidence deve refletir a confiança no documento como um todo.`,
+    input: [{
+      role: 'user',
+      content: [
+        mediaContent,
+        { type: 'input_text', text: 'Extraia os dados necessários para conferir o recebimento de peças no Sistema da Pint.' },
+      ],
+    }],
+    text: { format: { type: 'json_schema', name: 'recebimento_pecas', strict: true, schema: receiptSchema } },
+  });
+
+  return PartsReceiptSchema.parse(JSON.parse(response.output_text));
+}
+
 const PostDeliveryFeedbackSchema = z.object({
   sentiment: z.enum(['positivo', 'neutro', 'negativo', 'nao_relacionado']),
   confidence: z.number().min(0).max(1),
