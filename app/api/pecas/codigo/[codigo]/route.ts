@@ -1,10 +1,13 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(_request: Request, { params }: { params: Promise<{ codigo: string }> }) {
+  const user=await getCurrentAppUser();
+  if(!user?.ativo||!userHasPermission(user,'gerenciar_pecas')) return NextResponse.json({error:'sem acesso'},{status:403});
   const { codigo } = await params;
   const clean = decodeURIComponent(codigo).trim();
   if (!clean) return NextResponse.json({ items: [] });
