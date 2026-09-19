@@ -35,6 +35,9 @@ function snapshot(row: any) {
     previsao_saida: row?.previsao_saida ? String(row.previsao_saida).slice(0, 10) : null,
     responsavel_id: row?.responsavel_id ?? null,
     observacoes: row?.observacoes ?? null,
+    motivo_parada: row?.motivo_parada ?? null,
+    motivo_parada_detalhe: row?.motivo_parada_detalhe ?? null,
+    etapa_iniciada_em: row?.etapa_iniciada_em ?? null,
   };
 }
 
@@ -45,6 +48,8 @@ export async function updateOperationalVehicle(formData: FormData) {
   const status = text(formData, 'status');
   const previsaoSaida = nullableDate(text(formData, 'previsao_saida'));
   const observacoes = text(formData, 'observacoes');
+  const motivoParada = text(formData, 'motivo_parada');
+  const motivoParadaDetalhe = text(formData, 'motivo_parada_detalhe');
 
   if (!id) throw new Error('Veículo inválido.');
   const setor = normalizeOperationalStage(requestedStage);
@@ -52,7 +57,8 @@ export async function updateOperationalVehicle(formData: FormData) {
 
   const sql = getDb();
   const currentRows = await sql`
-    SELECT id, placa, setor, status, previsao_saida, responsavel_id, observacoes
+    SELECT id, placa, setor, status, previsao_saida, responsavel_id, observacoes,
+           motivo_parada, motivo_parada_detalhe, etapa_iniciada_em
     FROM veiculos
     WHERE id = ${id}
     LIMIT 1
@@ -76,9 +82,19 @@ export async function updateOperationalVehicle(formData: FormData) {
         previsao_saida = ${previsaoSaida},
         responsavel_id = ${responsavelId},
         observacoes = ${observacoes || null},
+        etapa_iniciada_em = CASE WHEN setor IS DISTINCT FROM ${setor} THEN now() ELSE COALESCE(etapa_iniciada_em, now()) END,
+        motivo_parada = CASE
+          WHEN ${status || null} IN ('Em serviço','Pronto para entrega') THEN NULL
+          ELSE ${motivoParada || null}
+        END,
+        motivo_parada_detalhe = CASE
+          WHEN ${status || null} IN ('Em serviço','Pronto para entrega') THEN NULL
+          ELSE ${motivoParadaDetalhe || null}
+        END,
         ultima_atualizacao = now()
     WHERE id = ${id}
-    RETURNING id, placa, setor, status, previsao_saida, responsavel_id, observacoes
+    RETURNING id, placa, setor, status, previsao_saida, responsavel_id, observacoes,
+              motivo_parada, motivo_parada_detalhe, etapa_iniciada_em
   `;
   const updated = updatedRows[0];
   const after = snapshot(updated);
