@@ -32,3 +32,27 @@ export async function markSupplierChargeSent(formData:FormData){
   await writeAudit(user,'registrar_cobranca_fornecedor','pedidos_pecas',String(orderId),{alertId});
   revalidatePath('/operacao/inteligencia');
 }
+
+
+export async function saveSupplierContact(formData:FormData){
+  const user=await requirePermission('gerenciar_pecas');
+  const nome=String(formData.get('nome')??'').trim();
+  const telefone=String(formData.get('telefone')??'').replace(/\D/g,'');
+  const email=String(formData.get('email')??'').trim();
+  if(!nome) throw new Error('Fornecedor inválido.');
+  const sql=getDb();
+  const rows=await sql`
+    INSERT INTO fornecedores_contatos (nome,telefone,email,ativo,atualizado_em)
+    VALUES (${nome},${telefone||null},${email||null},true,now())
+    ON CONFLICT ((lower(nome))) DO UPDATE SET
+      telefone=EXCLUDED.telefone,
+      email=EXCLUDED.email,
+      ativo=true,
+      atualizado_em=now()
+    RETURNING id
+  `;
+  await writeAudit(user,'salvar_contato_fornecedor','fornecedor',String(rows[0].id),{
+    nome,telefone:telefone? 'configurado':'vazio',email:email?'configurado':'vazio'
+  });
+  revalidatePath('/operacao/inteligencia');
+}
