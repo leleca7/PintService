@@ -420,7 +420,7 @@ export async function advancePostDeliveryFromParts(input: {
 
 export async function getOperationalIntelligenceData() {
   const sql = getDb();
-  const [alerts, causes, stages, insurers, suppliers, forecastStats] = await Promise.all([
+  const [alerts, causes, stages, insurers, suppliers, forecastStats, performanceStats] = await Promise.all([
     sql`
       SELECT a.id,a.tipo,a.nivel,a.titulo,a.mensagem,a.criado_em,a.dados,a.pedido_pecas_id,v.placa,f.nome AS responsavel
       FROM alertas_operacionais a
@@ -471,6 +471,25 @@ export async function getOperationalIntelligenceData() {
       FROM veiculos
       WHERE data_saida_real IS NULL
     `,
+    sql`
+      SELECT
+        COUNT(*) FILTER (WHERE data_saida_real IS NOT NULL)::int AS entregues,
+        ROUND(AVG(data_saida_real-data_entrada) FILTER (WHERE data_saida_real IS NOT NULL AND data_entrada IS NOT NULL))::int AS media_ciclo_dias,
+        ROUND(
+          100.0 * COUNT(*) FILTER (
+            WHERE data_saida_real IS NOT NULL
+              AND previsao_saida IS NOT NULL
+              AND data_saida_real <= previsao_saida
+          ) /
+          NULLIF(COUNT(*) FILTER (WHERE data_saida_real IS NOT NULL AND previsao_saida IS NOT NULL),0)
+        )::int AS percentual_no_prazo,
+        COUNT(*) FILTER (WHERE data_saida_real IS NULL AND motivo_parada='Retrabalho')::int AS retrabalho_aberto,
+        ROUND(
+          100.0 * COUNT(*) FILTER (WHERE data_saida_real IS NULL AND status='Aguardando peças') /
+          NULLIF(COUNT(*) FILTER (WHERE data_saida_real IS NULL),0)
+        )::int AS percentual_aguardando_pecas
+      FROM veiculos
+    `,
   ]);
 
   return {
@@ -480,5 +499,12 @@ export async function getOperationalIntelligenceData() {
     insurers,
     suppliers,
     forecast: forecastStats[0] ?? { com_previsao: 0, sem_previsao: 0, confianca_media: null },
+    performance: performanceStats[0] ?? {
+      entregues: 0,
+      media_ciclo_dias: null,
+      percentual_no_prazo: null,
+      retrabalho_aberto: 0,
+      percentual_aguardando_pecas: null,
+    },
   };
 }
