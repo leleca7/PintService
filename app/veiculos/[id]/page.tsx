@@ -7,6 +7,7 @@ import { getVehicleDetail } from '@/lib/dashboard-data';
 import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { normalizeOperationalStage, OPERATION_STAGES } from '@/lib/operation-stages';
 import { updateVehicle } from '../actions';
+import { getVehicleMedia } from '@/lib/vehicle-media';
 
 function dateTime(value: string | null) {
   if (!value) return 'Não informado';
@@ -15,7 +16,11 @@ function dateTime(value: string | null) {
 
 export default async function VehicleDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [data, user] = await Promise.all([getVehicleDetail(decodeURIComponent(id)), getCurrentAppUser()]);
+  const [data, user, media] = await Promise.all([
+    getVehicleDetail(decodeURIComponent(id)),
+    getCurrentAppUser(),
+    getVehicleMedia(decodeURIComponent(id)),
+  ]);
   if (!data.vehicle) notFound();
   const vehicle = data.vehicle;
   const canManage = userHasPermission(user, 'gerenciar_veiculos');
@@ -98,7 +103,18 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           <section className={styles.section}><div className={styles.sectionHead}><div><p>ATENDIMENTO</p><h2>Conversas relacionadas</h2></div><Link href="/atendimento" className="link-button">Central</Link></div>{data.conversations.length ? <div className={styles.list}>{data.conversations.map((conversation) => <article className={`${styles.row} ${conversation.status.includes('humano') ? styles.rowCritical : ''}`} key={conversation.id}><div className={styles.avatar}>{conversation.cliente.slice(0,2).toUpperCase()}</div><div className={styles.rowBody}><div className={styles.rowTop}><strong>{conversation.cliente}</strong><time>{dateTime(conversation.criadoEm)}</time></div><p className={styles.preview}>{conversation.mensagem}</p><div className={styles.meta}><span className={`${styles.badge} ${conversation.status.includes('humano') ? styles.badgeHuman : styles.badgeAi}`}>{conversation.status}</span></div></div></article>)}</div> : <div className={styles.quiet}><strong>Nenhuma conversa vinculada.</strong>O atendimento deste veículo ainda não aparece no histórico carregado.</div>}</section>
         </div>
 
-        <section className={styles.section}><div className={styles.sectionHead}><div><p>FOTOS E EVIDÊNCIAS</p><h2>Histórico visual</h2></div></div><div className={styles.quiet}><strong>Armazenamento de mídia ainda será conectado.</strong>Fotos recebidas em tarefas ficarão vinculadas ao histórico operacional quando o WhatsApp e o armazenamento real forem ativados.</div></section>
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>FOTOS E EVIDÊNCIAS</p><h2>Histórico visual</h2></div><span className={styles.count}>{media.length}</span></div>
+          {media.length ? <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>
+            {media.map((item) => <article key={item.id} style={{border:'1px solid var(--line,#d9dde3)',borderRadius:14,padding:10,display:'grid',gap:8}}>
+              {item.mediaType === 'audio'
+                ? <audio controls preload="none" src={`/api/media/whatsapp/${encodeURIComponent(item.mediaId)}`} style={{width:'100%'}}/>
+                : <img src={`/api/media/whatsapp/${encodeURIComponent(item.mediaId)}`} alt={item.caption || `Evidência de ${vehicle.placa}`} style={{width:'100%',aspectRatio:'4/3',objectFit:'cover',borderRadius:10,background:'#111'}}/>}
+              <small>{dateTime(item.createdAt)} · {item.event.replaceAll('_',' ')}</small>
+              {item.caption && <p className={styles.preview}>{item.caption}</p>}
+            </article>)}
+          </div> : <div className={styles.quiet}><strong>Nenhuma mídia vinculada ainda.</strong>Fotos e áudios confirmados pelo WhatsApp aparecerão aqui enquanto estiverem disponíveis na origem.</div>}
+        </section>
       </div>
     </AppShell>
   );
