@@ -4,6 +4,7 @@ import { extractPartsReceiptFromMedia, type ExtractedPartsReceipt } from '@/lib/
 import { getDb } from '@/lib/db';
 import { downloadWhatsAppMedia } from '@/lib/whatsapp-media';
 import { sendWhatsAppText, sentWhatsAppMessageId, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
+import { advancePostDeliveryFromParts } from '@/lib/operational-intelligence';
 
 type Employee = { id: string; nome: string; setor: string | null; telefone: string | null; cargo: string | null };
 
@@ -283,6 +284,15 @@ export async function processPartsReceiptConfirmation(message: IncomingWhatsAppM
         })}::jsonb
       )
     `;
+    try {
+      await advancePostDeliveryFromParts({
+        vehicleId: String(imported.veiculo_id),
+        receivedItems: proposed.map((item: any) => ({ descricao: String(item.descricao ?? '') })),
+        orderIds,
+      });
+    } catch (error) {
+      console.error('Falha ao avançar pendência pós-entrega após recebimento:', error);
+    }
   }
 
   await sendWhatsAppText(employee.telefone, `Recebimento #${imported.codigo} confirmado. Atualizei as quantidades das peças e o histórico do veículo automaticamente.`, message.id);
