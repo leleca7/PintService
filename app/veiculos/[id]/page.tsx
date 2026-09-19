@@ -52,6 +52,20 @@ export default async function VehicleDetailPage({ params }: { params: Promise<{ 
           <div className={styles.summaryItem}><span>Conversas ligadas</span><strong>{data.conversations.length}</strong><small>{humanConversations.length} com humano</small></div>
         </div>
 
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <div><p>ACESSO RÁPIDO</p><h2>QR do veículo</h2></div>
+            <a className="link-button" href={`/api/veiculos/${vehicle.id}/qr`} target="_blank" rel="noreferrer">Abrir para imprimir</a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 18, alignItems: 'center' }}>
+            <img src={`/api/veiculos/${vehicle.id}/qr`} alt={`QR operacional do veículo ${vehicle.placa}`} width="140" height="140"/>
+            <div>
+              <strong>{vehicle.placa}</strong>
+              <p className={styles.subtitle}>Cole este QR no cartão/ordem do veículo. Funcionários autenticados escaneiam e caem direto nesta ficha, sem pesquisar placa ou cliente.</p>
+            </div>
+          </div>
+        </section>
+
         {canManage && <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>EDIÇÃO INTERNA</p><h2>Atualizar cadastro confirmado</h2></div></div>
           <form action={updateVehicle} className={ops.detailForm}>
