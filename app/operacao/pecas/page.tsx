@@ -40,6 +40,7 @@ export default async function PartsPage() {
             <p className={styles.subtitle}>Acompanhe pedidos por placa e registre o que chegou. O status é calculado automaticamente; a liberação para entrada continua sendo uma decisão humana.</p>
           </div>
           <div className={local.headerActions}>
+            <Link className={styles.button} href="/operacao/pecas/scan">Escanear peça</Link>
             <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>
             <Link className={styles.button} href="/operacao">Modo Operação</Link>
           </div>
