@@ -114,8 +114,34 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
   if (!task) throw new Error('Tarefa operacional não encontrada.');
   if (task.status === 'resolvida' || task.status === 'cancelada') return { task, alreadyFinished: true };
 
-  if (task.veiculo_id && input.newVehicleStatus) await sql`UPDATE veiculos SET status = ${input.newVehicleStatus}, ultima_atualizacao = now() WHERE id = ${task.veiculo_id}`;
-  if (task.veiculo_id && input.newVehicleSector) await sql`UPDATE veiculos SET setor = ${input.newVehicleSector}, ultima_atualizacao = now() WHERE id = ${task.veiculo_id}`;
+  if (task.veiculo_id && (input.newVehicleStatus || input.newVehicleSector)) {
+    const before = {
+      status: task.veiculo_status ?? null,
+      setor: task.veiculo_setor ?? null,
+    };
+    const after = {
+      status: input.newVehicleStatus ?? task.veiculo_status ?? null,
+      setor: input.newVehicleSector ?? task.veiculo_setor ?? null,
+      origem: 'whatsapp_funcionario',
+      funcionario_id: input.employeeId ?? null,
+    };
+    await sql`
+      UPDATE veiculos
+      SET status = COALESCE(${input.newVehicleStatus ?? null}, status),
+          setor = COALESCE(${input.newVehicleSector ?? null}, setor),
+          ultima_atualizacao = now()
+      WHERE id = ${task.veiculo_id}
+    `;
+    await sql`
+      INSERT INTO historico_veiculos (veiculo_id, evento, dados_anteriores, dados_novos)
+      VALUES (
+        ${task.veiculo_id},
+        'atualizacao_via_whatsapp_funcionario',
+        ${JSON.stringify(before)}::jsonb,
+        ${JSON.stringify(after)}::jsonb
+      )
+    `;
+  }
 
   const result = { employeeResponse: input.employeeResponse, evidenceUrl: input.evidenceUrl ?? null, evidenceMediaId: input.evidenceMediaId ?? null, newVehicleStatus: input.newVehicleStatus ?? null, newVehicleSector: input.newVehicleSector ?? null };
   const resultJson = JSON.stringify(result);
