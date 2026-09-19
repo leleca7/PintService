@@ -3,6 +3,10 @@
     {
       "path": "/api/reputacao/check",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/operacao/resumo/check",
+      "schedule": "30 12 * * 1-6"
     }
   ]
 }
