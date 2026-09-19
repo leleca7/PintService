@@ -5,16 +5,12 @@ ALTER TABLE public.veiculos
   ADD COLUMN IF NOT EXISTS garantia_servico_ate date,
   ADD COLUMN IF NOT EXISTS garantia_pecas_ate date;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'veiculos_finalizacao_tipo_check'
-  ) THEN
-    ALTER TABLE public.veiculos
-      ADD CONSTRAINT veiculos_finalizacao_tipo_check
-      CHECK (finalizacao_tipo IS NULL OR finalizacao_tipo IN ('sem_pendencias','com_pendencias'));
-  END IF;
-END $$;
+ALTER TABLE public.veiculos
+  DROP CONSTRAINT IF EXISTS veiculos_finalizacao_tipo_check;
+
+ALTER TABLE public.veiculos
+  ADD CONSTRAINT veiculos_finalizacao_tipo_check
+  CHECK (finalizacao_tipo IS NULL OR finalizacao_tipo IN ('sem_pendencias','com_pendencias'));
 
 CREATE TABLE IF NOT EXISTS public.configuracao_pos_entrega (
   id boolean PRIMARY KEY DEFAULT true CHECK (id = true),
