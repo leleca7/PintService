@@ -11,9 +11,10 @@ const OperationalTaskSchema = z.object({
 });
 
 const PlanSchema = z.object({
-  intent: z.enum(['status', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral']),
-  action: z.enum(['status', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral']),
+  intent: z.enum(['status', 'pecas', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral']),
+  action: z.enum(['status', 'pecas', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral']),
   plate: z.string(),
+  partQuery: z.string(),
   confidence: z.number().min(0).max(1),
   needsHuman: z.boolean(),
   priority: z.enum(['baixa', 'normal', 'alta', 'urgente']),
@@ -36,21 +37,19 @@ function client() {
 const schema = {
   type: 'object', additionalProperties: false,
   properties: {
-    intent: { type: 'string', enum: ['status', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral'] },
-    action: { type: 'string', enum: ['status', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral'] },
-    plate: { type: 'string' }, confidence: { type: 'number', minimum: 0, maximum: 1 }, needsHuman: { type: 'boolean' }, priority: { type: 'string', enum: ['baixa', 'normal', 'alta', 'urgente'] }, sentiment: { type: 'string', enum: ['positivo', 'neutro', 'frustrado', 'irritado'] }, reason: { type: 'string' },
+    intent: { type: 'string', enum: ['status', 'pecas', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral'] },
+    action: { type: 'string', enum: ['status', 'pecas', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral'] },
+    plate: { type: 'string' }, partQuery: { type: 'string' }, confidence: { type: 'number', minimum: 0, maximum: 1 }, needsHuman: { type: 'boolean' }, priority: { type: 'string', enum: ['baixa', 'normal', 'alta', 'urgente'] }, sentiment: { type: 'string', enum: ['positivo', 'neutro', 'frustrado', 'irritado'] }, reason: { type: 'string' },
     operationalTask: { type: 'object', additionalProperties: false, properties: { type: { type: 'string', enum: ['confirmar_etapa', 'tirar_foto', 'confirmar_peca', 'verificar_status_fisico', 'informacao_setor', 'nenhuma'] }, sector: { type: 'string' }, instruction: { type: 'string' }, requiresPhoto: { type: 'boolean' } }, required: ['type', 'sector', 'instruction', 'requiresPhoto'] },
   },
-  required: ['intent', 'action', 'plate', 'confidence', 'needsHuman', 'priority', 'sentiment', 'reason', 'operationalTask'],
+  required: ['intent', 'action', 'plate', 'partQuery', 'confidence', 'needsHuman', 'priority', 'sentiment', 'reason', 'operationalTask'],
 };
 
 function normalizePlate(value = '') { const match = value.toUpperCase().match(/\b([A-Z]{3})[\s-]?([0-9][A-Z][0-9]{2}|[0-9]{4})\b/); return match ? `${match[1]}${match[2]}` : ''; }
-function normalizeText(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-function asksAboutParts(value = '') { return /\b(peca|pecas|reposicao|componente|componentes)\b/.test(normalizeText(value)); }
 const emptyTask = { type: 'nenhuma' as const, sector: '', instruction: '', requiresPhoto: false };
 
 export async function planAttendance(context: AgentContext): Promise<AgentPlan> {
-  if (context.messageType !== 'text') return { intent: 'midia', action: 'midia', plate: '', confidence: 1, needsHuman: true, priority: 'normal', sentiment: 'neutro', reason: 'midia_recebida', operationalTask: emptyTask };
+  if (context.messageType !== 'text') return { intent: 'midia', action: 'midia', plate: '', partQuery: '', confidence: 1, needsHuman: true, priority: 'normal', sentiment: 'neutro', reason: 'midia_recebida', operationalTask: emptyTask };
   const response = await client().responses.create({
     model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false,
     instructions: `Você é o roteador de atendimento da PintService, uma oficina brasileira de funilaria e pintura.
@@ -59,7 +58,8 @@ Nunca invente status, setor, preço, orçamento, prazo, data de entrega, peça r
 Status registrado no sistema pode ser informado, mas perguntas que exigem confirmação física atual devem gerar verificar_operacao.
 Exemplos permitidos para verificar_operacao: "já está pronto para pintura?", "consegue tirar uma foto agora?", "confere em qual setor ele está?".
 Tipos operacionais permitidos para resposta automática: confirmar_etapa, tirar_foto, verificar_status_fisico ou informacao_setor.
-Qualquer pergunta sobre peça, peças, reposição, chegada de peça ou componente deve ir para humano. Nunca use confirmar_peca para atender cliente automaticamente.
+Perguntas sobre chegada, recebimento ou falta de peça devem usar intent/action="pecas" para consultar o controle nativo antes de envolver humano. Em partQuery escreva somente a peça ou componente citado, sem placa e sem palavras como "chegou". Se a pergunta for sobre peças em geral, deixe partQuery vazio.
+Nunca afirme que uma peça chegou a partir do texto do cliente; a ação pecas apenas autoriza a camada determinística a consultar o banco.
 Solicitações de vistoria, orçamento particular, discussão de preço/prazo, reclamação, pedido de gerente, ameaça, acidente grave, informação conflitante ou baixa confiança devem ir para humano.
 Para pedido de foto do veículo na oficina, prefira verificar_operacao/tirar_foto quando a placa estiver identificada.
 Revise openTasks antes de pedir nova verificação. Se já houver tarefa equivalente, reutilize a finalidade.
@@ -70,14 +70,14 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
   const plan = PlanSchema.parse(JSON.parse(response.output_text));
   const messagePlate = normalizePlate(context.message); const contextPlate = normalizePlate(context.plateContext || ''); const aiPlate = normalizePlate(plan.plate); let plate = messagePlate || aiPlate || contextPlate;
 
-  if (asksAboutParts(context.message) || plan.operationalTask.type === 'confirmar_peca') {
-    return { ...plan, intent: 'humano', action: 'humano', plate, needsHuman: true, priority: plan.priority === 'baixa' ? 'normal' : plan.priority, reason: `guardrail:pecas:${plan.reason}`, operationalTask: emptyTask };
+  if (plan.operationalTask.type === 'confirmar_peca') {
+    return { ...plan, intent: 'pecas', action: 'pecas', plate, needsHuman: false, operationalTask: emptyTask };
   }
   if (plan.intent === 'vistoria' || plan.action === 'vistoria') {
     return { ...plan, action: 'humano', plate, needsHuman: true, reason: `guardrail:vistoria:${plan.reason}`, operationalTask: emptyTask };
   }
   if (plan.confidence < 0.62 || plan.intent === 'reclamacao' || plan.intent === 'humano') return { ...plan, plate, action: 'humano', needsHuman: true, reason: `guardrail:${plan.reason}`, operationalTask: emptyTask };
-  if ((plan.action === 'status' || plan.action === 'verificar_operacao') && !plate) { if (context.vehicles.length === 1) plate = normalizePlate(context.vehicles[0].placa); else return { ...plan, plate: '', action: 'pedir_placa', needsHuman: false, operationalTask: emptyTask }; }
+  if ((plan.action === 'status' || plan.action === 'verificar_operacao' || plan.action === 'pecas') && !plate) { if (context.vehicles.length === 1) plate = normalizePlate(context.vehicles[0].placa); else return { ...plan, plate: '', action: 'pedir_placa', needsHuman: false, operationalTask: emptyTask }; }
   if (plan.action === 'verificar_operacao' && plan.operationalTask.type === 'nenhuma') return { ...plan, plate, operationalTask: { type: 'verificar_status_fisico', sector: '', instruction: 'Verificar fisicamente a situação atual do veículo e confirmar a informação solicitada pelo cliente.', requiresPhoto: false } };
   return { ...plan, plate };
 }
