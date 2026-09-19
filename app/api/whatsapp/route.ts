@@ -2,6 +2,7 @@ import { after, NextRequest, NextResponse } from 'next/server';
 import { processIncomingMessage } from '@/lib/process-message';
 import { isDatabaseConfigured } from '@/lib/db';
 import { extractIncomingMessages, verifyMetaSignature } from '@/lib/whatsapp';
+import { recordInboxEvent } from '@/lib/unified-inbox';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,17 @@ export async function POST(request: NextRequest) {
   const messages = extractIncomingMessages(payload);
   after(async () => {
     for (const message of messages) {
-      try { await processIncomingMessage(message); }
+      try {
+        await recordInboxEvent({
+          channel: 'whatsapp',
+          externalId: message.id,
+          author: message.name || message.phone,
+          message: message.text || `[${message.type}]`,
+          phone: message.phone,
+          data: { type: message.type, mediaId: message.mediaId || null },
+        });
+        await processIncomingMessage(message);
+      }
       catch (error) { console.error('whatsapp_process_error', { messageId: message.id, error }); }
     }
   });
