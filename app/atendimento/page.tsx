@@ -2,6 +2,7 @@ import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
+import { getUnifiedInboxData } from '@/lib/unified-inbox';
 
 function normalize(value = '') {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
@@ -39,7 +40,7 @@ function initials(name: string) {
 }
 
 export default async function AttendancePage() {
-  const data = await getDashboardData();
+  const [data, inbox] = await Promise.all([getDashboardData(), getUnifiedInboxData()]);
   const human = data.conversations
     .filter((item) => normalize(item.status).includes('humano'))
     .sort((a, b) => timeValue(a.criadoEm, Number.MAX_SAFE_INTEGER) - timeValue(b.criadoEm, Number.MAX_SAFE_INTEGER));
@@ -124,6 +125,22 @@ export default async function AttendancePage() {
             </article>)}</div> : <div className={styles.quiet}><strong>Nenhuma conversa automática carregada.</strong>Quando o WhatsApp estiver em operação, a rotina segura aparecerá aqui sem competir com as exceções.</div>}
           </section>
         </div>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}><div><p>CAIXA MULTICANAL</p><h2>WhatsApp, Instagram e próximos canais</h2></div><span className={styles.count}>{inbox.length}</span></div>
+          {inbox.length ? <div className={styles.list}>{inbox.slice(0,24).map((item) => <article className={`${styles.row} ${['alta','urgente'].includes(item.priority) ? styles.rowCritical : ''}`} key={item.id}>
+            <div className={styles.avatar}>{item.channel.slice(0,2).toUpperCase()}</div>
+            <div className={styles.rowBody}>
+              <div className={styles.rowTop}><strong>{item.author}</strong><time>{dateTime(item.createdAt)}</time></div>
+              <p className={styles.preview}>{item.message}</p>
+              <div className={styles.meta}>
+                <span className={styles.badge}>{item.channel}</span>
+                <span>{item.priority}</span>
+                {item.plate && <span>{item.plate}</span>}
+              </div>
+            </div>
+          </article>)}</div> : <div className={styles.quiet}><strong>Nenhum evento multicanal carregado.</strong>WhatsApp e Instagram aparecerão aqui conforme chegarem.</div>}
+        </section>
 
         <section className="system-banner info-banner"><strong>Regra de operação</strong><span>A IA responde apenas os casos seguros. Reclamação, negociação de preço ou prazo, pedido de gerente, dado ausente ou baixa confiança passam para uma pessoa.</span></section>
       </div>
