@@ -6,6 +6,7 @@ import { writeAudit } from '@/lib/audit';
 import { getDb } from '@/lib/db';
 import { normalizeOperationalStage } from '@/lib/operation-stages';
 import { addMonths, getPostDeliveryConfig, startPostDeliveryFlow, type FinalizationKind } from '@/lib/post-delivery';
+import { maybeSendOperationalEvent } from '@/lib/operational-communications';
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
@@ -109,6 +110,18 @@ export async function updateOperationalVehicle(formData: FormData) {
     antes: before,
     depois: after,
   });
+
+  try {
+    await maybeSendOperationalEvent({
+      vehicleId: id,
+      beforeStage: before.setor,
+      afterStage: after.setor,
+      beforeStatus: before.status,
+      afterStatus: after.status,
+    });
+  } catch (error) {
+    console.error('Falha ao processar comunicação de evento operacional:', error);
+  }
 
   revalidatePath('/');
   revalidatePath('/operacao');
