@@ -196,6 +196,10 @@ export default async function OperationPage() {
                       <div className={local.actions}><button className={local.save} type="submit">Salvar atualização</button></div>
                     </form>
 
+                    <div className={local.actions} style={{ marginTop: 10 }}>
+                      <Link className={styles.button} href={`/operacao/qualidade/${vehicle.id}`}>Checklist de qualidade</Link>
+                    </div>
+
                     <details className={local.finalize}>
                       <summary>Finalizar / entregar veículo</summary>
                       <p>Use somente quando o veículo realmente sair da oficina. O pós-entrega será iniciado a partir desta ação.</p>
