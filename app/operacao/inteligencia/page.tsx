@@ -34,6 +34,16 @@ export default async function OperationalIntelligencePage(){
       </div>
 
       <section className={styles.section}>
+        <div className={styles.sectionHead}><div><p>DESEMPENHO</p><h2>Indicadores da operação</h2></div></div>
+        <div className={styles.summaryGrid}>
+          <div className={styles.summaryItem}><span>Ciclo médio entregue</span><strong>{(data.performance as any).media_ciclo_dias==null?'—':`${Number((data.performance as any).media_ciclo_dias)}d`}</strong><small>entrada até saída real</small></div>
+          <div className={styles.summaryItem}><span>Entregues no prazo informado</span><strong>{(data.performance as any).percentual_no_prazo==null?'—':`${Number((data.performance as any).percentual_no_prazo)}%`}</strong><small>quando havia previsão registrada</small></div>
+          <div className={styles.summaryItem}><span>Aguardando peças</span><strong>{(data.performance as any).percentual_aguardando_pecas==null?'—':`${Number((data.performance as any).percentual_aguardando_pecas)}%`}</strong><small>da carteira aberta agora</small></div>
+          <div className={styles.summaryItem}><span>Retrabalho aberto</span><strong>{Number((data.performance as any).retrabalho_aberto??0)}</strong><small>veículos marcados com essa causa</small></div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
         <div className={styles.sectionHead}><div><p>EXCEÇÕES</p><h2>O que precisa de ação</h2></div><span className={styles.count}>{data.alerts.length}</span></div>
         {data.alerts.length?<div className={styles.list}>{data.alerts.map((alert:any)=>{
           const payload=asObject(alert.dados);
