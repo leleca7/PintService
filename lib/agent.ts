@@ -82,6 +82,127 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
   return { ...plan, plate };
 }
 
+const StaffCommandSchema = z.object({
+  action: z.enum(['atualizar_veiculo', 'checkin', 'registrar_observacao', 'desconhecido']),
+  plate: z.string(),
+  stage: z.string(),
+  status: z.string(),
+  stopReason: z.string(),
+  stopDetail: z.string(),
+  note: z.string(),
+  confidence: z.number().min(0).max(1),
+  reason: z.string(),
+});
+
+export async function interpretStaffOperationalCommand(input: {
+  message: string;
+  employeeSector?: string | null;
+}) {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      action: { type: 'string', enum: ['atualizar_veiculo', 'checkin', 'registrar_observacao', 'desconhecido'] },
+      plate: { type: 'string' },
+      stage: { type: 'string' },
+      status: { type: 'string' },
+      stopReason: { type: 'string' },
+      stopDetail: { type: 'string' },
+      note: { type: 'string' },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      reason: { type: 'string' },
+    },
+    required: ['action','plate','stage','status','stopReason','stopDetail','note','confidence','reason'],
+  };
+
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Você interpreta comandos enviados por funcionários de uma oficina automotiva para atualizar o Sistema da Pint.
+
+Etapas válidas, exatamente:
+Desmontagem
+Funilaria
+Prep. de Pintura
+Pintura
+Polimento de Pint.
+Montagem
+Lavagem/Acabamento
+
+Status válidos, exatamente:
+Em serviço
+Aguardando peças
+Aguardando aprovação
+Parado
+Pronto para entrega
+
+Motivos de parada preferidos:
+Aguardando peça
+Aguardando seguradora
+Aguardando cliente
+Retrabalho
+Capacidade interna
+Problema técnico
+Outro
+
+Regras:
+- Extraia a placa quando estiver explícita. Normalize sem hífen e em maiúsculas.
+- Nunca invente placa.
+- "está na montagem", "foi para pintura", "agora está em funilaria" permitem atualizar a etapa.
+- "acabou de sair da pintura" não prova a próxima etapa; deixe stage vazio se a etapa atual não estiver explícita.
+- Se disser "parado porque...", "aguardando..." ou equivalente, use status e stopReason somente quando sustentados.
+- checkin só quando a mensagem indicar entrada/chegada/check-in do veículo.
+- registrar_observacao quando houver uma informação útil vinculada ao veículo, mas sem atualização estrutural segura.
+- Se faltarem placa ou dados suficientes, use desconhecido.
+- Não inferir prazo nem data de entrega.`,
+    input: JSON.stringify(input),
+    text: { format: { type: 'json_schema', name: 'comando_funcionario', strict: true, schema } },
+  });
+  return StaffCommandSchema.parse(JSON.parse(response.output_text));
+}
+
+const StaffMediaSchema = z.object({
+  kind: z.enum(['vehicle_photo', 'parts_document', 'other']),
+  plate: z.string(),
+  confidence: z.number().min(0).max(1),
+  description: z.string(),
+});
+
+export async function classifyStaffMedia(input: { buffer: Buffer; mimeType: string; filename: string }) {
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      kind: { type: 'string', enum: ['vehicle_photo', 'parts_document', 'other'] },
+      plate: { type: 'string' },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      description: { type: 'string' },
+    },
+    required: ['kind','plate','confidence','description'],
+  };
+  const dataUrl = `data:${input.mimeType};base64,${input.buffer.toString('base64')}`;
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Classifique uma mídia enviada por funcionário de oficina.
+vehicle_photo: fotografia de veículo, placa, área da oficina ou evidência de serviço.
+parts_document: nota fiscal, DANFE, romaneio, pedido, etiqueta/lista de peças ou documento de recebimento.
+other: qualquer outro conteúdo.
+Extraia plate somente quando uma placa automotiva brasileira estiver claramente legível. Não invente.`,
+    input: [{
+      role: 'user',
+      content: [
+        input.mimeType.startsWith('image/')
+          ? { type: 'input_image', image_url: dataUrl, detail: 'high' }
+          : { type: 'input_file', filename: input.filename, file_data: dataUrl },
+        { type: 'input_text', text: 'Classifique esta mídia operacional.' },
+      ],
+    }],
+    text: { format: { type: 'json_schema', name: 'classificacao_midia_funcionario', strict: true, schema } },
+  });
+  return StaffMediaSchema.parse(JSON.parse(response.output_text));
+}
+
 const PartsReceiptSchema = z.object({
   documentType: z.enum(['nota_fiscal', 'romaneio', 'pedido', 'outro']),
   documentNumber: z.string(),
@@ -222,6 +343,9 @@ const StaffOperationalUpdateSchema = z.object({
   stage: z.string(),
   updateStatus: z.boolean(),
   status: z.string(),
+  updateStopReason: z.boolean(),
+  stopReason: z.string(),
+  stopDetail: z.string(),
   reason: z.string(),
 });
 
@@ -239,9 +363,12 @@ export async function suggestOperationalUpdateFromEmployeeResponse(input: {
       stage: { type: 'string' },
       updateStatus: { type: 'boolean' },
       status: { type: 'string' },
+      updateStopReason: { type: 'boolean' },
+      stopReason: { type: 'string' },
+      stopDetail: { type: 'string' },
       reason: { type: 'string' },
     },
-    required: ['updateStage', 'stage', 'updateStatus', 'status', 'reason'],
+    required: ['updateStage', 'stage', 'updateStatus', 'status', 'updateStopReason', 'stopReason', 'stopDetail', 'reason'],
   };
 
   const response = await client().responses.create({
@@ -269,6 +396,9 @@ Regras:
 - Só marque updateStage=true quando o funcionário afirmar claramente a etapa ATUAL do veículo, por exemplo "está na montagem", "já foi para polimento", "está em pintura".
 - Frases como "acabou de sair da pintura", "terminou a funilaria" ou "vai para montagem" NÃO provam a etapa atual; nesses casos não atualize a etapa.
 - Só marque updateStatus=true quando um dos status permitidos estiver explicitamente sustentado pela resposta.
+- Se o funcionário disser explicitamente que está aguardando peça, seguradora, cliente, retrabalho, capacidade interna ou problema técnico, marque updateStopReason=true.
+- stopReason deve ser exatamente um destes quando aplicável: Aguardando peça, Aguardando seguradora, Aguardando cliente, Retrabalho, Capacidade interna, Problema técnico, Outro.
+- stopDetail deve conter somente o detalhe factual citado pelo funcionário, sem inferência.
 - Nunca inferir próxima etapa, prazo, disponibilidade, entrega ou recebimento de peça.
 - Se houver dúvida, deixe os campos de atualização falsos e strings vazias.
 - A resposta ao cliente pode continuar normalmente mesmo quando não houver atualização estrutural.`,

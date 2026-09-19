@@ -1,12 +1,13 @@
 import 'server-only';
 import { resolveOperationalTask } from '@/lib/operational-tasks';
-import { suggestOperationalUpdateFromEmployeeResponse, transcribeOperationalAudio } from '@/lib/agent';
+import { classifyStaffMedia, suggestOperationalUpdateFromEmployeeResponse, transcribeOperationalAudio } from '@/lib/agent';
 import { normalizeOperationalStage } from '@/lib/operation-stages';
 import { findTaskIdByOutboundMessage, sendMappedTaskText } from '@/lib/task-messaging';
 import { getDb } from '@/lib/db';
 import { normalizeWhatsAppPhone, sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 import { downloadWhatsAppMedia } from '@/lib/whatsapp-media';
 import { findPartsReceiptImportByReply, processPartsReceiptConfirmation, stagePartsReceiptFromStaff } from '@/lib/parts-receipt-import';
+import { explicitPlate, stageAdHocStaffCommand } from '@/lib/staff-ad-hoc';
 
 const TASK_CODE_PATTERN = /#[A-Z0-9]{10}\b/gi;
 type Employee = { id: string; nome: string; setor: string | null; telefone: string | null; cargo: string | null };
@@ -103,10 +104,21 @@ async function confirmStagedTask(task: any, employee: Employee, message: Incomin
     evidenceMediaId: task.evidencia_media_id ?? null,
     newVehicleStatus: proposed.newVehicleStatus ?? null,
     newVehicleSector: proposed.newVehicleSector ?? null,
+    newVehicleStopReason: proposed.newVehicleStopReason ?? null,
+    newVehicleStopDetail: proposed.newVehicleStopDetail ?? null,
+    appendVehicleObservation: proposed.appendVehicleObservation ?? null,
+    markCheckin: Boolean(proposed.markCheckin),
     sourceMediaId: staged?.sourceMediaId ?? null,
     sourceMediaType: staged?.sourceMediaType ?? null,
   });
-  await sendWhatsAppText(employee.telefone, `Tarefa #${task.codigo} concluída. A confirmação foi registrada e o atendimento do cliente foi retomado automaticamente.`, message.id);
+  const adHoc = String(task.origem_mensagem ?? '') === 'comando_funcionario' || Boolean(staged?.adHoc);
+  await sendWhatsAppText(
+    employee.telefone,
+    adHoc
+      ? `Atualização #${task.codigo} confirmada e registrada no veículo.`
+      : `Tarefa #${task.codigo} concluída. A confirmação foi registrada e o atendimento do cliente foi retomado automaticamente.`,
+    message.id,
+  );
   return { ok: true, resolved: true, result };
 }
 
@@ -139,9 +151,16 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
   const responseText = incomingText || previousText || (hasImage ? 'Foto enviada pela equipe.' : 'Confirmação enviada pela equipe.');
   const evidenceMediaId = hasImage ? message.mediaId : task.evidencia_media_id ?? null;
 
-  let proposedUpdate: { newVehicleSector: string | null; newVehicleStatus: string | null } = {
+  let proposedUpdate: {
+    newVehicleSector: string | null;
+    newVehicleStatus: string | null;
+    newVehicleStopReason: string | null;
+    newVehicleStopDetail: string | null;
+  } = {
     newVehicleSector: null,
     newVehicleStatus: null,
+    newVehicleStopReason: null,
+    newVehicleStopDetail: null,
   };
   if (['confirmar_etapa', 'verificar_status_fisico', 'informacao_setor'].includes(String(task.tipo)) && responseText.trim()) {
     try {
@@ -153,9 +172,12 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
       });
       const normalizedStage = suggestion.updateStage ? normalizeOperationalStage(suggestion.stage) : null;
       const allowedStatuses = ['Em serviço', 'Aguardando peças', 'Aguardando aprovação', 'Parado', 'Pronto para entrega'];
+      const allowedStopReasons = ['Aguardando peça','Aguardando seguradora','Aguardando cliente','Retrabalho','Capacidade interna','Problema técnico','Outro'];
       proposedUpdate = {
         newVehicleSector: normalizedStage,
         newVehicleStatus: suggestion.updateStatus && allowedStatuses.includes(suggestion.status) ? suggestion.status : null,
+        newVehicleStopReason: suggestion.updateStopReason && allowedStopReasons.includes(suggestion.stopReason) ? suggestion.stopReason : null,
+        newVehicleStopDetail: suggestion.updateStopReason ? suggestion.stopDetail.trim() || null : null,
       };
     } catch (error) {
       console.error('Falha ao sugerir atualização operacional pela resposta do funcionário:', error);
@@ -174,6 +196,7 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
   const systemUpdate = [
     proposedUpdate.newVehicleSector ? `Etapa: ${proposedUpdate.newVehicleSector}` : '',
     proposedUpdate.newVehicleStatus ? `Status: ${proposedUpdate.newVehicleStatus}` : '',
+    proposedUpdate.newVehicleStopReason ? `Motivo: ${proposedUpdate.newVehicleStopReason}${proposedUpdate.newVehicleStopDetail ? ` — ${proposedUpdate.newVehicleStopDetail}` : ''}` : '',
   ].filter(Boolean);
   if (employee.telefone) await sendMappedTaskText({
     taskId: String(task.id),
@@ -210,10 +233,116 @@ export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessa
     return { staff: true, ...(await processPartsReceiptConfirmation(message, employee, receiptImport)) };
   }
 
-  const located = await findTaskForEmployee(message, employee);
+  let processingMessage: IncomingWhatsAppMessage & { sourceMediaType?: string } = message;
+
+  if (message.type === 'audio' && message.mediaId) {
+    try {
+      const media = await downloadWhatsAppMedia(message.mediaId);
+      const transcript = await transcribeOperationalAudio(media);
+      if (!transcript) throw new Error('Transcrição vazia.');
+      processingMessage = { ...message, type: 'text', text: transcript, sourceMediaType: 'audio' };
+      if (!message.contextMessageId && explicitPlate(transcript)) {
+        return {
+          staff: true,
+          ...(await stageAdHocStaffCommand({
+            employee,
+            message: processingMessage,
+            text: transcript,
+            sourceMediaId: message.mediaId,
+            sourceMediaType: 'audio',
+          })),
+        };
+      }
+    } catch (error) {
+      console.error('Falha ao transcrever áudio operacional:', error);
+      if (employee.telefone) {
+        await sendWhatsAppText(employee.telefone, 'Não consegui transcrever esse áudio com segurança. Envie a informação por texto ou tente novamente.', message.id);
+      }
+      return { staff: true, handled: true, audioError: true };
+    }
+  }
+
+  if (!message.contextMessageId && processingMessage.type === 'text' && explicitPlate(processingMessage.text)) {
+    return {
+      staff: true,
+      ...(await stageAdHocStaffCommand({
+        employee,
+        message: processingMessage,
+        text: processingMessage.text,
+        sourceMediaId: processingMessage.sourceMediaType ? message.mediaId : null,
+        sourceMediaType: processingMessage.sourceMediaType ?? null,
+      })),
+    };
+  }
+
+  if (!message.contextMessageId && message.type === 'image' && message.mediaId && !message.text.trim()) {
+    try {
+      const media = await downloadWhatsAppMedia(message.mediaId);
+      const classification = await classifyStaffMedia(media);
+      if (classification.kind === 'vehicle_photo') {
+        if (classification.plate && classification.confidence >= 0.65) {
+          return {
+            staff: true,
+            ...(await stageAdHocStaffCommand({
+              employee,
+              message,
+              text: `Foto do veículo ${classification.plate}. ${classification.description}`,
+              sourceMediaId: message.mediaId,
+              sourceMediaType: 'image',
+              forcedPlate: classification.plate,
+              forcedCheckin: true,
+            })),
+          };
+        }
+        if (employee.telefone) {
+          await sendWhatsAppText(employee.telefone, 'A imagem parece ser de um veículo, mas não consegui ler a placa com segurança. Envie a mesma foto com a placa na legenda, por exemplo: ABC1D23.', message.id);
+        }
+        return { staff: true, handled: true, plateRequired: true };
+      }
+      if (classification.kind === 'parts_document') {
+        return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+      }
+      if (employee.telefone) {
+        await sendWhatsAppText(employee.telefone, 'Recebi a imagem, mas não consegui relacioná-la com segurança a um veículo ou documento de peças. Envie novamente com a placa na legenda ou responda à tarefa correspondente.', message.id);
+      }
+      return { staff: true, handled: true, unclassifiedMedia: true };
+    } catch (error) {
+      console.error('Falha ao classificar mídia espontânea do funcionário:', error);
+    }
+  }
+
+  if (!message.contextMessageId && message.type === 'image' && message.mediaId && explicitPlate(message.text)) {
+    return {
+      staff: true,
+      ...(await stageAdHocStaffCommand({
+        employee,
+        message,
+        text: message.text,
+        sourceMediaId: message.mediaId,
+        sourceMediaType: 'image',
+      })),
+    };
+  }
+
+  const located = await findTaskForEmployee(processingMessage, employee);
   if (!located.task) {
-    if (['image', 'document'].includes(message.type) && message.mediaId) {
+    if (message.type === 'document' && message.mediaId) {
       return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+    }
+    if (message.type === 'image' && message.mediaId) {
+      return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+    }
+    if (processingMessage.type === 'text' && processingMessage.text.trim() && !located.ambiguousIds.length) {
+      return {
+        staff: true,
+        ...(await stageAdHocStaffCommand({
+          employee,
+          message: processingMessage,
+          text: processingMessage.text,
+          sourceMediaId: processingMessage.sourceMediaType ? message.mediaId : null,
+          sourceMediaType: processingMessage.sourceMediaType ?? null,
+        })),
+      };
     }
     await sendAmbiguityMessage(employee, located.ambiguousIds);
     return { staff: true, handled: true, ambiguous: true };
@@ -229,31 +358,18 @@ export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessa
     return { staff: true, handled: true, ...(await confirmStagedTask(task, employee, message)) };
   }
 
-  let processingMessage: IncomingWhatsAppMessage & { sourceMediaType?: string } = message;
-  if (message.type === 'audio' && message.mediaId) {
-    try {
-      const media = await downloadWhatsAppMedia(message.mediaId);
-      const transcript = await transcribeOperationalAudio(media);
-      if (!transcript) throw new Error('Transcrição vazia.');
-      processingMessage = { ...message, type: 'text', text: transcript, sourceMediaType: 'audio' };
-      const sql = getDb();
-      await sql`
-        INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados)
-        VALUES (
-          ${task.id},
-          'funcionario',
-          ${employee.id},
-          'audio_transcrito_whatsapp',
-          ${JSON.stringify({ mediaId: message.mediaId, transcript })}::jsonb
-        )
-      `;
-    } catch (error) {
-      console.error('Falha ao transcrever áudio operacional:', error);
-      if (employee.telefone) {
-        await sendWhatsAppText(employee.telefone, `Não consegui transcrever esse áudio com segurança. Para a tarefa #${task.codigo}, envie a informação por texto ou tente o áudio novamente.`, message.id);
-      }
-      return { staff: true, handled: true, audioError: true };
-    }
+  if (processingMessage.sourceMediaType === 'audio') {
+    const sql = getDb();
+    await sql`
+      INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados)
+      VALUES (
+        ${task.id},
+        'funcionario',
+        ${employee.id},
+        'audio_transcrito_whatsapp',
+        ${JSON.stringify({ mediaId: message.mediaId, transcript: processingMessage.text })}::jsonb
+      )
+    `;
   }
 
   return { staff: true, handled: true, ...(await stageEmployeeResponse(task, employee, processingMessage)) };

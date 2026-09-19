@@ -16,6 +16,17 @@ const STATUS_OPTIONS = [
   'Pronto para entrega',
 ];
 
+const STOP_REASON_OPTIONS = [
+  '',
+  'Aguardando peça',
+  'Aguardando seguradora',
+  'Aguardando cliente',
+  'Retrabalho',
+  'Capacidade interna',
+  'Problema técnico',
+  'Outro',
+];
+
 function formatDate(value: string | null) {
   if (!value) return 'Não informada';
   return new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Bahia' }).format(new Date(`${value}T12:00:00-03:00`));
@@ -27,6 +38,13 @@ function daysInShop(value: string | null) {
   const today = new Date();
   const localToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12).getTime();
   return Math.max(0, Math.floor((localToday - start) / 86_400_000));
+}
+
+function stageElapsed(value: string | null) {
+  if (!value) return 'tempo não calculado';
+  const hours = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 3_600_000));
+  if (hours < 24) return `${hours}h nesta etapa`;
+  return `${Math.floor(hours / 24)}d ${hours % 24}h nesta etapa`;
 }
 
 function todayInBahia() {
@@ -69,6 +87,7 @@ export default async function OperationPage() {
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/agenda">Agenda</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
             <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
+            <Link className={styles.button} href="/operacao/inteligencia">Inteligência</Link>
             <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
           </div>
         </header>
@@ -128,8 +147,10 @@ export default async function OperationPage() {
                       <div><span>Seguradora</span><strong>{vehicle.seguradora || 'Não informada'}</strong></div>
                       <div><span>Entrada</span><strong>{formatDate(vehicle.dataEntrada)}</strong></div>
                       <div><span>Dias em casa</span><strong>{days == null ? '—' : days}</strong></div>
-                      <div><span>Previsão</span><strong>{formatDate(vehicle.previsaoSaida)}</strong></div>
+                      <div><span>Previsão informada</span><strong>{formatDate(vehicle.previsaoSaida)}</strong></div>
+                      <div><span>Previsão operacional</span><strong>{formatDate(vehicle.previsaoIa)}</strong></div>
                       <div><span>Responsável</span><strong>{vehicle.responsavel || 'Não definido'}</strong></div>
+                      <div><span>Tempo na etapa</span><strong>{stageElapsed(vehicle.etapaIniciadaEm)}</strong></div>
                     </div>
 
                     <form action={updateOperationalVehicle} className={local.form}>
@@ -155,6 +176,18 @@ export default async function OperationPage() {
                         <input type="date" name="previsao_saida" defaultValue={vehicle.previsaoSaida ?? ''}/>
                       </label>
 
+                      <label className={local.field}>
+                        <span>Motivo de parada</span>
+                        <select name="motivo_parada" defaultValue={vehicle.motivoParada}>
+                          {STOP_REASON_OPTIONS.map((reason) => <option value={reason} key={reason || 'none'}>{reason || 'Sem motivo de parada'}</option>)}
+                        </select>
+                      </label>
+
+                      <label className={`${local.field} ${local.fieldWide}`}>
+                        <span>Detalhe da parada</span>
+                        <input name="motivo_parada_detalhe" defaultValue={vehicle.motivoParadaDetalhe} placeholder="Ex.: farol direito sem previsão do fornecedor"/>
+                      </label>
+
                       <label className={`${local.field} ${local.fieldWide}`}>
                         <span>Observação interna</span>
                         <textarea name="observacoes" defaultValue={vehicle.observacoes} placeholder="Ex.: aguardando encaixe, peça secundária pendente, veículo liberado para próxima etapa"/>
@@ -162,6 +195,10 @@ export default async function OperationPage() {
 
                       <div className={local.actions}><button className={local.save} type="submit">Salvar atualização</button></div>
                     </form>
+
+                    <div className={local.actions} style={{ marginTop: 10 }}>
+                      <Link className={styles.button} href={`/operacao/qualidade/${vehicle.id}`}>Checklist de qualidade</Link>
+                    </div>
 
                     <details className={local.finalize}>
                       <summary>Finalizar / entregar veículo</summary>

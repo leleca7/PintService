@@ -6,11 +6,17 @@ import { isAuthConfigured } from '@/lib/auth/server';
 import { fetchExternalVehicles } from '@/lib/external-vehicle-source';
 import { getOfficeProfile } from '@/lib/office-profile';
 import { getChannelStatuses } from '@/lib/reputation';
+import { getOperationalAutomationConfig } from '@/lib/operational-config';
+import { updateOperationalAutomationConfig } from './actions';
 
 function configured(...values: Array<string | undefined>) { return values.every((value) => Boolean(value?.trim())); }
 
 export default async function SettingsPage() {
-  const [data, vehicleSource] = await Promise.all([getDashboardData(), fetchExternalVehicles()]);
+  const [data, vehicleSource, automation] = await Promise.all([
+    getDashboardData(),
+    fetchExternalVehicles(),
+    getOperationalAutomationConfig(),
+  ]);
   const reputationChannels = getChannelStatuses();
   const office = getOfficeProfile();
   const vehicleSourceReady = vehicleSource.configured && !vehicleSource.error && vehicleSource.vehicles.length > 0;
@@ -28,6 +34,10 @@ export default async function SettingsPage() {
     { name: 'Alertas de reputação', description: 'Envia ao WhatsApp interno novas DMs e casos classificados como alta/urgente.', ready: configured(process.env.ALERT_WHATSAPP_TO, process.env.WHATSAPP_ACCESS_TOKEN, process.env.WHATSAPP_PHONE_NUMBER_ID), detail: 'número interno + WhatsApp Cloud API + template recomendado' },
     { name: 'Blinko', description: 'Permite que a central Blinko consulte apenas um resumo seguro da operação, sem acesso ao banco completo.', ready: configured(process.env.BLINKO_API_SECRET), detail: 'BLINKO_API_SECRET compartilhado com a Blinko' },
     { name: 'Dados da oficina', description: 'Telefone, horários e endereço usados como informação oficial no atendimento.', ready: officeCoreReady, detail: officeCoreReady ? `${office.publicPhone} · ${office.address}` : 'telefone + horário + endereço confirmados' },
+    { name: 'Reconciliação Zeta', description: 'Compara a fonte do Zeta com o Sistema da Pint em modo somente leitura e destaca divergências.', ready: configured(process.env.ZETA_SYNC_URL), detail: 'ZETA_SYNC_URL + token opcional; nenhuma escrita no Zeta' },
+    { name: 'Inbox de e-mail', description: 'Entrada protegida para conectar um provedor de e-mail à caixa multicanal.', ready: configured(process.env.INBOX_EMAIL_WEBHOOK_SECRET), detail: 'webhook + segredo do provedor' },
+    { name: 'Inbox do site', description: 'Entrada protegida para formulários e contatos do site chegarem à mesma central.', ready: configured(process.env.INBOX_SITE_WEBHOOK_SECRET), detail: 'webhook + segredo compartilhado' },
+    { name: 'Atualizações operacionais ao cliente', description: 'Envia somente eventos relevantes da oficina quando o template da Meta está disponível.', ready: configured(process.env.WHATSAPP_OPERATION_UPDATE_TEMPLATE), detail: 'template Meta com cliente, veículo, evento e mensagem' },
   ];
   const readyCount = connections.filter((item) => item.ready).length;
   const pendingCount = connections.length - readyCount;
@@ -47,6 +57,24 @@ export default async function SettingsPage() {
         <section className={core.section}>
           <div className={core.sectionHead}><div><p>CONEXÕES</p><h2>Estado real das integrações</h2></div><span className={core.count}>{readyCount}/{connections.length}</span></div>
           <div className={admin.connectionGrid}>{connections.map((connection) => <article className={admin.connection} key={connection.name}><div className={`${admin.status} ${connection.ready ? admin.statusReady : ''}`}>{connection.ready ? '✓' : '!'}</div><div><h3>{connection.name}</h3><p>{connection.description}</p><small>{connection.detail}</small></div><span className={`${admin.state} ${connection.ready ? admin.stateReady : ''}`}>{connection.ready ? 'configurado' : 'pendente'}</span></article>)}</div>
+        </section>
+
+        <section className={core.section}>
+          <div className={core.sectionHead}><div><p>AUTOMAÇÕES OPERACIONAIS</p><h2>O que o sistema executa sozinho</h2></div></div>
+          <form action={updateOperationalAutomationConfig} style={{ display: 'grid', gap: 12 }}>
+            {[
+              ['detector_atrasos_ativo','Detector de veículos acima do tempo esperado',automation.detectorDelays,'Cria alerta e pede confirmação ao responsável antes de escalar.'],
+              ['previsao_operacional_ativa','Previsão operacional interna',automation.smartForecast,'Calcula estimativa somente quando os dados permitem; nunca inventa data quando falta dependência.'],
+              ['exigir_checklist_qualidade','Exigir checklist antes da entrega',automation.requireQualityChecklist,'Impede finalização até a conferência final ser aprovada.'],
+              ['comunicacao_eventos_ativa','Eventos relevantes para clientes',automation.customerEvents,'Entrada, início do reparo, pintura concluída, montagem e pronto para entrega.'],
+              ['resumo_setores_ativo','Resumos por setor',automation.sectorSummaries,'Prepara supervisão por líder/setor; envio depende do canal interno configurado.'],
+              ['cobranca_fornecedor_automatica','Cobrança automática de fornecedor',automation.automaticSupplierCharge,'Fica desligada por padrão; exige contato do fornecedor e template aprovado antes do envio automático.'],
+            ].map(([name,label,enabled,description]) => <label key={String(name)} style={{ display:'flex', gap:12, alignItems:'flex-start', padding:12, border:'1px solid var(--line,#d9dde3)', borderRadius:12 }}>
+              <input type="checkbox" name={String(name)} defaultChecked={Boolean(enabled)} style={{ marginTop:4 }}/>
+              <span><strong>{String(label)}</strong><small style={{ display:'block', marginTop:3 }}>{String(description)}</small></span>
+            </label>)}
+            <div><button className={core.button} type="submit">Salvar automações</button></div>
+          </form>
         </section>
 
         <section className={admin.infoGrid}>

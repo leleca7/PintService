@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/current-user';
 import { writeAudit } from '@/lib/audit';
 import { getDb } from '@/lib/db';
+import { advancePostDeliveryFromParts } from '@/lib/operational-intelligence';
 
 function text(formData: FormData, key: string) {
   return String(formData.get(key) ?? '').trim();
@@ -151,7 +152,13 @@ export async function updatePartsItemReceipt(formData: FormData) {
 
   const sql = getDb();
   const before = await sql`
-    SELECT descricao, quantidade, quantidade_recebida FROM itens_pedido_pecas WHERE id = ${id} LIMIT 1
+    SELECT i.descricao, i.quantidade, i.quantidade_recebida, i.pedido_id,
+           c.veiculo_id
+    FROM itens_pedido_pecas i
+    JOIN pedidos_pecas p ON p.id = i.pedido_id
+    JOIN controle_pecas c ON c.id = p.controle_pecas_id
+    WHERE i.id = ${id}
+    LIMIT 1
   `;
   if (!before[0]) throw new Error('Item não encontrado.');
   const quantidade = Number(before[0].quantidade ?? 0);
@@ -169,6 +176,21 @@ export async function updatePartsItemReceipt(formData: FormData) {
     antes: Number(before[0].quantidade_recebida ?? 0),
     depois: quantidadeRecebida,
   });
+
+  const wasIncomplete = Number(before[0].quantidade_recebida ?? 0) < quantidade;
+  const isComplete = quantidadeRecebida >= quantidade;
+  if (wasIncomplete && isComplete && before[0].veiculo_id) {
+    try {
+      await advancePostDeliveryFromParts({
+        vehicleId: String(before[0].veiculo_id),
+        receivedItems: [{ descricao: String(before[0].descricao ?? '') }],
+        orderIds: [String(before[0].pedido_id)],
+      });
+    } catch (error) {
+      console.error('Falha ao avançar pós-entrega após recebimento manual:', error);
+    }
+  }
+
   revalidatePartsPaths();
 }
 

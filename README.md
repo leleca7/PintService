@@ -2,7 +2,7 @@
 
 Sistema de atendimento e operação da Pint Services para funilaria e pintura, com painel web, Neon Postgres, autenticação/RBAC, fila operacional, WhatsApp + IA e Central de reputação.
 
-> **Memória oficial do projeto:** antes de alterar arquitetura, fluxo operacional, veículos ou IA, ler [`docs/PROJECT_CONTEXT_CHECKPOINT.md`](docs/PROJECT_CONTEXT_CHECKPOINT.md). Esse arquivo consolida as decisões de produto e continuidade do **Sistema da Pint**.
+> **Memória oficial do projeto:** antes de alterar arquitetura, fluxo operacional, veículos ou IA, ler [`docs/PROJECT_CONTEXT_CHECKPOINT.md`](docs/PROJECT_CONTEXT_CHECKPOINT.md). As decisões mais recentes de automação estão em [`docs/DECISAO-2026-09-19-OPERACAO-INTELIGENTE.md`](docs/DECISAO-2026-09-19-OPERACAO-INTELIGENTE.md).
 
 ## Direção operacional atual
 
@@ -104,7 +104,7 @@ A leitura de indicadores e casos depende das credenciais/endpoints disponibiliza
 ## Regras de segurança operacional da IA
 
 - Nunca inventar preço, orçamento, prazo, data de entrega, status, setor, dano ou disponibilidade.
-- Perguntas sobre **peças/reposição** vão para atendimento humano.
+- Perguntas sobre **peças/reposição** consultam primeiro o controle nativo confirmado. Se o banco não permitir uma resposta segura, o sistema aciona o responsável humano.
 - **Vistoria**, orçamento particular, reclamações e situações de baixa confiança vão para humano.
 - Confirmações físicas atuais podem virar tarefa operacional para funcionário, mas somente para informações permitidas.
 - Prazo registrado só é comunicado automaticamente após a etapa de desmontagem e quando a fonte oficial contém status de prazo.

@@ -8,7 +8,7 @@ function clean(value: unknown) {
 
 export async function buildOperationsExceptionSummary() {
   const sql = getDb();
-  const [vehicles, tasks, postDelivery, parts] = await Promise.all([
+  const [vehicles, tasks, postDelivery, parts, alerts] = await Promise.all([
     sql`
       SELECT placa, modelo, setor, status, previsao_saida, ultima_atualizacao
       FROM veiculos
@@ -55,9 +55,16 @@ export async function buildOperationsExceptionSummary() {
       ORDER BY p.previsao_entrega ASC NULLS LAST
       LIMIT 12
     `,
+    sql`
+      SELECT nivel,titulo,mensagem
+      FROM alertas_operacionais
+      WHERE status IN ('aberto','em_tratamento')
+      ORDER BY CASE nivel WHEN 'critico' THEN 0 WHEN 'alto' THEN 1 ELSE 2 END, criado_em ASC
+      LIMIT 10
+    `,
   ]);
 
-  const total = vehicles.length + tasks.length + postDelivery.length + parts.length;
+  const total = vehicles.length + tasks.length + postDelivery.length + parts.length + alerts.length;
   if (!total) return { total: 0, text: 'Operação sem exceções relevantes registradas agora.' };
 
   const blocks: string[] = [];
@@ -92,6 +99,81 @@ export async function buildOperationsExceptionSummary() {
     }
   }
 
+  if (alerts.length) {
+    blocks.push('ALERTAS INTELIGENTES');
+    for (const item of alerts) {
+      blocks.push(`• [${clean(item.nivel)}] ${clean(item.titulo)} — ${clean(item.mensagem).slice(0, 120)}`);
+    }
+  }
+
   const text = ['Resumo de exceções da Pint Services', ...blocks].join('\n').slice(0, 3600);
   return { total, text };
+}
+
+export async function buildSectorSupervisorSummaries() {
+  const sql = getDb();
+  const leaders = await sql`
+    SELECT id,nome,setor,telefone,cargo
+    FROM funcionarios
+    WHERE ativo=true
+      AND telefone IS NOT NULL
+      AND (
+        lower(coalesce(cargo,'')) LIKE '%lider%'
+        OR lower(coalesce(cargo,'')) LIKE '%líder%'
+        OR lower(coalesce(cargo,'')) LIKE '%supervisor%'
+        OR lower(coalesce(cargo,'')) LIKE '%encarregado%'
+      )
+    ORDER BY setor,nome
+  `;
+
+  const result:Array<{employeeId:string;name:string;sector:string;phone:string;text:string}>=[];
+  for(const leader of leaders){
+    const sector=String(leader.setor??'').trim();
+    if(!sector) continue;
+    const [vehicles,alerts,tasks]=await Promise.all([
+      sql`
+        SELECT placa,modelo,status,etapa_iniciada_em,motivo_parada
+        FROM veiculos
+        WHERE data_saida_real IS NULL AND lower(coalesce(setor,''))=lower(${sector})
+        ORDER BY etapa_iniciada_em ASC NULLS LAST
+      `,
+      sql`
+        SELECT a.nivel,a.titulo
+        FROM alertas_operacionais a
+        JOIN veiculos v ON v.id=a.veiculo_id
+        WHERE a.status IN ('aberto','em_tratamento')
+          AND lower(coalesce(v.setor,''))=lower(${sector})
+        ORDER BY CASE a.nivel WHEN 'critico' THEN 0 WHEN 'alto' THEN 1 ELSE 2 END
+        LIMIT 8
+      `,
+      sql`
+        SELECT t.codigo,v.placa,t.titulo
+        FROM tarefas_operacionais t
+        LEFT JOIN veiculos v ON v.id=t.veiculo_id
+        WHERE t.status IN ('aberta','em_execucao','aguardando_confirmacao')
+          AND lower(coalesce(t.setor_responsavel,''))=lower(${sector})
+        ORDER BY t.criado_em ASC
+        LIMIT 8
+      `,
+    ]);
+    const lines=[
+      `Resumo do setor ${sector}`,
+      `${vehicles.length} veículo(s) em andamento · ${alerts.length} alerta(s) · ${tasks.length} tarefa(s) aberta(s)`,
+    ];
+    for(const alert of alerts) lines.push(`• ${clean(alert.titulo)}`);
+    for(const vehicle of vehicles.slice(0,8)){
+      const elapsed=vehicle.etapa_iniciada_em
+        ? Math.max(0,Math.floor((Date.now()-new Date(vehicle.etapa_iniciada_em).getTime())/3_600_000))
+        : null;
+      lines.push(`• ${clean(vehicle.placa)} — ${clean(vehicle.status)||'sem status'}${elapsed==null?'':` — ${elapsed}h na etapa`}${vehicle.motivo_parada?` — ${clean(vehicle.motivo_parada)}`:''}`);
+    }
+    result.push({
+      employeeId:String(leader.id),
+      name:String(leader.nome),
+      sector,
+      phone:String(leader.telefone).replace(/\D/g,''),
+      text:lines.join('\n').slice(0,3000),
+    });
+  }
+  return result;
 }
