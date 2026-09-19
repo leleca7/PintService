@@ -180,6 +180,7 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
             ELSE COALESCE(${input.newVehicleStopDetail ?? null}, motivo_parada_detalhe)
           END,
           observacoes = COALESCE(${appendedObservation}, observacoes),
+          data_entrada = CASE WHEN ${Boolean(input.markCheckin)} THEN COALESCE(data_entrada, CURRENT_DATE) ELSE data_entrada END,
           checkin_realizado_em = CASE WHEN ${Boolean(input.markCheckin)} THEN COALESCE(checkin_realizado_em, now()) ELSE checkin_realizado_em END,
           checkin_media_id = CASE WHEN ${Boolean(input.markCheckin)} AND ${input.sourceMediaId ?? input.evidenceMediaId ?? null} IS NOT NULL
                                   THEN ${input.sourceMediaId ?? input.evidenceMediaId ?? null}
