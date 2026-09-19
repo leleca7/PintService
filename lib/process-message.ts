@@ -5,6 +5,7 @@ import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/li
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
 import { getOfficeProfile } from '@/lib/office-profile';
 import { handlePostDeliveryFeedback } from '@/lib/post-delivery';
+import { formatPartsReply, lookupPartsByPlate } from '@/lib/parts-status';
 import { getDb } from '@/lib/db';
 import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 
@@ -134,7 +135,7 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
     return { ok: true, action: 'humano', needsHuman: true, fallback: 'ai_unavailable' };
   }
 
-  const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured() });
+  const decisionData = JSON.stringify({ reason: plan.reason, sentiment: plan.sentiment, plate: plan.plate, partQuery: plan.partQuery, operationalTask: plan.operationalTask, openTaskCount: openTasks.length, externalVehicleSource: externalVehicleSourceConfigured() });
   await sql`INSERT INTO decisoes_ia (telefone,mensagem,intencao,acao,confianca,prioridade,precisa_atendente,dados) VALUES (${message.phone},${message.text},${plan.intent},${plan.action},${plan.confidence},${plan.priority},${plan.needsHuman},${decisionData}::jsonb)`;
 
   let reply = '';
@@ -180,6 +181,58 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
         reply = statusMessage(vehicle);
         await setState(message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'status', placa_contexto: vehicle.placa });
       }
+      break;
+    }
+    case 'pecas': {
+      const vehicleRowsForParts = await sql`
+        SELECT id, placa, modelo, setor
+        FROM veiculos
+        WHERE upper(placa) = upper(${plan.plate})
+        LIMIT 1
+      `;
+      const vehicle = vehicleRowsForParts[0];
+      if (!vehicle) {
+        needsHuman = true;
+        reply = 'Não consegui localizar esse veículo no cadastro operacional para consultar as peças com segurança. Encaminhei para a equipe verificar.';
+        await createPending(String(client.id), null, 'pecas', `Localizar o veículo ${plan.plate || 'não identificado'} e confirmar a dúvida sobre peça: ${message.text}`, 'normal');
+        await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'pecas' });
+        break;
+      }
+
+      vehicleId = String(vehicle.id);
+      await sql`UPDATE veiculos SET cliente_id = COALESCE(cliente_id, ${client.id}) WHERE id = ${vehicle.id}`;
+      const partsResult = await lookupPartsByPlate(String(vehicle.placa), plan.partQuery);
+      const formatted = formatPartsReply(String(vehicle.placa), partsResult, plan.partQuery);
+
+      if (formatted.definitive) {
+        reply = formatted.text;
+        await setState(message.phone, { etapa: 'inicio', bot_ativo: true, ultima_intencao: 'pecas', placa_contexto: String(vehicle.placa) });
+        break;
+      }
+
+      const { task, reused } = await createOrReuseOperationalTask({
+        clientId: String(client.id),
+        vehicle: {
+          id: String(vehicle.id),
+          placa: String(vehicle.placa),
+          modelo: vehicle.modelo == null ? null : String(vehicle.modelo),
+        },
+        customerPhone: message.phone,
+        customerMessage: message.text,
+        priority: plan.priority === 'baixa' ? 'normal' : plan.priority,
+        request: {
+          type: 'confirmar_peca',
+          sector: vehicle.setor == null ? '' : String(vehicle.setor),
+          instruction: plan.partQuery
+            ? `Confirmar a situação da peça “${plan.partQuery}”. O controle do sistema não permitiu responder com segurança.`
+            : 'Confirmar a situação das peças perguntadas pelo cliente. O controle do sistema não permitiu responder com segurança.',
+          requiresPhoto: false,
+        },
+      });
+      reply = reused
+        ? `${formatted.text} Essa confirmação já está em andamento com o responsável; assim que ele responder, eu continuo com você por aqui.`
+        : `${formatted.text} Já pedi a confirmação ao responsável e eu continuo com você por aqui assim que ele responder.`;
+      await setState(message.phone, { etapa: 'aguardando_tarefa_operacional', bot_ativo: true, ultima_intencao: 'pecas', placa_contexto: String(vehicle.placa), tarefa_aguardada_id: String(task.id) });
       break;
     }
     case 'verificar_operacao': {
