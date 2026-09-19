@@ -130,6 +130,67 @@ ${officeFacts}`,
   return response.output_text.trim();
 }
 
+const StaffOperationalUpdateSchema = z.object({
+  updateStage: z.boolean(),
+  stage: z.string(),
+  updateStatus: z.boolean(),
+  status: z.string(),
+  reason: z.string(),
+});
+
+export async function suggestOperationalUpdateFromEmployeeResponse(input: {
+  employeeResponse: string;
+  currentStage?: string | null;
+  currentStatus?: string | null;
+  taskType: string;
+}) {
+  const updateSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      updateStage: { type: 'boolean' },
+      stage: { type: 'string' },
+      updateStatus: { type: 'boolean' },
+      status: { type: 'string' },
+      reason: { type: 'string' },
+    },
+    required: ['updateStage', 'stage', 'updateStatus', 'status', 'reason'],
+  };
+
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Você analisa uma resposta curta de um funcionário de oficina e decide se ela contém uma atualização operacional EXPLÍCITA e segura para gravar no cadastro do veículo.
+
+Etapas permitidas, exatamente com estes nomes:
+- Desmontagem
+- Funilaria
+- Prep. de Pintura
+- Pintura
+- Polimento de Pint.
+- Montagem
+- Lavagem/Acabamento
+
+Status permitidos, exatamente com estes nomes:
+- Em serviço
+- Aguardando peças
+- Aguardando aprovação
+- Parado
+- Pronto para entrega
+
+Regras:
+- Só marque updateStage=true quando o funcionário afirmar claramente a etapa ATUAL do veículo, por exemplo "está na montagem", "já foi para polimento", "está em pintura".
+- Frases como "acabou de sair da pintura", "terminou a funilaria" ou "vai para montagem" NÃO provam a etapa atual; nesses casos não atualize a etapa.
+- Só marque updateStatus=true quando um dos status permitidos estiver explicitamente sustentado pela resposta.
+- Nunca inferir próxima etapa, prazo, disponibilidade, entrega ou recebimento de peça.
+- Se houver dúvida, deixe os campos de atualização falsos e strings vazias.
+- A resposta ao cliente pode continuar normalmente mesmo quando não houver atualização estrutural.`,
+    input: JSON.stringify(input),
+    text: { format: { type: 'json_schema', name: 'atualizacao_operacional_funcionario', strict: true, schema: updateSchema } },
+  });
+  return StaffOperationalUpdateSchema.parse(JSON.parse(response.output_text));
+}
+
 export async function answerOperationalResolution(input: { customerQuestion: string; employeeResponse: string; taskType: string; evidenceSent: boolean; vehicle: { placa?: string | null; modelo?: string | null; status?: string | null; setor?: string | null } }) {
   const response = await client().responses.create({ model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false, instructions: 'Você está retomando uma conversa de WhatsApp depois que um funcionário da PintService fez uma confirmação física. Responda em português do Brasil, cordialmente, em até 3 frases. Use SOMENTE os fatos fornecidos na entrada. Não invente preço, prazo, data de entrega, próxima etapa, peça recebida ou qualquer status não confirmado. Se evidenceSent=true, pode mencionar que a foto/evidência está sendo enviada junto.', input: JSON.stringify(input) });
   return response.output_text.trim();
