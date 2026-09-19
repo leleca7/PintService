@@ -1,8 +1,8 @@
 ALTER TABLE public.veiculos
-  ADD COLUMN IF NOT EXISTS etapa_iniciada_em timestamptz,
+  ADD COLUMN IF NOT EXISTS etapa_iniciada_em timestamptz DEFAULT now(),
   ADD COLUMN IF NOT EXISTS motivo_parada text,
   ADD COLUMN IF NOT EXISTS motivo_parada_detalhe text,
-  ADD COLUMN IF NOT EXISTS qr_token text,
+  ADD COLUMN IF NOT EXISTS qr_token text DEFAULT replace(gen_random_uuid()::text, '-', ''),
   ADD COLUMN IF NOT EXISTS checkin_realizado_em timestamptz,
   ADD COLUMN IF NOT EXISTS checkin_media_id text,
   ADD COLUMN IF NOT EXISTS previsao_ia date,
@@ -10,6 +10,10 @@ ALTER TABLE public.veiculos
   ADD COLUMN IF NOT EXISTS previsao_ia_atualizada_em timestamptz,
   ADD COLUMN IF NOT EXISTS zeta_referencia text,
   ADD COLUMN IF NOT EXISTS zeta_ultima_sincronizacao timestamptz;
+
+ALTER TABLE public.veiculos
+  ALTER COLUMN etapa_iniciada_em SET DEFAULT now(),
+  ALTER COLUMN qr_token SET DEFAULT replace(gen_random_uuid()::text, '-', '');
 
 UPDATE public.veiculos
 SET etapa_iniciada_em = COALESCE(etapa_iniciada_em, ultima_atualizacao, criado_em, now()),
