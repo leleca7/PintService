@@ -1,12 +1,13 @@
 import 'server-only';
 import { resolveOperationalTask } from '@/lib/operational-tasks';
-import { suggestOperationalUpdateFromEmployeeResponse, transcribeOperationalAudio } from '@/lib/agent';
+import { classifyStaffMedia, suggestOperationalUpdateFromEmployeeResponse, transcribeOperationalAudio } from '@/lib/agent';
 import { normalizeOperationalStage } from '@/lib/operation-stages';
 import { findTaskIdByOutboundMessage, sendMappedTaskText } from '@/lib/task-messaging';
 import { getDb } from '@/lib/db';
 import { normalizeWhatsAppPhone, sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 import { downloadWhatsAppMedia } from '@/lib/whatsapp-media';
 import { findPartsReceiptImportByReply, processPartsReceiptConfirmation, stagePartsReceiptFromStaff } from '@/lib/parts-receipt-import';
+import { explicitPlate, stageAdHocStaffCommand } from '@/lib/staff-ad-hoc';
 
 const TASK_CODE_PATTERN = /#[A-Z0-9]{10}\b/gi;
 type Employee = { id: string; nome: string; setor: string | null; telefone: string | null; cargo: string | null };
@@ -103,10 +104,21 @@ async function confirmStagedTask(task: any, employee: Employee, message: Incomin
     evidenceMediaId: task.evidencia_media_id ?? null,
     newVehicleStatus: proposed.newVehicleStatus ?? null,
     newVehicleSector: proposed.newVehicleSector ?? null,
+    newVehicleStopReason: proposed.newVehicleStopReason ?? null,
+    newVehicleStopDetail: proposed.newVehicleStopDetail ?? null,
+    appendVehicleObservation: proposed.appendVehicleObservation ?? null,
+    markCheckin: Boolean(proposed.markCheckin),
     sourceMediaId: staged?.sourceMediaId ?? null,
     sourceMediaType: staged?.sourceMediaType ?? null,
   });
-  await sendWhatsAppText(employee.telefone, `Tarefa #${task.codigo} concluída. A confirmação foi registrada e o atendimento do cliente foi retomado automaticamente.`, message.id);
+  const adHoc = String(task.origem_mensagem ?? '') === 'comando_funcionario' || Boolean(staged?.adHoc);
+  await sendWhatsAppText(
+    employee.telefone,
+    adHoc
+      ? `Atualização #${task.codigo} confirmada e registrada no veículo.`
+      : `Tarefa #${task.codigo} concluída. A confirmação foi registrada e o atendimento do cliente foi retomado automaticamente.`,
+    message.id,
+  );
   return { ok: true, resolved: true, result };
 }
 
@@ -210,10 +222,106 @@ export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessa
     return { staff: true, ...(await processPartsReceiptConfirmation(message, employee, receiptImport)) };
   }
 
-  const located = await findTaskForEmployee(message, employee);
+  let processingMessage: IncomingWhatsAppMessage & { sourceMediaType?: string } = message;
+
+  if (message.type === 'audio' && message.mediaId) {
+    try {
+      const media = await downloadWhatsAppMedia(message.mediaId);
+      const transcript = await transcribeOperationalAudio(media);
+      if (!transcript) throw new Error('Transcrição vazia.');
+      processingMessage = { ...message, type: 'text', text: transcript, sourceMediaType: 'audio' };
+      if (!message.contextMessageId && explicitPlate(transcript)) {
+        return {
+          staff: true,
+          ...(await stageAdHocStaffCommand({
+            employee,
+            message: processingMessage,
+            text: transcript,
+            sourceMediaId: message.mediaId,
+            sourceMediaType: 'audio',
+          })),
+        };
+      }
+    } catch (error) {
+      console.error('Falha ao transcrever áudio operacional:', error);
+      if (employee.telefone) {
+        await sendWhatsAppText(employee.telefone, 'Não consegui transcrever esse áudio com segurança. Envie a informação por texto ou tente novamente.', message.id);
+      }
+      return { staff: true, handled: true, audioError: true };
+    }
+  }
+
+  if (!message.contextMessageId && processingMessage.type === 'text' && explicitPlate(processingMessage.text)) {
+    return {
+      staff: true,
+      ...(await stageAdHocStaffCommand({
+        employee,
+        message: processingMessage,
+        text: processingMessage.text,
+        sourceMediaId: processingMessage.sourceMediaType ? message.mediaId : null,
+        sourceMediaType: processingMessage.sourceMediaType ?? null,
+      })),
+    };
+  }
+
+  if (!message.contextMessageId && message.type === 'image' && message.mediaId && !message.text.trim()) {
+    try {
+      const media = await downloadWhatsAppMedia(message.mediaId);
+      const classification = await classifyStaffMedia(media);
+      if (classification.kind === 'vehicle_photo' && classification.plate && classification.confidence >= 0.65) {
+        return {
+          staff: true,
+          ...(await stageAdHocStaffCommand({
+            employee,
+            message,
+            text: `Foto do veículo ${classification.plate}. ${classification.description}`,
+            sourceMediaId: message.mediaId,
+            sourceMediaType: 'image',
+            forcedPlate: classification.plate,
+            forcedCheckin: true,
+          })),
+        };
+      }
+      if (classification.kind === 'parts_document') {
+        return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+      }
+    } catch (error) {
+      console.error('Falha ao classificar mídia espontânea do funcionário:', error);
+    }
+  }
+
+  if (!message.contextMessageId && message.type === 'image' && message.mediaId && explicitPlate(message.text)) {
+    return {
+      staff: true,
+      ...(await stageAdHocStaffCommand({
+        employee,
+        message,
+        text: message.text,
+        sourceMediaId: message.mediaId,
+        sourceMediaType: 'image',
+      })),
+    };
+  }
+
+  const located = await findTaskForEmployee(processingMessage, employee);
   if (!located.task) {
-    if (['image', 'document'].includes(message.type) && message.mediaId) {
+    if (message.type === 'document' && message.mediaId) {
       return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+    }
+    if (message.type === 'image' && message.mediaId) {
+      return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+    }
+    if (processingMessage.type === 'text' && processingMessage.text.trim() && !located.ambiguousIds.length) {
+      return {
+        staff: true,
+        ...(await stageAdHocStaffCommand({
+          employee,
+          message: processingMessage,
+          text: processingMessage.text,
+          sourceMediaId: processingMessage.sourceMediaType ? message.mediaId : null,
+          sourceMediaType: processingMessage.sourceMediaType ?? null,
+        })),
+      };
     }
     await sendAmbiguityMessage(employee, located.ambiguousIds);
     return { staff: true, handled: true, ambiguous: true };
@@ -229,31 +337,18 @@ export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessa
     return { staff: true, handled: true, ...(await confirmStagedTask(task, employee, message)) };
   }
 
-  let processingMessage: IncomingWhatsAppMessage & { sourceMediaType?: string } = message;
-  if (message.type === 'audio' && message.mediaId) {
-    try {
-      const media = await downloadWhatsAppMedia(message.mediaId);
-      const transcript = await transcribeOperationalAudio(media);
-      if (!transcript) throw new Error('Transcrição vazia.');
-      processingMessage = { ...message, type: 'text', text: transcript, sourceMediaType: 'audio' };
-      const sql = getDb();
-      await sql`
-        INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados)
-        VALUES (
-          ${task.id},
-          'funcionario',
-          ${employee.id},
-          'audio_transcrito_whatsapp',
-          ${JSON.stringify({ mediaId: message.mediaId, transcript })}::jsonb
-        )
-      `;
-    } catch (error) {
-      console.error('Falha ao transcrever áudio operacional:', error);
-      if (employee.telefone) {
-        await sendWhatsAppText(employee.telefone, `Não consegui transcrever esse áudio com segurança. Para a tarefa #${task.codigo}, envie a informação por texto ou tente o áudio novamente.`, message.id);
-      }
-      return { staff: true, handled: true, audioError: true };
-    }
+  if (processingMessage.sourceMediaType === 'audio') {
+    const sql = getDb();
+    await sql`
+      INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados)
+      VALUES (
+        ${task.id},
+        'funcionario',
+        ${employee.id},
+        'audio_transcrito_whatsapp',
+        ${JSON.stringify({ mediaId: message.mediaId, transcript: processingMessage.text })}::jsonb
+      )
+    `;
   }
 
   return { staff: true, handled: true, ...(await stageEmployeeResponse(task, employee, processingMessage)) };
