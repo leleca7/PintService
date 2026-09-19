@@ -138,6 +138,17 @@ export async function finalizeOperationalVehicle(formData: FormData) {
   if (!current) throw new Error('Veículo não encontrado.');
   if (current.data_saida_real) throw new Error('Este veículo já foi finalizado.');
 
+  const configRows = await sql`SELECT exigir_checklist_qualidade FROM configuracao_operacao WHERE id=true LIMIT 1`;
+  if (configRows[0]?.exigir_checklist_qualidade !== false) {
+    const checklist = await sql`
+      SELECT id FROM checklists_qualidade
+      WHERE veiculo_id=${id} AND status='aprovado'
+      ORDER BY concluido_em DESC NULLS LAST
+      LIMIT 1
+    `;
+    if (!checklist[0]) throw new Error('Conclua e aprove o checklist de qualidade antes de finalizar a entrega.');
+  }
+
   if (user.perfil === 'funcionario') {
     const userSector = normalizeOperationalStage(user.setor ?? '');
     const vehicleSector = normalizeOperationalStage(String(current.setor ?? ''));
