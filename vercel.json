@@ -7,6 +7,10 @@
     {
       "path": "/api/operacao/resumo/check",
       "schedule": "30 12 * * 1-6"
+    },
+    {
+      "path": "/api/operacao/inteligencia/check",
+      "schedule": "15 11,15,19 * * 1-6"
     }
   ]
 }
