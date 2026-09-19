@@ -274,8 +274,8 @@ export async function scanOperationalExceptions() {
   }
 
   const overdueOrders = await sql`
-    SELECT p.id, p.fornecedor, p.numero_pedido, p.previsao_entrega, c.veiculo_id, c.placa,
-           v.responsavel_id,
+    SELECT p.id, p.fornecedor, p.numero_pedido, p.previsao_entrega, p.ultima_cobranca_em,
+           c.veiculo_id, c.placa, v.responsavel_id,
            SUM(i.quantidade) AS total,
            SUM(i.quantidade_recebida) AS recebidas
     FROM pedidos_pecas p
@@ -289,7 +289,17 @@ export async function scanOperationalExceptions() {
     GROUP BY p.id, c.veiculo_id, c.placa, v.responsavel_id
   `;
 
+  const automationRows = await sql`
+    SELECT cobranca_fornecedor_automatica
+    FROM configuracao_operacao
+    WHERE id=true
+    LIMIT 1
+  `;
+  const automaticSupplierCharge = automationRows[0]?.cobranca_fornecedor_automatica === true;
+  const supplierTemplate = process.env.WHATSAPP_SUPPLIER_DELAY_TEMPLATE?.trim();
+
   let supplierAlerts = 0;
+  let automaticSupplierMessages = 0;
   for (const order of overdueOrders) {
     const key = `fornecedor_atrasado:${order.id}`;
     const supplier = String(order.fornecedor ?? 'Fornecedor não informado');
@@ -308,13 +318,45 @@ export async function scanOperationalExceptions() {
     });
     await sql`
       UPDATE pedidos_pecas
-      SET cobranca_status = 'preparada', cobranca_mensagem = ${draft}, atualizado_em = now()
+      SET cobranca_status = CASE WHEN cobranca_status='enviada_automaticamente' THEN cobranca_status ELSE 'preparada' END,
+          cobranca_mensagem = ${draft},
+          atualizado_em = now()
       WHERE id = ${order.id}
     `;
+
+    if (automaticSupplierCharge && supplierTemplate && order.fornecedor) {
+      const contacts = await sql`
+        SELECT telefone
+        FROM fornecedores_contatos
+        WHERE ativo=true AND lower(nome)=lower(${String(order.fornecedor)})
+        LIMIT 1
+      `;
+      const phone = String(contacts[0]?.telefone ?? '').replace(/\D/g,'');
+      const lastCharge = order.ultima_cobranca_em ? new Date(order.ultima_cobranca_em).getTime() : 0;
+      const canSendAgain = !lastCharge || Date.now() - lastCharge >= 48 * 60 * 60 * 1000;
+      if (phone && canSendAgain) {
+        try {
+          await sendWhatsAppTemplate(phone, supplierTemplate, [
+            String(order.fornecedor),
+            String(order.numero_pedido || 'sem número'),
+            String(order.placa),
+            dateOnly(order.previsao_entrega)?.split('-').reverse().join('/') || 'sem data',
+          ]);
+          await sql`
+            UPDATE pedidos_pecas
+            SET ultima_cobranca_em=now(),cobranca_status='enviada_automaticamente',atualizado_em=now()
+            WHERE id=${order.id}
+          `;
+          automaticSupplierMessages += 1;
+        } catch (error) {
+          console.error('Falha na cobrança automática de fornecedor:', error);
+        }
+      }
+    }
     supplierAlerts += 1;
   }
 
-  return { vehicleAlerts, supplierAlerts, staffTasks };
+  return { vehicleAlerts, supplierAlerts, staffTasks, automaticSupplierMessages };
 }
 
 function itemMatchesPending(description: string, pending: string) {
@@ -411,10 +453,14 @@ export async function getOperationalIntelligenceData() {
     `,
     sql`
       SELECT COALESCE(p.fornecedor,'Não informado') AS fornecedor,
+             MAX(fc.telefone) AS telefone,
+             MAX(fc.email) AS email,
              COUNT(*) FILTER (WHERE p.previsao_entrega < CURRENT_DATE AND p.status='Aberto')::int AS atrasados,
              COUNT(*)::int AS pedidos
       FROM pedidos_pecas p
-      GROUP BY 1 ORDER BY atrasados DESC, pedidos DESC
+      LEFT JOIN fornecedores_contatos fc ON lower(fc.nome)=lower(p.fornecedor) AND fc.ativo=true
+      GROUP BY COALESCE(p.fornecedor,'Não informado')
+      ORDER BY atrasados DESC, pedidos DESC
       LIMIT 12
     `,
     sql`
