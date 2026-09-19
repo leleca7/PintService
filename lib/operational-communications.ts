@@ -121,3 +121,66 @@ export async function maybeSendOperationalEvent(input: VehicleEventInput) {
     return {handled:true as const,sent:false as const,error:true as const};
   }
 }
+
+
+export async function flushPreparedOperationalCommunications(){
+  const template=process.env.WHATSAPP_OPERATION_UPDATE_TEMPLATE?.trim();
+  if(!template) return {sent:0,skipped:'template_not_configured' as const};
+
+  const sql=getDb();
+  const configRows=await sql`SELECT comunicacao_eventos_ativa FROM configuracao_operacao WHERE id=true LIMIT 1`;
+  if(configRows[0]?.comunicacao_eventos_ativa===false) return {sent:0,skipped:'disabled' as const};
+
+  const rows=await sql`
+    SELECT co.id,co.evento,co.mensagem,v.placa,v.modelo,c.nome AS cliente_nome,c.telefone,
+           co.cliente_id,co.veiculo_id
+    FROM comunicacoes_operacionais co
+    JOIN veiculos v ON v.id=co.veiculo_id
+    LEFT JOIN clientes c ON c.id=co.cliente_id
+    WHERE co.status='preparada'
+      AND co.criado_em >= now()-interval '3 days'
+    ORDER BY co.criado_em ASC
+    LIMIT 30
+  `;
+
+  let sent=0;
+  for(const item of rows){
+    const phone=String(item.telefone??'').replace(/\D/g,'');
+    if(!phone){
+      await sql`UPDATE comunicacoes_operacionais SET status='ignorada',erro='cliente sem telefone' WHERE id=${item.id}`;
+      continue;
+    }
+    const labels:Record<string,string>={
+      entrada_oficina:'Entrada na oficina',
+      inicio_reparo:'Reparo iniciado',
+      pintura_concluida:'Pintura concluída',
+      montagem:'Montagem',
+      pronto_entrega:'Pronto para entrega',
+    };
+    try{
+      await sendWhatsAppTemplate(phone,template,[
+        String(item.cliente_nome??'cliente'),
+        `${String(item.modelo??'Veículo')} ${String(item.placa??'')}`.trim(),
+        labels[String(item.evento)]??String(item.evento),
+        String(item.mensagem??''),
+      ]);
+      await sql`
+        UPDATE comunicacoes_operacionais
+        SET status='enviada',enviado_em=now(),erro=NULL
+        WHERE id=${item.id}
+      `;
+      await sql`
+        INSERT INTO conversas (telefone,cliente_id,veiculo_id,mensagem,origem,intencao,canal,atendente_assumiu)
+        VALUES (${phone},${item.cliente_id??null},${item.veiculo_id},${String(item.mensagem??'')},'bot','atualizacao_operacional','whatsapp',false)
+      `;
+      sent+=1;
+    }catch(error){
+      await sql`
+        UPDATE comunicacoes_operacionais
+        SET status='erro',erro=${error instanceof Error?error.message.slice(0,500):'erro desconhecido'}
+        WHERE id=${item.id}
+      `;
+    }
+  }
+  return {sent};
+}
