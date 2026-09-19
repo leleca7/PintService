@@ -207,7 +207,7 @@ export async function findEmployeeByWhatsAppPhone(phone: string): Promise<Employ
 export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessage, employee: Employee) {
   const receiptImport = await findPartsReceiptImportByReply(message, employee);
   if (receiptImport) {
-    return { staff: true, handled: true, ...(await processPartsReceiptConfirmation(message, employee, receiptImport)) };
+    return { staff: true, ...(await processPartsReceiptConfirmation(message, employee, receiptImport)) };
   }
 
   const located = await findTaskForEmployee(message, employee);
