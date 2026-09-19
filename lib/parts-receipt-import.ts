@@ -247,7 +247,7 @@ export async function processPartsReceiptConfirmation(message: IncomingWhatsAppM
     `;
   }
 
-  const orderIds = [...new Set(proposed.map((item: any) => String(item.pedidoId)).filter(Boolean))];
+  const orderIds: string[] = Array.from(new Set<string>(proposed.map((item: any) => String(item.pedidoId)).filter(Boolean)));
   for (const orderId of orderIds) {
     await sql`
       UPDATE pedidos_pecas p
