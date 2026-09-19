@@ -56,3 +56,25 @@ export async function saveSupplierContact(formData:FormData){
   });
   revalidatePath('/operacao/inteligencia');
 }
+
+
+export async function updateStageTiming(formData:FormData){
+  const user=await requirePermission('gerenciar_capacidade');
+  const fase=String(formData.get('fase')??'').trim();
+  const alerta=Number.parseInt(String(formData.get('horas_alerta')??''),10);
+  const critico=Number.parseInt(String(formData.get('horas_critico')??''),10);
+  if(!fase||!Number.isInteger(alerta)||alerta<=0||!Number.isInteger(critico)||critico<alerta){
+    throw new Error('Tempos da etapa inválidos.');
+  }
+  const sql=getDb();
+  const before=await sql`SELECT horas_alerta,horas_critico FROM configuracao_tempo_etapas WHERE fase=${fase} LIMIT 1`;
+  await sql`
+    INSERT INTO configuracao_tempo_etapas (fase,horas_alerta,horas_critico,ativo,atualizado_em)
+    VALUES (${fase},${alerta},${critico},true,now())
+    ON CONFLICT (fase) DO UPDATE SET horas_alerta=EXCLUDED.horas_alerta,horas_critico=EXCLUDED.horas_critico,ativo=true,atualizado_em=now()
+  `;
+  await writeAudit(user,'configurar_tempo_etapa','configuracao_tempo_etapas',fase,{
+    antes:before[0]??null,depois:{horas_alerta:alerta,horas_critico:critico}
+  });
+  revalidatePath('/operacao/inteligencia');
+}
