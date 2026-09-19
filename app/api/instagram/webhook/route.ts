@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { priorityFor } from '@/lib/reputation';
 import { sendWhatsAppAlert } from '@/lib/whatsapp';
+import { recordInboxEvent } from '@/lib/unified-inbox';
 
 export const runtime = 'nodejs';
 
@@ -65,6 +66,15 @@ export async function POST(request: Request) {
   let payload: any;
   try { payload = JSON.parse(rawBody); } catch { return NextResponse.json({ error: 'json inválido' }, { status: 400 }); }
   const events = eventsFrom(payload);
-  await Promise.allSettled(events.map(notifyIfNeeded));
+  await Promise.allSettled(events.map(async (event) => {
+    await recordInboxEvent({
+      channel: 'instagram',
+      externalId: event.id || null,
+      author: event.author,
+      message: event.text,
+      data: { kind: event.kind },
+    });
+    await notifyIfNeeded(event);
+  }));
   return NextResponse.json({ received: true, events: events.length });
 }
