@@ -70,3 +70,35 @@ CREATE TABLE IF NOT EXISTS public.fluxos_pos_entrega (
 
 CREATE INDEX IF NOT EXISTS idx_fluxos_pos_entrega_cliente_status
   ON public.fluxos_pos_entrega (cliente_id, status, atualizado_em DESC);
+
+
+CREATE TABLE IF NOT EXISTS public.importacoes_recebimento_pecas (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  codigo text NOT NULL DEFAULT upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10)),
+  funcionario_id uuid NOT NULL REFERENCES public.funcionarios(id) ON DELETE CASCADE,
+  media_id text NOT NULL,
+  mime_type text,
+  arquivo_nome text,
+  dados_extraidos jsonb NOT NULL DEFAULT '{}'::jsonb,
+  veiculo_id uuid REFERENCES public.veiculos(id) ON DELETE SET NULL,
+  controle_pecas_id uuid REFERENCES public.controle_pecas(id) ON DELETE SET NULL,
+  pedido_id uuid REFERENCES public.pedidos_pecas(id) ON DELETE SET NULL,
+  proposta_recebimento jsonb NOT NULL DEFAULT '[]'::jsonb,
+  mensagem_confirmacao_id text,
+  status text NOT NULL DEFAULT 'aguardando_confirmacao',
+  criado_em timestamptz NOT NULL DEFAULT now(),
+  atualizado_em timestamptz NOT NULL DEFAULT now(),
+  resolvido_em timestamptz,
+  CONSTRAINT importacoes_recebimento_pecas_status_check
+    CHECK (status IN ('aguardando_confirmacao','confirmado','rejeitado','requer_revisao'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_importacoes_recebimento_pecas_codigo
+  ON public.importacoes_recebimento_pecas (codigo);
+
+CREATE INDEX IF NOT EXISTS idx_importacoes_recebimento_funcionario_status
+  ON public.importacoes_recebimento_pecas (funcionario_id, status, criado_em DESC);
+
+CREATE INDEX IF NOT EXISTS idx_importacoes_recebimento_confirmacao
+  ON public.importacoes_recebimento_pecas (mensagem_confirmacao_id)
+  WHERE mensagem_confirmacao_id IS NOT NULL;
