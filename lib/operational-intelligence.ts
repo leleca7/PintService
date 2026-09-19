@@ -380,7 +380,7 @@ export async function getOperationalIntelligenceData() {
   const sql = getDb();
   const [alerts, causes, stages, insurers, suppliers, forecastStats] = await Promise.all([
     sql`
-      SELECT a.id,a.tipo,a.nivel,a.titulo,a.mensagem,a.criado_em,v.placa,f.nome AS responsavel
+      SELECT a.id,a.tipo,a.nivel,a.titulo,a.mensagem,a.criado_em,a.dados,a.pedido_pecas_id,v.placa,f.nome AS responsavel
       FROM alertas_operacionais a
       LEFT JOIN veiculos v ON v.id=a.veiculo_id
       LEFT JOIN funcionarios f ON f.id=a.responsavel_id
