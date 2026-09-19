@@ -8,7 +8,22 @@ import { sendWhatsAppImageId, sendWhatsAppImageUrl, sendWhatsAppText } from '@/l
 export type OperationalTaskType = 'confirmar_etapa' | 'tirar_foto' | 'confirmar_peca' | 'verificar_status_fisico' | 'informacao_setor';
 export type OperationalTaskRequest = { type: OperationalTaskType; sector: string; instruction: string; requiresPhoto: boolean };
 type CreateTaskInput = { clientId: string; vehicle: { id: string; placa: string; modelo?: string | null }; customerPhone: string; customerMessage: string; priority: 'baixa' | 'normal' | 'alta' | 'urgente'; request: OperationalTaskRequest };
-type ResolveTaskInput = { taskId: string; employeeId?: string | null; employeeResponse: string; evidenceUrl?: string | null; evidenceMediaId?: string | null; sourceMediaId?: string | null; sourceMediaType?: string | null; newVehicleStatus?: string | null; newVehicleSector?: string | null; customerReply?: string | null };
+type ResolveTaskInput = {
+  taskId: string;
+  employeeId?: string | null;
+  employeeResponse: string;
+  evidenceUrl?: string | null;
+  evidenceMediaId?: string | null;
+  sourceMediaId?: string | null;
+  sourceMediaType?: string | null;
+  newVehicleStatus?: string | null;
+  newVehicleSector?: string | null;
+  newVehicleStopReason?: string | null;
+  newVehicleStopDetail?: string | null;
+  appendVehicleObservation?: string | null;
+  markCheckin?: boolean;
+  customerReply?: string | null;
+};
 
 function compact(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 160); }
 function taskKey(vehicleId: string, request: OperationalTaskRequest) { return createHash('sha256').update([vehicleId, request.type, compact(request.sector), compact(request.instruction)].join('|')).digest('hex'); }
@@ -114,14 +129,39 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
   if (!task) throw new Error('Tarefa operacional não encontrada.');
   if (task.status === 'resolvida' || task.status === 'cancelada') return { task, alreadyFinished: true };
 
-  if (task.veiculo_id && (input.newVehicleStatus || input.newVehicleSector)) {
+  if (task.veiculo_id && (
+    input.newVehicleStatus ||
+    input.newVehicleSector ||
+    input.newVehicleStopReason ||
+    input.newVehicleStopDetail ||
+    input.appendVehicleObservation ||
+    input.markCheckin
+  )) {
+    const currentRows = await sql`
+      SELECT status, setor, motivo_parada, motivo_parada_detalhe, observacoes, checkin_realizado_em
+      FROM veiculos WHERE id = ${task.veiculo_id} LIMIT 1
+    `;
+    const current = currentRows[0] ?? {};
     const before = {
-      status: task.veiculo_status ?? null,
-      setor: task.veiculo_setor ?? null,
+      status: current.status ?? task.veiculo_status ?? null,
+      setor: current.setor ?? task.veiculo_setor ?? null,
+      motivo_parada: current.motivo_parada ?? null,
+      motivo_parada_detalhe: current.motivo_parada_detalhe ?? null,
+      observacoes: current.observacoes ?? null,
+      checkin_realizado_em: current.checkin_realizado_em ?? null,
     };
+    const stageChanged = Boolean(input.newVehicleSector && input.newVehicleSector !== before.setor);
+    const appendedObservation = input.appendVehicleObservation?.trim()
+      ? [String(current.observacoes ?? '').trim(), input.appendVehicleObservation.trim()].filter(Boolean).join('\n')
+      : null;
+    const clearStop = Boolean(input.newVehicleStatus && ['Em serviço','Pronto para entrega'].includes(input.newVehicleStatus));
     const after = {
-      status: input.newVehicleStatus ?? task.veiculo_status ?? null,
-      setor: input.newVehicleSector ?? task.veiculo_setor ?? null,
+      status: input.newVehicleStatus ?? before.status,
+      setor: input.newVehicleSector ?? before.setor,
+      motivo_parada: clearStop ? null : (input.newVehicleStopReason ?? before.motivo_parada),
+      motivo_parada_detalhe: clearStop ? null : (input.newVehicleStopDetail ?? before.motivo_parada_detalhe),
+      observacoes: appendedObservation ?? before.observacoes,
+      checkin_realizado_em: input.markCheckin ? new Date().toISOString() : before.checkin_realizado_em,
       origem: 'whatsapp_funcionario',
       funcionario_id: input.employeeId ?? null,
     };
@@ -129,6 +169,20 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
       UPDATE veiculos
       SET status = COALESCE(${input.newVehicleStatus ?? null}, status),
           setor = COALESCE(${input.newVehicleSector ?? null}, setor),
+          etapa_iniciada_em = CASE WHEN ${stageChanged} THEN now() ELSE etapa_iniciada_em END,
+          motivo_parada = CASE
+            WHEN ${clearStop} THEN NULL
+            ELSE COALESCE(${input.newVehicleStopReason ?? null}, motivo_parada)
+          END,
+          motivo_parada_detalhe = CASE
+            WHEN ${clearStop} THEN NULL
+            ELSE COALESCE(${input.newVehicleStopDetail ?? null}, motivo_parada_detalhe)
+          END,
+          observacoes = COALESCE(${appendedObservation}, observacoes),
+          checkin_realizado_em = CASE WHEN ${Boolean(input.markCheckin)} THEN COALESCE(checkin_realizado_em, now()) ELSE checkin_realizado_em END,
+          checkin_media_id = CASE WHEN ${Boolean(input.markCheckin)} AND ${input.sourceMediaId ?? input.evidenceMediaId ?? null} IS NOT NULL
+                                  THEN ${input.sourceMediaId ?? input.evidenceMediaId ?? null}
+                                  ELSE checkin_media_id END,
           ultima_atualizacao = now()
       WHERE id = ${task.veiculo_id}
     `;
@@ -136,7 +190,7 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
       INSERT INTO historico_veiculos (veiculo_id, evento, dados_anteriores, dados_novos)
       VALUES (
         ${task.veiculo_id},
-        'atualizacao_via_whatsapp_funcionario',
+        ${input.markCheckin ? 'checkin_via_whatsapp' : 'atualizacao_via_whatsapp_funcionario'},
         ${JSON.stringify(before)}::jsonb,
         ${JSON.stringify(after)}::jsonb
       )
@@ -170,6 +224,10 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
     sourceMediaType: input.sourceMediaType ?? null,
     newVehicleStatus: input.newVehicleStatus ?? null,
     newVehicleSector: input.newVehicleSector ?? null,
+    newVehicleStopReason: input.newVehicleStopReason ?? null,
+    newVehicleStopDetail: input.newVehicleStopDetail ?? null,
+    appendVehicleObservation: input.appendVehicleObservation ?? null,
+    markCheckin: Boolean(input.markCheckin),
   };
   const resultJson = JSON.stringify(result);
   const resolvedRows = await sql`
