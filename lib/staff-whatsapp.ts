@@ -279,23 +279,33 @@ export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessa
     try {
       const media = await downloadWhatsAppMedia(message.mediaId);
       const classification = await classifyStaffMedia(media);
-      if (classification.kind === 'vehicle_photo' && classification.plate && classification.confidence >= 0.65) {
-        return {
-          staff: true,
-          ...(await stageAdHocStaffCommand({
-            employee,
-            message,
-            text: `Foto do veículo ${classification.plate}. ${classification.description}`,
-            sourceMediaId: message.mediaId,
-            sourceMediaType: 'image',
-            forcedPlate: classification.plate,
-            forcedCheckin: true,
-          })),
-        };
+      if (classification.kind === 'vehicle_photo') {
+        if (classification.plate && classification.confidence >= 0.65) {
+          return {
+            staff: true,
+            ...(await stageAdHocStaffCommand({
+              employee,
+              message,
+              text: `Foto do veículo ${classification.plate}. ${classification.description}`,
+              sourceMediaId: message.mediaId,
+              sourceMediaType: 'image',
+              forcedPlate: classification.plate,
+              forcedCheckin: true,
+            })),
+          };
+        }
+        if (employee.telefone) {
+          await sendWhatsAppText(employee.telefone, 'A imagem parece ser de um veículo, mas não consegui ler a placa com segurança. Envie a mesma foto com a placa na legenda, por exemplo: ABC1D23.', message.id);
+        }
+        return { staff: true, handled: true, plateRequired: true };
       }
       if (classification.kind === 'parts_document') {
         return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
       }
+      if (employee.telefone) {
+        await sendWhatsAppText(employee.telefone, 'Recebi a imagem, mas não consegui relacioná-la com segurança a um veículo ou documento de peças. Envie novamente com a placa na legenda ou responda à tarefa correspondente.', message.id);
+      }
+      return { staff: true, handled: true, unclassifiedMedia: true };
     } catch (error) {
       console.error('Falha ao classificar mídia espontânea do funcionário:', error);
     }
