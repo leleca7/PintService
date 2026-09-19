@@ -4,6 +4,7 @@ import { createOrReuseOperationalTask, type OperationalTaskType } from '@/lib/op
 import { externalVehicleSourceConfigured, resolveOperationalVehicle } from '@/lib/operational-vehicle';
 import { findEmployeeByWhatsAppPhone, processStaffWhatsAppMessage } from '@/lib/staff-whatsapp';
 import { getOfficeProfile } from '@/lib/office-profile';
+import { handlePostDeliveryFeedback } from '@/lib/post-delivery';
 import { getDb } from '@/lib/db';
 import { sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
 
@@ -81,6 +82,10 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
   ]);
   const state = stateRows[0] ?? null;
   if (state?.bot_ativo === false) return { handedToHuman: true };
+  if (message.type === 'text' && message.text.trim()) {
+    const postDelivery = await handlePostDeliveryFeedback({ phone: message.phone, clientId: String(client.id), message: message.text });
+    if (postDelivery.handled) return { ok: true, action: 'pos_entrega', needsHuman: postDelivery.sentiment === 'negativo' };
+  }
 
   const vehicles = vehicleRows.map((row) => ({
     id: String(row.id ?? ''),
@@ -140,11 +145,34 @@ export async function processIncomingMessage(message: IncomingWhatsAppMessage) {
     case 'status': {
       const resolution = await resolveOperationalVehicle(plan.plate);
       if (!resolution.ok) {
-        needsHuman = true;
-        reply = unavailableVehicleReply(resolution.reason);
-        const detail = resolution.reason === 'source_error' ? `Fonte por link indisponível ao consultar ${plan.plate}: ${resolution.error || 'erro sem detalhe'}.` : resolution.reason === 'incomplete' ? `Completar etapa/status da placa ${plan.plate} na fonte operacional e responder o cliente.` : `Localizar a placa ${plan.plate || 'não identificada'} na fonte operacional e responder o cliente.`;
-        await createPending(String(client.id), null, 'atendente', detail, resolution.reason === 'source_error' ? 'alta' : 'normal');
-        await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'status' });
+        if (resolution.reason === 'incomplete' && resolution.vehicle) {
+          const vehicle = resolution.vehicle;
+          vehicleId = vehicle.id;
+          await sql`UPDATE veiculos SET cliente_id = COALESCE(cliente_id, ${client.id}) WHERE id = ${vehicle.id}`;
+          const { task, reused } = await createOrReuseOperationalTask({
+            clientId: String(client.id),
+            vehicle,
+            customerPhone: message.phone,
+            customerMessage: message.text,
+            priority: 'normal',
+            request: {
+              type: 'confirmar_etapa',
+              sector: vehicle.setor || '',
+              instruction: 'Confirmar a etapa e o status atuais do veículo porque essa informação não está preenchida no sistema.',
+              requiresPhoto: false,
+            },
+          });
+          reply = reused
+            ? 'Encontrei o veículo, mas essa atualização ainda não está preenchida. A confirmação já está sendo verificada com o responsável e eu te aviso por aqui assim que ele responder.'
+            : 'Encontrei o veículo, mas essa atualização ainda não está preenchida. Já pedi a confirmação ao responsável e eu te respondo por aqui assim que ele retornar.';
+          await setState(message.phone, { etapa: 'aguardando_tarefa_operacional', bot_ativo: true, ultima_intencao: 'status', placa_contexto: vehicle.placa, tarefa_aguardada_id: String(task.id) });
+        } else {
+          needsHuman = true;
+          reply = unavailableVehicleReply(resolution.reason);
+          const detail = resolution.reason === 'source_error' ? `Fonte por link indisponível ao consultar ${plan.plate}: ${resolution.error || 'erro sem detalhe'}.` : `Localizar a placa ${plan.plate || 'não identificada'} na fonte operacional e responder o cliente.`;
+          await createPending(String(client.id), null, 'atendente', detail, resolution.reason === 'source_error' ? 'alta' : 'normal');
+          await setState(message.phone, { etapa: 'atendimento_humano', bot_ativo: false, ultima_intencao: 'status' });
+        }
       } else {
         const vehicle = resolution.vehicle;
         vehicleId = vehicle.id;
