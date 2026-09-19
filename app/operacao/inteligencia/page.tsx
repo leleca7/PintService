@@ -2,7 +2,7 @@ import Link from 'next/link';
 import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
 import { getOperationalIntelligenceData } from '@/lib/operational-intelligence';
-import { markOperationalAlertResolved, markSupplierChargeSent } from './actions';
+import { markOperationalAlertResolved, markSupplierChargeSent, saveSupplierContact } from './actions';
 
 function asObject(value:any){
   if(!value) return {};
@@ -69,7 +69,16 @@ export default async function OperationalIntelligencePage(){
         </section>
         <section className={styles.section}>
           <div className={styles.sectionHead}><div><p>FORNECEDORES</p><h2>Pedidos e atrasos</h2></div></div>
-          <div className={styles.list}>{data.suppliers.map((row:any)=><div className={styles.row} key={String(row.fornecedor)}><div className={styles.rowBody}><div className={styles.rowTop}><strong>{String(row.fornecedor)}</strong><span>{Number(row.atrasados)} atrasado(s)</span></div><p className={styles.preview}>{Number(row.pedidos)} pedido(s) registrados</p></div></div>)}</div>
+          <div className={styles.list}>{data.suppliers.map((row:any)=><div className={styles.row} key={String(row.fornecedor)}><div className={styles.rowBody}>
+            <div className={styles.rowTop}><strong>{String(row.fornecedor)}</strong><span>{Number(row.atrasados)} atrasado(s)</span></div>
+            <p className={styles.preview}>{Number(row.pedidos)} pedido(s) registrados · {row.telefone ? 'WhatsApp cadastrado' : 'sem contato cadastrado'}</p>
+            <form action={saveSupplierContact} style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+              <input type="hidden" name="nome" value={String(row.fornecedor)}/>
+              <input name="telefone" defaultValue={String(row.telefone??'')} placeholder="WhatsApp do fornecedor" style={{padding:8,border:'1px solid #d9dde3',borderRadius:8}}/>
+              <input name="email" defaultValue={String(row.email??'')} placeholder="E-mail" style={{padding:8,border:'1px solid #d9dde3',borderRadius:8}}/>
+              <button className={styles.button} type="submit">Salvar contato</button>
+            </form>
+          </div></div>)}</div>
         </section>
       </div>
     </div>
