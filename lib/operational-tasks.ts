@@ -4,6 +4,7 @@ import { answerOperationalResolution } from '@/lib/agent';
 import { getDb } from '@/lib/db';
 import { sendOperationalTaskToEmployee } from '@/lib/task-messaging';
 import { sendWhatsAppImageId, sendWhatsAppImageUrl, sendWhatsAppText } from '@/lib/whatsapp';
+import { maybeSendOperationalEvent } from '@/lib/operational-communications';
 
 export type OperationalTaskType = 'confirmar_etapa' | 'tirar_foto' | 'confirmar_peca' | 'verificar_status_fisico' | 'informacao_setor';
 export type OperationalTaskRequest = { type: OperationalTaskType; sector: string; instruction: string; requiresPhoto: boolean };
@@ -195,6 +196,18 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
         ${JSON.stringify(after)}::jsonb
       )
     `;
+    try {
+      await maybeSendOperationalEvent({
+        vehicleId: String(task.veiculo_id),
+        beforeStage: before.setor,
+        afterStage: after.setor,
+        beforeStatus: before.status,
+        afterStatus: after.status,
+        checkin: Boolean(input.markCheckin),
+      });
+    } catch (error) {
+      console.error('Falha ao processar comunicação após atualização pelo WhatsApp:', error);
+    }
   }
 
   if (task.veiculo_id && (input.evidenceMediaId || input.evidenceUrl || input.sourceMediaId)) {
