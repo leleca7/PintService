@@ -82,6 +82,38 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
   return { ...plan, plate };
 }
 
+const PostDeliveryFeedbackSchema = z.object({
+  sentiment: z.enum(['positivo', 'neutro', 'negativo', 'nao_relacionado']),
+  confidence: z.number().min(0).max(1),
+  reason: z.string(),
+});
+
+export async function classifyPostDeliveryFeedback(message: string) {
+  const feedbackSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      sentiment: { type: 'string', enum: ['positivo', 'neutro', 'negativo', 'nao_relacionado'] },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      reason: { type: 'string' },
+    },
+    required: ['sentiment', 'confidence', 'reason'],
+  };
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Classifique a resposta de um cliente de funilaria/pintura que acabou de ser perguntado sobre a experiência após a entrega do veículo.
+Use positivo quando houver satisfação clara, elogio ou confirmação inequívoca de que ficou tudo certo.
+Use negativo quando houver reclamação, defeito percebido, insatisfação, problema, cobrança ou algo que precise de atenção humana.
+Use neutro quando a resposta for relacionada ao serviço, mas não permitir concluir satisfação ou insatisfação.
+Use nao_relacionado quando a mensagem claramente tratar de outro assunto.
+Não transforme respostas vagas como "ok", "beleza" ou "recebido" em elogio automaticamente; em caso de dúvida, prefira neutro.`,
+    input: message,
+    text: { format: { type: 'json_schema', name: 'feedback_pos_entrega', strict: true, schema: feedbackSchema } },
+  });
+  return PostDeliveryFeedbackSchema.parse(JSON.parse(response.output_text));
+}
+
 export async function answerGeneralQuestion(message: string) {
   const officeFacts = getOfficeProfileFacts();
   const response = await client().responses.create({
