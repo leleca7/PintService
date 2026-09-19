@@ -68,6 +68,7 @@ export default async function OperationPage() {
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>}
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/agenda">Agenda</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
+            <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
             <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
           </div>
         </header>
