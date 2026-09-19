@@ -13,20 +13,31 @@ export type PostDeliveryConfig = {
 };
 
 export async function getPostDeliveryConfig(): Promise<PostDeliveryConfig> {
-  const sql = getDb();
-  const rows = await sql`
-    SELECT garantia_servico_meses, garantia_pecas_meses, link_avaliacao, ativo
-    FROM configuracao_pos_entrega
-    WHERE id = true
-    LIMIT 1
-  `;
-  const row = rows[0];
-  return {
-    active: row?.ativo !== false,
-    serviceWarrantyMonths: Number(row?.garantia_servico_meses ?? 12),
-    partsWarrantyMonths: Number(row?.garantia_pecas_meses ?? 6),
-    reviewLink: String(row?.link_avaliacao ?? process.env.GOOGLE_REVIEW_URL ?? '').trim(),
+  const fallback: PostDeliveryConfig = {
+    active: true,
+    serviceWarrantyMonths: 12,
+    partsWarrantyMonths: 6,
+    reviewLink: String(process.env.GOOGLE_REVIEW_URL ?? '').trim(),
   };
+  try {
+    const sql = getDb();
+    const rows = await sql`
+      SELECT garantia_servico_meses, garantia_pecas_meses, link_avaliacao, ativo
+      FROM configuracao_pos_entrega
+      WHERE id = true
+      LIMIT 1
+    `;
+    const row = rows[0];
+    return {
+      active: row?.ativo !== false,
+      serviceWarrantyMonths: Number(row?.garantia_servico_meses ?? fallback.serviceWarrantyMonths),
+      partsWarrantyMonths: Number(row?.garantia_pecas_meses ?? fallback.partsWarrantyMonths),
+      reviewLink: String(row?.link_avaliacao ?? fallback.reviewLink).trim(),
+    };
+  } catch (error) {
+    console.error('Configuração de pós-entrega ainda não disponível:', error);
+    return fallback;
+  }
 }
 
 export function addMonths(date: string, months: number) {
@@ -173,16 +184,22 @@ export async function handlePostDeliveryFeedback(input: {
   message: string;
 }) {
   const sql = getDb();
-  const rows = await sql`
-    SELECT f.id, f.veiculo_id, f.status, v.placa, v.modelo
-    FROM fluxos_pos_entrega f
-    LEFT JOIN veiculos v ON v.id = f.veiculo_id
-    WHERE f.cliente_id = ${input.clientId}
-      AND f.telefone = ${input.phone}
-      AND f.status IN ('aguardando_satisfacao','feedback_neutro')
-    ORDER BY f.atualizado_em DESC
-    LIMIT 1
-  `;
+  let rows: any[] = [];
+  try {
+    rows = await sql`
+      SELECT f.id, f.veiculo_id, f.status, v.placa, v.modelo
+      FROM fluxos_pos_entrega f
+      LEFT JOIN veiculos v ON v.id = f.veiculo_id
+      WHERE f.cliente_id = ${input.clientId}
+        AND f.telefone = ${input.phone}
+        AND f.status IN ('aguardando_satisfacao','feedback_neutro')
+      ORDER BY f.atualizado_em DESC
+      LIMIT 1
+    `;
+  } catch (error) {
+    console.error('Fluxo de pós-entrega ainda não disponível:', error);
+    return { handled: false as const };
+  }
   const flow = rows[0];
   if (!flow) return { handled: false as const };
 
