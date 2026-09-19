@@ -8,7 +8,7 @@ import { sendWhatsAppImageId, sendWhatsAppImageUrl, sendWhatsAppText } from '@/l
 export type OperationalTaskType = 'confirmar_etapa' | 'tirar_foto' | 'confirmar_peca' | 'verificar_status_fisico' | 'informacao_setor';
 export type OperationalTaskRequest = { type: OperationalTaskType; sector: string; instruction: string; requiresPhoto: boolean };
 type CreateTaskInput = { clientId: string; vehicle: { id: string; placa: string; modelo?: string | null }; customerPhone: string; customerMessage: string; priority: 'baixa' | 'normal' | 'alta' | 'urgente'; request: OperationalTaskRequest };
-type ResolveTaskInput = { taskId: string; employeeId?: string | null; employeeResponse: string; evidenceUrl?: string | null; evidenceMediaId?: string | null; newVehicleStatus?: string | null; newVehicleSector?: string | null; customerReply?: string | null };
+type ResolveTaskInput = { taskId: string; employeeId?: string | null; employeeResponse: string; evidenceUrl?: string | null; evidenceMediaId?: string | null; sourceMediaId?: string | null; sourceMediaType?: string | null; newVehicleStatus?: string | null; newVehicleSector?: string | null; customerReply?: string | null };
 
 function compact(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 160); }
 function taskKey(vehicleId: string, request: OperationalTaskRequest) { return createHash('sha256').update([vehicleId, request.type, compact(request.sector), compact(request.instruction)].join('|')).digest('hex'); }
@@ -143,7 +143,34 @@ export async function resolveOperationalTask(input: ResolveTaskInput) {
     `;
   }
 
-  const result = { employeeResponse: input.employeeResponse, evidenceUrl: input.evidenceUrl ?? null, evidenceMediaId: input.evidenceMediaId ?? null, newVehicleStatus: input.newVehicleStatus ?? null, newVehicleSector: input.newVehicleSector ?? null };
+  if (task.veiculo_id && (input.evidenceMediaId || input.evidenceUrl || input.sourceMediaId)) {
+    await sql`
+      INSERT INTO historico_veiculos (veiculo_id, evento, dados_novos)
+      VALUES (
+        ${task.veiculo_id},
+        'midia_operacional_via_whatsapp',
+        ${JSON.stringify({
+          tarefaId: String(task.id),
+          funcionarioId: input.employeeId ?? null,
+          evidenceMediaId: input.evidenceMediaId ?? null,
+          evidenceUrl: input.evidenceUrl ?? null,
+          sourceMediaId: input.sourceMediaId ?? null,
+          sourceMediaType: input.sourceMediaType ?? (input.evidenceMediaId ? 'image' : null),
+          textoConfirmado: input.employeeResponse,
+        })}::jsonb
+      )
+    `;
+  }
+
+  const result = {
+    employeeResponse: input.employeeResponse,
+    evidenceUrl: input.evidenceUrl ?? null,
+    evidenceMediaId: input.evidenceMediaId ?? null,
+    sourceMediaId: input.sourceMediaId ?? null,
+    sourceMediaType: input.sourceMediaType ?? null,
+    newVehicleStatus: input.newVehicleStatus ?? null,
+    newVehicleSector: input.newVehicleSector ?? null,
+  };
   const resultJson = JSON.stringify(result);
   const resolvedRows = await sql`
     UPDATE tarefas_operacionais
