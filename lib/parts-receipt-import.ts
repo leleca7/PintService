@@ -287,7 +287,9 @@ export async function processPartsReceiptConfirmation(message: IncomingWhatsAppM
     try {
       await advancePostDeliveryFromParts({
         vehicleId: String(imported.veiculo_id),
-        receivedItems: proposed.map((item: any) => ({ descricao: String(item.descricao ?? '') })),
+        receivedItems: proposed
+          .filter((item: any) => Number(item.atual ?? 0) + Number(item.incremento ?? 0) >= Number(item.total ?? 0))
+          .map((item: any) => ({ descricao: String(item.descricao ?? '') })),
         orderIds,
       });
     } catch (error) {
