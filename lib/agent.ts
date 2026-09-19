@@ -343,6 +343,9 @@ const StaffOperationalUpdateSchema = z.object({
   stage: z.string(),
   updateStatus: z.boolean(),
   status: z.string(),
+  updateStopReason: z.boolean(),
+  stopReason: z.string(),
+  stopDetail: z.string(),
   reason: z.string(),
 });
 
@@ -360,9 +363,12 @@ export async function suggestOperationalUpdateFromEmployeeResponse(input: {
       stage: { type: 'string' },
       updateStatus: { type: 'boolean' },
       status: { type: 'string' },
+      updateStopReason: { type: 'boolean' },
+      stopReason: { type: 'string' },
+      stopDetail: { type: 'string' },
       reason: { type: 'string' },
     },
-    required: ['updateStage', 'stage', 'updateStatus', 'status', 'reason'],
+    required: ['updateStage', 'stage', 'updateStatus', 'status', 'updateStopReason', 'stopReason', 'stopDetail', 'reason'],
   };
 
   const response = await client().responses.create({
@@ -390,6 +396,9 @@ Regras:
 - Só marque updateStage=true quando o funcionário afirmar claramente a etapa ATUAL do veículo, por exemplo "está na montagem", "já foi para polimento", "está em pintura".
 - Frases como "acabou de sair da pintura", "terminou a funilaria" ou "vai para montagem" NÃO provam a etapa atual; nesses casos não atualize a etapa.
 - Só marque updateStatus=true quando um dos status permitidos estiver explicitamente sustentado pela resposta.
+- Se o funcionário disser explicitamente que está aguardando peça, seguradora, cliente, retrabalho, capacidade interna ou problema técnico, marque updateStopReason=true.
+- stopReason deve ser exatamente um destes quando aplicável: Aguardando peça, Aguardando seguradora, Aguardando cliente, Retrabalho, Capacidade interna, Problema técnico, Outro.
+- stopDetail deve conter somente o detalhe factual citado pelo funcionário, sem inferência.
 - Nunca inferir próxima etapa, prazo, disponibilidade, entrega ou recebimento de peça.
 - Se houver dúvida, deixe os campos de atualização falsos e strings vazias.
 - A resposta ao cliente pode continuar normalmente mesmo quando não houver atualização estrutural.`,
