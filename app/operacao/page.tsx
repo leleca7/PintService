@@ -5,7 +5,7 @@ import { getCurrentAppUser, userHasPermission } from '@/lib/auth/current-user';
 import { getCapacityData } from '@/lib/capacity-data';
 import { getOperationData } from '@/lib/operation-data';
 import { OPERATION_STAGES } from '@/lib/operation-stages';
-import { updateOperationalVehicle } from './actions';
+import { finalizeOperationalVehicle, updateOperationalVehicle } from './actions';
 import local from './operacao.module.css';
 
 const STATUS_OPTIONS = [
@@ -68,6 +68,7 @@ export default async function OperationPage() {
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>}
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/agenda">Agenda</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
+            <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
             <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
           </div>
         </header>
@@ -161,6 +162,32 @@ export default async function OperationPage() {
 
                       <div className={local.actions}><button className={local.save} type="submit">Salvar atualização</button></div>
                     </form>
+
+                    <details className={local.finalize}>
+                      <summary>Finalizar / entregar veículo</summary>
+                      <p>Use somente quando o veículo realmente sair da oficina. O pós-entrega será iniciado a partir desta ação.</p>
+                      <div className={local.finalizeGrid}>
+                        <form action={finalizeOperationalVehicle} className={local.finalizeForm}>
+                          <input type="hidden" name="id" value={vehicle.id}/>
+                          <input type="hidden" name="finalizacao_tipo" value="sem_pendencias"/>
+                          <strong>Sem pendências</strong>
+                          <span>Entrega concluída sem obrigação operacional aberta conhecida.</span>
+                          <button className={local.finishOk} type="submit">Finalizar sem pendências</button>
+                        </form>
+
+                        <form action={finalizeOperationalVehicle} className={local.finalizeForm}>
+                          <input type="hidden" name="id" value={vehicle.id}/>
+                          <input type="hidden" name="finalizacao_tipo" value="com_pendencias"/>
+                          <strong>Com pendência</strong>
+                          <span>O veículo sai, mas o item continuará sendo acompanhado até a resolução.</span>
+                          <label className={local.field}>
+                            <span>O que ficou pendente?</span>
+                            <textarea name="pendencia_descricao" required placeholder="Ex.: emblema traseiro aguardando fornecedor"/>
+                          </label>
+                          <button className={local.finishPending} type="submit">Finalizar com pendência</button>
+                        </form>
+                      </div>
+                    </details>
                   </article>
                 );
               })}

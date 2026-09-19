@@ -28,7 +28,7 @@ type ResolvedVehicle = {
 
 export type VehicleResolution =
   | { ok: true; vehicle: ResolvedVehicle }
-  | { ok: false; reason: 'not_found' | 'source_error' | 'incomplete'; error?: string };
+  | { ok: false; reason: 'not_found' | 'source_error' | 'incomplete'; error?: string; vehicle?: ResolvedVehicle };
 
 function text(value: unknown) {
   return value == null ? '' : String(value).trim();
@@ -91,16 +91,16 @@ export async function resolveOperationalVehicle(plate: string): Promise<VehicleR
 
   if (!externalVehicleSourceConfigured()) {
     if (!dbVehicle) return { ok: false, reason: 'not_found' };
-    return { ok: false, reason: 'incomplete' };
+    return { ok: false, reason: 'incomplete', vehicle: mapDbVehicle(dbVehicle) };
   }
 
   const { source, vehicle: external } = await findExternalVehicleByPlate(plate);
   if (source.error) {
-    if (dbVehicle) return { ok: false, reason: 'incomplete', error: source.error };
+    if (dbVehicle) return { ok: false, reason: 'incomplete', error: source.error, vehicle: mapDbVehicle(dbVehicle) };
     return { ok: false, reason: 'source_error', error: source.error };
   }
-  if (!external) return dbVehicle ? { ok: false, reason: 'incomplete' } : { ok: false, reason: 'not_found' };
-  if (!external.status.trim() && !external.etapa.trim()) return { ok: false, reason: 'incomplete' };
+  if (!external) return dbVehicle ? { ok: false, reason: 'incomplete', vehicle: mapDbVehicle(dbVehicle) } : { ok: false, reason: 'not_found' };
+  if (!external.status.trim() && !external.etapa.trim()) return { ok: false, reason: 'incomplete', ...(dbVehicle ? { vehicle: mapDbVehicle(dbVehicle) } : {}) };
 
   const normalizedStage = (normalizeOperationalStage(external.etapa) ?? external.etapa.trim()) || null;
   const dataEntrada = parseExternalDate(external.dataEntrada);

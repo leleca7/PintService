@@ -1,8 +1,12 @@
 import 'server-only';
 import { resolveOperationalTask } from '@/lib/operational-tasks';
+import { suggestOperationalUpdateFromEmployeeResponse, transcribeOperationalAudio } from '@/lib/agent';
+import { normalizeOperationalStage } from '@/lib/operation-stages';
 import { findTaskIdByOutboundMessage, sendMappedTaskText } from '@/lib/task-messaging';
 import { getDb } from '@/lib/db';
 import { normalizeWhatsAppPhone, sendWhatsAppText, type IncomingWhatsAppMessage } from '@/lib/whatsapp';
+import { downloadWhatsAppMedia } from '@/lib/whatsapp-media';
+import { findPartsReceiptImportByReply, processPartsReceiptConfirmation, stagePartsReceiptFromStaff } from '@/lib/parts-receipt-import';
 
 const TASK_CODE_PATTERN = /#[A-Z0-9]{10}\b/gi;
 type Employee = { id: string; nome: string; setor: string | null; telefone: string | null; cargo: string | null };
@@ -17,7 +21,7 @@ function stripTaskCode(value = '') { return value.replace(TASK_CODE_PATTERN, '')
 async function getTask(taskId: string) {
   const sql = getDb();
   const rows = await sql`
-    SELECT t.id,t.codigo,t.cliente_id,t.veiculo_id,t.telefone_cliente,t.tipo,t.titulo,t.instrucoes,t.setor_responsavel,t.responsavel_id,t.prioridade,t.status,t.requer_foto,t.resposta_funcionario,t.evidencia_url,t.evidencia_media_id,t.origem_mensagem,
+    SELECT t.id,t.codigo,t.cliente_id,t.veiculo_id,t.telefone_cliente,t.tipo,t.titulo,t.instrucoes,t.setor_responsavel,t.responsavel_id,t.prioridade,t.status,t.requer_foto,t.resposta_funcionario,t.evidencia_url,t.evidencia_media_id,t.origem_mensagem,t.resultado,
            v.placa,v.modelo,v.status AS veiculo_status,v.setor AS veiculo_setor
     FROM tarefas_operacionais t
     LEFT JOIN veiculos v ON v.id = t.veiculo_id
@@ -73,7 +77,7 @@ async function ensureTaskBelongsToEmployee(task: any, employee: Employee) {
 
 async function requestCorrection(task: any, employee: Employee, contextMessageId: string) {
   const sql = getDb();
-  await sql`UPDATE tarefas_operacionais SET status = 'em_execucao', resposta_funcionario = null, evidencia_url = null, evidencia_media_id = null, atualizado_em = now() WHERE id = ${task.id}`;
+  await sql`UPDATE tarefas_operacionais SET status = 'em_execucao', resposta_funcionario = null, evidencia_url = null, evidencia_media_id = null, resultado = '{}'::jsonb, atualizado_em = now() WHERE id = ${task.id}`;
   await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados) VALUES (${task.id}, 'funcionario', ${employee.id}, 'confirmacao_recusada', '{}'::jsonb)`;
   if (employee.telefone) await sendMappedTaskText({ taskId: String(task.id), employeeId: employee.id, employeePhone: employee.telefone, text: `Sem problema. Envie a informação correta${task.requer_foto ? ' e a foto correta' : ''} respondendo esta mensagem. Tarefa #${task.codigo}.`, purpose: 'solicitacao', contextMessageId });
 }
@@ -87,12 +91,26 @@ async function confirmStagedTask(task: any, employee: Employee, message: Incomin
     return { ok: true, waitingConfirmation: true };
   }
   if (!String(task.resposta_funcionario ?? '').trim()) { await requestCorrection(task, employee, message.id); return { ok: true, corrected: true }; }
-  const result = await resolveOperationalTask({ taskId: String(task.id), employeeId: employee.id, employeeResponse: String(task.resposta_funcionario), evidenceUrl: task.evidencia_url ?? null, evidenceMediaId: task.evidencia_media_id ?? null });
+  const staged = typeof task.resultado === 'string'
+    ? (() => { try { return JSON.parse(task.resultado); } catch { return {}; } })()
+    : (task.resultado ?? {});
+  const proposed = staged?.proposedUpdate ?? {};
+  const result = await resolveOperationalTask({
+    taskId: String(task.id),
+    employeeId: employee.id,
+    employeeResponse: String(task.resposta_funcionario),
+    evidenceUrl: task.evidencia_url ?? null,
+    evidenceMediaId: task.evidencia_media_id ?? null,
+    newVehicleStatus: proposed.newVehicleStatus ?? null,
+    newVehicleSector: proposed.newVehicleSector ?? null,
+    sourceMediaId: staged?.sourceMediaId ?? null,
+    sourceMediaType: staged?.sourceMediaType ?? null,
+  });
   await sendWhatsAppText(employee.telefone, `Tarefa #${task.codigo} concluída. A confirmação foi registrada e o atendimento do cliente foi retomado automaticamente.`, message.id);
   return { ok: true, resolved: true, result };
 }
 
-async function stageEmployeeResponse(task: any, employee: Employee, message: IncomingWhatsAppMessage) {
+async function stageEmployeeResponse(task: any, employee: Employee, message: IncomingWhatsAppMessage & { sourceMediaType?: string }) {
   const sql = getDb();
   const hasImage = message.type === 'image' && Boolean(message.mediaId);
   const incomingText = stripTaskCode(message.text);
@@ -120,11 +138,60 @@ async function stageEmployeeResponse(task: any, employee: Employee, message: Inc
 
   const responseText = incomingText || previousText || (hasImage ? 'Foto enviada pela equipe.' : 'Confirmação enviada pela equipe.');
   const evidenceMediaId = hasImage ? message.mediaId : task.evidencia_media_id ?? null;
-  await sql`UPDATE tarefas_operacionais SET status = 'aguardando_confirmacao', responsavel_id = ${employee.id}, resposta_funcionario = ${responseText}, evidencia_media_id = ${evidenceMediaId}, atualizado_em = now() WHERE id = ${task.id}`;
-  const data = JSON.stringify({ texto: responseText, mediaId: evidenceMediaId, messageId: message.id });
+
+  let proposedUpdate: { newVehicleSector: string | null; newVehicleStatus: string | null } = {
+    newVehicleSector: null,
+    newVehicleStatus: null,
+  };
+  if (['confirmar_etapa', 'verificar_status_fisico', 'informacao_setor'].includes(String(task.tipo)) && responseText.trim()) {
+    try {
+      const suggestion = await suggestOperationalUpdateFromEmployeeResponse({
+        employeeResponse: responseText,
+        currentStage: task.veiculo_setor ?? null,
+        currentStatus: task.veiculo_status ?? null,
+        taskType: String(task.tipo),
+      });
+      const normalizedStage = suggestion.updateStage ? normalizeOperationalStage(suggestion.stage) : null;
+      const allowedStatuses = ['Em serviço', 'Aguardando peças', 'Aguardando aprovação', 'Parado', 'Pronto para entrega'];
+      proposedUpdate = {
+        newVehicleSector: normalizedStage,
+        newVehicleStatus: suggestion.updateStatus && allowedStatuses.includes(suggestion.status) ? suggestion.status : null,
+      };
+    } catch (error) {
+      console.error('Falha ao sugerir atualização operacional pela resposta do funcionário:', error);
+    }
+  }
+
+  const stagingResult = JSON.stringify({
+    proposedUpdate,
+    sourceMediaId: message.sourceMediaType ? message.mediaId || null : null,
+    sourceMediaType: message.sourceMediaType ?? null,
+  });
+  await sql`UPDATE tarefas_operacionais SET status = 'aguardando_confirmacao', responsavel_id = ${employee.id}, resposta_funcionario = ${responseText}, evidencia_media_id = ${evidenceMediaId}, resultado = ${stagingResult}::jsonb, atualizado_em = now() WHERE id = ${task.id}`;
+  const data = JSON.stringify({ texto: responseText, mediaId: evidenceMediaId, messageId: message.id, proposedUpdate });
   await sql`INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados) VALUES (${task.id}, 'funcionario', ${employee.id}, 'resposta_recebida_whatsapp', ${data}::jsonb)`;
   const label = task.modelo ? `${task.modelo} ${task.placa}` : task.placa ?? 'veículo';
-  if (employee.telefone) await sendMappedTaskText({ taskId: String(task.id), employeeId: employee.id, employeePhone: employee.telefone, text: [`Só confirma antes de eu mandar ao cliente — tarefa #${task.codigo}:`, `Veículo: ${label}`, `Informação: ${responseText}`, evidenceMediaId ? 'Foto: recebida' : '', '', 'Responda SIM para concluir e enviar ao cliente.', 'Responda NÃO para corrigir.'].filter(Boolean).join('\n'), purpose: 'confirmacao', contextMessageId: message.id });
+  const systemUpdate = [
+    proposedUpdate.newVehicleSector ? `Etapa: ${proposedUpdate.newVehicleSector}` : '',
+    proposedUpdate.newVehicleStatus ? `Status: ${proposedUpdate.newVehicleStatus}` : '',
+  ].filter(Boolean);
+  if (employee.telefone) await sendMappedTaskText({
+    taskId: String(task.id),
+    employeeId: employee.id,
+    employeePhone: employee.telefone,
+    text: [
+      `Só confirma antes de eu mandar ao cliente — tarefa #${task.codigo}:`,
+      `Veículo: ${label}`,
+      `Informação: ${responseText}`,
+      evidenceMediaId ? 'Foto: recebida' : '',
+      systemUpdate.length ? `Também vou atualizar no sistema: ${systemUpdate.join(' · ')}` : '',
+      '',
+      systemUpdate.length ? 'Responda SIM para gravar a atualização e enviar ao cliente.' : 'Responda SIM para concluir e enviar ao cliente.',
+      'Responda NÃO para corrigir.',
+    ].filter(Boolean).join('\n'),
+    purpose: 'confirmacao',
+    contextMessageId: message.id,
+  });
   return { ok: true, staged: true };
 }
 
@@ -138,13 +205,56 @@ export async function findEmployeeByWhatsAppPhone(phone: string): Promise<Employ
 }
 
 export async function processStaffWhatsAppMessage(message: IncomingWhatsAppMessage, employee: Employee) {
+  const receiptImport = await findPartsReceiptImportByReply(message, employee);
+  if (receiptImport) {
+    return { staff: true, ...(await processPartsReceiptConfirmation(message, employee, receiptImport)) };
+  }
+
   const located = await findTaskForEmployee(message, employee);
-  if (!located.task) { await sendAmbiguityMessage(employee, located.ambiguousIds); return { staff: true, handled: true, ambiguous: true }; }
+  if (!located.task) {
+    if (['image', 'document'].includes(message.type) && message.mediaId) {
+      return { staff: true, ...(await stagePartsReceiptFromStaff(message, employee)) };
+    }
+    await sendAmbiguityMessage(employee, located.ambiguousIds);
+    return { staff: true, handled: true, ambiguous: true };
+  }
+
   const task = located.task;
   if (!(await ensureTaskBelongsToEmployee(task, employee))) {
     if (employee.telefone) await sendWhatsAppText(employee.telefone, `Essa tarefa #${task.codigo} está atribuída a outro responsável. Para evitar atualizar o carro errado, não registrei sua resposta.`, message.id);
     return { staff: true, handled: true, wrongAssignee: true };
   }
-  if (located.purpose === 'confirmacao' || task.status === 'aguardando_confirmacao') return { staff: true, handled: true, ...(await confirmStagedTask(task, employee, message)) };
-  return { staff: true, handled: true, ...(await stageEmployeeResponse(task, employee, message)) };
+
+  if (located.purpose === 'confirmacao' || task.status === 'aguardando_confirmacao') {
+    return { staff: true, handled: true, ...(await confirmStagedTask(task, employee, message)) };
+  }
+
+  let processingMessage: IncomingWhatsAppMessage & { sourceMediaType?: string } = message;
+  if (message.type === 'audio' && message.mediaId) {
+    try {
+      const media = await downloadWhatsAppMedia(message.mediaId);
+      const transcript = await transcribeOperationalAudio(media);
+      if (!transcript) throw new Error('Transcrição vazia.');
+      processingMessage = { ...message, type: 'text', text: transcript, sourceMediaType: 'audio' };
+      const sql = getDb();
+      await sql`
+        INSERT INTO tarefa_eventos (tarefa_id, ator_tipo, ator_id, evento, dados)
+        VALUES (
+          ${task.id},
+          'funcionario',
+          ${employee.id},
+          'audio_transcrito_whatsapp',
+          ${JSON.stringify({ mediaId: message.mediaId, transcript })}::jsonb
+        )
+      `;
+    } catch (error) {
+      console.error('Falha ao transcrever áudio operacional:', error);
+      if (employee.telefone) {
+        await sendWhatsAppText(employee.telefone, `Não consegui transcrever esse áudio com segurança. Para a tarefa #${task.codigo}, envie a informação por texto ou tente o áudio novamente.`, message.id);
+      }
+      return { staff: true, handled: true, audioError: true };
+    }
+  }
+
+  return { staff: true, handled: true, ...(await stageEmployeeResponse(task, employee, processingMessage)) };
 }

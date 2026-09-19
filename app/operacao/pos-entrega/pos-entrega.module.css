@@ -1,0 +1,126 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 18px;
+  background: var(--surface, #fff);
+  padding: 18px;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.head h2 {
+  margin: 5px 0 2px;
+  font-size: 1.05rem;
+}
+
+.head p {
+  margin: 0;
+  font-size: .82rem;
+  opacity: .68;
+}
+
+.plate {
+  letter-spacing: .08em;
+  white-space: nowrap;
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.meta div {
+  padding: 10px 11px;
+  background: rgba(15, 23, 42, .035);
+  border-radius: 11px;
+}
+
+.meta span,
+.field span {
+  display: block;
+  font-size: .7rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  opacity: .6;
+  margin-bottom: 4px;
+}
+
+.meta strong {
+  font-size: .84rem;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+}
+
+.wide,
+.actions {
+  grid-column: 1 / -1;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border: 1px solid var(--line, #d9dde3);
+  border-radius: 10px;
+  padding: 10px 11px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.field textarea {
+  min-height: 68px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.actions button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  background: #111315;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .grid,
+  .form,
+  .meta {
+    grid-template-columns: 1fr;
+  }
+  .wide,
+  .actions {
+    grid-column: auto;
+  }
+  .actions button {
+    width: 100%;
+  }
+}

@@ -11,9 +11,10 @@ const OperationalTaskSchema = z.object({
 });
 
 const PlanSchema = z.object({
-  intent: z.enum(['status', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral']),
-  action: z.enum(['status', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral']),
+  intent: z.enum(['status', 'pecas', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral']),
+  action: z.enum(['status', 'pecas', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral']),
   plate: z.string(),
+  partQuery: z.string(),
   confidence: z.number().min(0).max(1),
   needsHuman: z.boolean(),
   priority: z.enum(['baixa', 'normal', 'alta', 'urgente']),
@@ -36,21 +37,19 @@ function client() {
 const schema = {
   type: 'object', additionalProperties: false,
   properties: {
-    intent: { type: 'string', enum: ['status', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral'] },
-    action: { type: 'string', enum: ['status', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral'] },
-    plate: { type: 'string' }, confidence: { type: 'number', minimum: 0, maximum: 1 }, needsHuman: { type: 'boolean' }, priority: { type: 'string', enum: ['baixa', 'normal', 'alta', 'urgente'] }, sentiment: { type: 'string', enum: ['positivo', 'neutro', 'frustrado', 'irritado'] }, reason: { type: 'string' },
+    intent: { type: 'string', enum: ['status', 'pecas', 'confirmacao_operacional', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'reclamacao', 'humano', 'midia', 'geral'] },
+    action: { type: 'string', enum: ['status', 'pecas', 'verificar_operacao', 'pedir_placa', 'vistoria', 'foto', 'orcamento', 'agendamento', 'horario_endereco', 'humano', 'midia', 'geral'] },
+    plate: { type: 'string' }, partQuery: { type: 'string' }, confidence: { type: 'number', minimum: 0, maximum: 1 }, needsHuman: { type: 'boolean' }, priority: { type: 'string', enum: ['baixa', 'normal', 'alta', 'urgente'] }, sentiment: { type: 'string', enum: ['positivo', 'neutro', 'frustrado', 'irritado'] }, reason: { type: 'string' },
     operationalTask: { type: 'object', additionalProperties: false, properties: { type: { type: 'string', enum: ['confirmar_etapa', 'tirar_foto', 'confirmar_peca', 'verificar_status_fisico', 'informacao_setor', 'nenhuma'] }, sector: { type: 'string' }, instruction: { type: 'string' }, requiresPhoto: { type: 'boolean' } }, required: ['type', 'sector', 'instruction', 'requiresPhoto'] },
   },
-  required: ['intent', 'action', 'plate', 'confidence', 'needsHuman', 'priority', 'sentiment', 'reason', 'operationalTask'],
+  required: ['intent', 'action', 'plate', 'partQuery', 'confidence', 'needsHuman', 'priority', 'sentiment', 'reason', 'operationalTask'],
 };
 
 function normalizePlate(value = '') { const match = value.toUpperCase().match(/\b([A-Z]{3})[\s-]?([0-9][A-Z][0-9]{2}|[0-9]{4})\b/); return match ? `${match[1]}${match[2]}` : ''; }
-function normalizeText(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
-function asksAboutParts(value = '') { return /\b(peca|pecas|reposicao|componente|componentes)\b/.test(normalizeText(value)); }
 const emptyTask = { type: 'nenhuma' as const, sector: '', instruction: '', requiresPhoto: false };
 
 export async function planAttendance(context: AgentContext): Promise<AgentPlan> {
-  if (context.messageType !== 'text') return { intent: 'midia', action: 'midia', plate: '', confidence: 1, needsHuman: true, priority: 'normal', sentiment: 'neutro', reason: 'midia_recebida', operationalTask: emptyTask };
+  if (context.messageType !== 'text') return { intent: 'midia', action: 'midia', plate: '', partQuery: '', confidence: 1, needsHuman: true, priority: 'normal', sentiment: 'neutro', reason: 'midia_recebida', operationalTask: emptyTask };
   const response = await client().responses.create({
     model: process.env.OPENAI_MODEL || 'gpt-5.6-luna', store: false,
     instructions: `Você é o roteador de atendimento da PintService, uma oficina brasileira de funilaria e pintura.
@@ -59,7 +58,8 @@ Nunca invente status, setor, preço, orçamento, prazo, data de entrega, peça r
 Status registrado no sistema pode ser informado, mas perguntas que exigem confirmação física atual devem gerar verificar_operacao.
 Exemplos permitidos para verificar_operacao: "já está pronto para pintura?", "consegue tirar uma foto agora?", "confere em qual setor ele está?".
 Tipos operacionais permitidos para resposta automática: confirmar_etapa, tirar_foto, verificar_status_fisico ou informacao_setor.
-Qualquer pergunta sobre peça, peças, reposição, chegada de peça ou componente deve ir para humano. Nunca use confirmar_peca para atender cliente automaticamente.
+Perguntas sobre chegada, recebimento ou falta de peça devem usar intent/action="pecas" para consultar o controle nativo antes de envolver humano. Em partQuery escreva somente a peça ou componente citado, sem placa e sem palavras como "chegou". Se a pergunta for sobre peças em geral, deixe partQuery vazio.
+Nunca afirme que uma peça chegou a partir do texto do cliente; a ação pecas apenas autoriza a camada determinística a consultar o banco.
 Solicitações de vistoria, orçamento particular, discussão de preço/prazo, reclamação, pedido de gerente, ameaça, acidente grave, informação conflitante ou baixa confiança devem ir para humano.
 Para pedido de foto do veículo na oficina, prefira verificar_operacao/tirar_foto quando a placa estiver identificada.
 Revise openTasks antes de pedir nova verificação. Se já houver tarefa equivalente, reutilize a finalidade.
@@ -70,16 +70,135 @@ Quando a ação não for verificar_operacao, use operationalTask.type="nenhuma" 
   const plan = PlanSchema.parse(JSON.parse(response.output_text));
   const messagePlate = normalizePlate(context.message); const contextPlate = normalizePlate(context.plateContext || ''); const aiPlate = normalizePlate(plan.plate); let plate = messagePlate || aiPlate || contextPlate;
 
-  if (asksAboutParts(context.message) || plan.operationalTask.type === 'confirmar_peca') {
-    return { ...plan, intent: 'humano', action: 'humano', plate, needsHuman: true, priority: plan.priority === 'baixa' ? 'normal' : plan.priority, reason: `guardrail:pecas:${plan.reason}`, operationalTask: emptyTask };
+  if (plan.operationalTask.type === 'confirmar_peca') {
+    return { ...plan, intent: 'pecas', action: 'pecas', plate, needsHuman: false, operationalTask: emptyTask };
   }
   if (plan.intent === 'vistoria' || plan.action === 'vistoria') {
     return { ...plan, action: 'humano', plate, needsHuman: true, reason: `guardrail:vistoria:${plan.reason}`, operationalTask: emptyTask };
   }
   if (plan.confidence < 0.62 || plan.intent === 'reclamacao' || plan.intent === 'humano') return { ...plan, plate, action: 'humano', needsHuman: true, reason: `guardrail:${plan.reason}`, operationalTask: emptyTask };
-  if ((plan.action === 'status' || plan.action === 'verificar_operacao') && !plate) { if (context.vehicles.length === 1) plate = normalizePlate(context.vehicles[0].placa); else return { ...plan, plate: '', action: 'pedir_placa', needsHuman: false, operationalTask: emptyTask }; }
+  if ((plan.action === 'status' || plan.action === 'verificar_operacao' || plan.action === 'pecas') && !plate) { if (context.vehicles.length === 1) plate = normalizePlate(context.vehicles[0].placa); else return { ...plan, plate: '', action: 'pedir_placa', needsHuman: false, operationalTask: emptyTask }; }
   if (plan.action === 'verificar_operacao' && plan.operationalTask.type === 'nenhuma') return { ...plan, plate, operationalTask: { type: 'verificar_status_fisico', sector: '', instruction: 'Verificar fisicamente a situação atual do veículo e confirmar a informação solicitada pelo cliente.', requiresPhoto: false } };
   return { ...plan, plate };
+}
+
+const PartsReceiptSchema = z.object({
+  documentType: z.enum(['nota_fiscal', 'romaneio', 'pedido', 'outro']),
+  documentNumber: z.string(),
+  supplier: z.string(),
+  plate: z.string(),
+  claimNumber: z.string(),
+  date: z.string(),
+  items: z.array(z.object({
+    description: z.string(),
+    code: z.string(),
+    quantity: z.number().int().min(1),
+  })),
+  confidence: z.number().min(0).max(1),
+  notes: z.string(),
+});
+
+export type ExtractedPartsReceipt = z.infer<typeof PartsReceiptSchema>;
+
+export async function transcribeOperationalAudio(input: { buffer: Buffer; mimeType: string; filename: string }) {
+  const file = new File([new Uint8Array(input.buffer)], input.filename, { type: input.mimeType });
+  const transcription = await client().audio.transcriptions.create({
+    model: process.env.OPENAI_TRANSCRIBE_MODEL || 'gpt-transcribe',
+    file,
+    prompt: 'Áudio de funcionário de oficina automotiva brasileira. Vocabulário frequente: Pint Services, placa, desmontagem, funilaria, preparação de pintura, pintura, polimento, montagem, lavagem, acabamento, peça, fornecedor, sinistro, seguradora.',
+  });
+  return String(transcription.text ?? '').trim();
+}
+
+export async function extractPartsReceiptFromMedia(input: { buffer: Buffer; mimeType: string; filename: string }): Promise<ExtractedPartsReceipt> {
+  const receiptSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      documentType: { type: 'string', enum: ['nota_fiscal', 'romaneio', 'pedido', 'outro'] },
+      documentNumber: { type: 'string' },
+      supplier: { type: 'string' },
+      plate: { type: 'string' },
+      claimNumber: { type: 'string' },
+      date: { type: 'string' },
+      items: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            description: { type: 'string' },
+            code: { type: 'string' },
+            quantity: { type: 'integer', minimum: 1 },
+          },
+          required: ['description', 'code', 'quantity'],
+        },
+      },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      notes: { type: 'string' },
+    },
+    required: ['documentType', 'documentNumber', 'supplier', 'plate', 'claimNumber', 'date', 'items', 'confidence', 'notes'],
+  };
+
+  const base64 = input.buffer.toString('base64');
+  const dataUrl = `data:${input.mimeType};base64,${base64}`;
+  const mediaContent: any = input.mimeType.startsWith('image/')
+    ? { type: 'input_image', image_url: dataUrl, detail: 'high' }
+    : { type: 'input_file', filename: input.filename, file_data: dataUrl, ...(input.mimeType === 'application/pdf' ? { detail: 'high' } : {}) };
+
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Extraia dados de um documento de recebimento de peças automotivas.
+Use somente o que estiver visível no arquivo. Não invente placa, número, fornecedor, código ou quantidade.
+Em plate, normalize para letras/números sem hífen somente se houver uma placa legível; caso contrário use string vazia.
+Em date, use YYYY-MM-DD somente se a data estiver clara; caso contrário use string vazia.
+Liste somente itens que pareçam peças/produtos efetivamente presentes no documento.
+Se uma quantidade não estiver clara, use 1 e explique a incerteza em notes.
+confidence deve refletir a confiança no documento como um todo.`,
+    input: [{
+      role: 'user',
+      content: [
+        mediaContent,
+        { type: 'input_text', text: 'Extraia os dados necessários para conferir o recebimento de peças no Sistema da Pint.' },
+      ],
+    }],
+    text: { format: { type: 'json_schema', name: 'recebimento_pecas', strict: true, schema: receiptSchema } },
+  });
+
+  return PartsReceiptSchema.parse(JSON.parse(response.output_text));
+}
+
+const PostDeliveryFeedbackSchema = z.object({
+  sentiment: z.enum(['positivo', 'neutro', 'negativo', 'nao_relacionado']),
+  confidence: z.number().min(0).max(1),
+  reason: z.string(),
+});
+
+export async function classifyPostDeliveryFeedback(message: string) {
+  const feedbackSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      sentiment: { type: 'string', enum: ['positivo', 'neutro', 'negativo', 'nao_relacionado'] },
+      confidence: { type: 'number', minimum: 0, maximum: 1 },
+      reason: { type: 'string' },
+    },
+    required: ['sentiment', 'confidence', 'reason'],
+  };
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Classifique a resposta de um cliente de funilaria/pintura que acabou de ser perguntado sobre a experiência após a entrega do veículo.
+Use positivo quando houver satisfação clara, elogio ou confirmação inequívoca de que ficou tudo certo.
+Use negativo quando houver reclamação, defeito percebido, insatisfação, problema, cobrança ou algo que precise de atenção humana.
+Use neutro quando a resposta for relacionada ao serviço, mas não permitir concluir satisfação ou insatisfação.
+Use nao_relacionado quando a mensagem claramente tratar de outro assunto.
+Não transforme respostas vagas como "ok", "beleza" ou "recebido" em elogio automaticamente; em caso de dúvida, prefira neutro.`,
+    input: message,
+    text: { format: { type: 'json_schema', name: 'feedback_pos_entrega', strict: true, schema: feedbackSchema } },
+  });
+  return PostDeliveryFeedbackSchema.parse(JSON.parse(response.output_text));
 }
 
 export async function answerGeneralQuestion(message: string) {
@@ -96,6 +215,67 @@ ${officeFacts}`,
     input: message,
   });
   return response.output_text.trim();
+}
+
+const StaffOperationalUpdateSchema = z.object({
+  updateStage: z.boolean(),
+  stage: z.string(),
+  updateStatus: z.boolean(),
+  status: z.string(),
+  reason: z.string(),
+});
+
+export async function suggestOperationalUpdateFromEmployeeResponse(input: {
+  employeeResponse: string;
+  currentStage?: string | null;
+  currentStatus?: string | null;
+  taskType: string;
+}) {
+  const updateSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      updateStage: { type: 'boolean' },
+      stage: { type: 'string' },
+      updateStatus: { type: 'boolean' },
+      status: { type: 'string' },
+      reason: { type: 'string' },
+    },
+    required: ['updateStage', 'stage', 'updateStatus', 'status', 'reason'],
+  };
+
+  const response = await client().responses.create({
+    model: process.env.OPENAI_MODEL || 'gpt-5.6-luna',
+    store: false,
+    instructions: `Você analisa uma resposta curta de um funcionário de oficina e decide se ela contém uma atualização operacional EXPLÍCITA e segura para gravar no cadastro do veículo.
+
+Etapas permitidas, exatamente com estes nomes:
+- Desmontagem
+- Funilaria
+- Prep. de Pintura
+- Pintura
+- Polimento de Pint.
+- Montagem
+- Lavagem/Acabamento
+
+Status permitidos, exatamente com estes nomes:
+- Em serviço
+- Aguardando peças
+- Aguardando aprovação
+- Parado
+- Pronto para entrega
+
+Regras:
+- Só marque updateStage=true quando o funcionário afirmar claramente a etapa ATUAL do veículo, por exemplo "está na montagem", "já foi para polimento", "está em pintura".
+- Frases como "acabou de sair da pintura", "terminou a funilaria" ou "vai para montagem" NÃO provam a etapa atual; nesses casos não atualize a etapa.
+- Só marque updateStatus=true quando um dos status permitidos estiver explicitamente sustentado pela resposta.
+- Nunca inferir próxima etapa, prazo, disponibilidade, entrega ou recebimento de peça.
+- Se houver dúvida, deixe os campos de atualização falsos e strings vazias.
+- A resposta ao cliente pode continuar normalmente mesmo quando não houver atualização estrutural.`,
+    input: JSON.stringify(input),
+    text: { format: { type: 'json_schema', name: 'atualizacao_operacional_funcionario', strict: true, schema: updateSchema } },
+  });
+  return StaffOperationalUpdateSchema.parse(JSON.parse(response.output_text));
 }
 
 export async function answerOperationalResolution(input: { customerQuestion: string; employeeResponse: string; taskType: string; evidenceSent: boolean; vehicle: { placa?: string | null; modelo?: string | null; status?: string | null; setor?: string | null } }) {

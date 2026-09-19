@@ -21,13 +21,6 @@ export async function sendMappedTaskText(input: { taskId: string; employeeId: st
   return { response, messageId };
 }
 
-async function sectorHasSingleActiveEmployee(sector: string | null, assignedEmployeeId: string) {
-  if (!sector?.trim()) return true;
-  const sql = getDb();
-  const rows = await sql`SELECT id FROM funcionarios WHERE ativo = true AND lower(setor) = lower(${sector.trim()}) LIMIT 2`;
-  return rows.length === 1 && String(rows[0].id) === assignedEmployeeId;
-}
-
 export async function sendOperationalTaskToEmployee(taskId: string) {
   const sql = getDb();
   const rows = await sql`
@@ -43,7 +36,6 @@ export async function sendOperationalTaskToEmployee(taskId: string) {
   const task = rows[0];
   if (!task) return { sent: false, reason: 'task_not_found' as const };
   if (!task.funcionario_id || !task.funcionario_telefone) return { sent: false, reason: 'employee_without_whatsapp' as const };
-  if (!(await sectorHasSingleActiveEmployee(task.setor_responsavel, String(task.funcionario_id)))) return { sent: false, reason: 'ambiguous_sector_assignment' as const };
 
   const vehicleLabel = task.modelo ? `${task.modelo} — ${task.placa}` : task.placa || 'veículo não identificado';
   const priority = task.prioridade === 'urgente' ? '[URGENTE]' : task.prioridade === 'alta' ? '[PRIORIDADE ALTA]' : '[NOVA TAREFA]';
