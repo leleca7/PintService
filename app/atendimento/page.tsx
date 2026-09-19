@@ -3,6 +3,7 @@ import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
 import { getUnifiedInboxData } from '@/lib/unified-inbox';
+import { updateInboxStatus } from './actions';
 
 function normalize(value = '') {
   return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
@@ -136,8 +137,19 @@ export default async function AttendancePage() {
               <div className={styles.meta}>
                 <span className={styles.badge}>{item.channel}</span>
                 <span>{item.priority}</span>
+                <span>{item.status.replaceAll('_',' ')}</span>
                 {item.plate && <span>{item.plate}</span>}
               </div>
+              <form action={updateInboxStatus} style={{display:'flex',gap:6,marginTop:8,flexWrap:'wrap'}}>
+                <input type="hidden" name="id" value={item.id}/>
+                <select name="status" defaultValue={item.status} style={{padding:7,border:'1px solid #d9dde3',borderRadius:8}}>
+                  <option value="novo">Novo</option>
+                  <option value="triado">Triado</option>
+                  <option value="em_atendimento">Em atendimento</option>
+                  <option value="resolvido">Resolvido</option>
+                </select>
+                <button className={styles.button} type="submit">Atualizar</button>
+              </form>
             </div>
           </article>)}</div> : <div className={styles.quiet}><strong>Nenhum evento multicanal carregado.</strong>WhatsApp e Instagram aparecerão aqui conforme chegarem.</div>}
         </section>
