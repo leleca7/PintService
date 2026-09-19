@@ -13,10 +13,28 @@ type ResolveTaskInput = { taskId: string; employeeId?: string | null; employeeRe
 function compact(value = '') { return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().slice(0, 160); }
 function taskKey(vehicleId: string, request: OperationalTaskRequest) { return createHash('sha256').update([vehicleId, request.type, compact(request.sector), compact(request.instruction)].join('|')).digest('hex'); }
 
-async function findResponsibleEmployee(sector: string) {
-  if (!sector.trim()) return null;
+async function findResponsibleEmployee(vehicleId: string, sector: string) {
   const sql = getDb();
-  const rows = await sql`SELECT id, nome, setor, telefone FROM funcionarios WHERE ativo = true AND lower(setor) = lower(${sector.trim()}) ORDER BY nome ASC LIMIT 2`;
+  const assigned = await sql`
+    SELECT f.id, f.nome, f.setor, f.telefone
+    FROM veiculos v
+    JOIN funcionarios f ON f.id = v.responsavel_id
+    WHERE v.id = ${vehicleId}
+      AND f.ativo = true
+      AND f.telefone IS NOT NULL
+    LIMIT 1
+  `;
+  if (assigned[0]) return assigned[0];
+  if (!sector.trim()) return null;
+  const rows = await sql`
+    SELECT id, nome, setor, telefone
+    FROM funcionarios
+    WHERE ativo = true
+      AND telefone IS NOT NULL
+      AND lower(setor) = lower(${sector.trim()})
+    ORDER BY nome ASC
+    LIMIT 2
+  `;
   return rows.length === 1 ? rows[0] : null;
 }
 
@@ -31,7 +49,7 @@ export async function createOrReuseOperationalTask(input: CreateTaskInput) {
   const existing = await sql`SELECT id,codigo,tipo,titulo,instrucoes,setor_responsavel,responsavel_id,status,requer_foto,resposta_funcionario,evidencia_url,evidencia_media_id,criado_em FROM tarefas_operacionais WHERE dedupe_key = ${dedupeKey} AND status IN ('aberta','em_execucao','aguardando_confirmacao') LIMIT 1`;
   if (existing[0]) return { task: existing[0], reused: true };
 
-  const employee = await findResponsibleEmployee(input.request.sector);
+  const employee = await findResponsibleEmployee(input.vehicle.id, input.request.sector);
   const vehicleLabel = input.vehicle.modelo ? `${input.vehicle.modelo} ${input.vehicle.placa}` : `veículo ${input.vehicle.placa}`;
   const title = `${input.request.instruction.replace(/[.!?]+$/, '')} — ${input.vehicle.placa}`;
   const inserted = await sql`
