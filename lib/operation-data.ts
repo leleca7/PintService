@@ -18,6 +18,11 @@ export type OperationalVehicle = {
   responsavel: string;
   prioridade: number | null;
   observacoes: string;
+  motivoParada: string;
+  motivoParadaDetalhe: string;
+  etapaIniciadaEm: string | null;
+  previsaoIa: string | null;
+  previsaoIaConfianca: number | null;
   ultimaAtualizacao: string | null;
 };
 
@@ -54,6 +59,8 @@ export async function getOperationData(): Promise<OperationData> {
     const rows = await sql`
       SELECT v.id, v.placa, v.modelo, v.cor, v.seguradora, v.setor, v.status,
              v.data_entrada, v.previsao_saida, v.prioridade, v.observacoes,
+             v.motivo_parada, v.motivo_parada_detalhe, v.etapa_iniciada_em,
+             v.previsao_ia, v.previsao_ia_confianca,
              v.ultima_atualizacao, c.nome AS cliente_nome, f.nome AS responsavel_nome
       FROM veiculos v
       LEFT JOIN clientes c ON c.id = v.cliente_id
@@ -76,6 +83,11 @@ export async function getOperationData(): Promise<OperationData> {
       responsavel: String(row.responsavel_nome ?? ''),
       prioridade: row.prioridade == null ? null : Number(row.prioridade),
       observacoes: String(row.observacoes ?? ''),
+      motivoParada: String(row.motivo_parada ?? ''),
+      motivoParadaDetalhe: String(row.motivo_parada_detalhe ?? ''),
+      etapaIniciadaEm: iso(row.etapa_iniciada_em),
+      previsaoIa: dateOnly(row.previsao_ia),
+      previsaoIaConfianca: row.previsao_ia_confianca == null ? null : Number(row.previsao_ia_confianca),
       ultimaAtualizacao: iso(row.ultima_atualizacao),
     }));
 
