@@ -187,3 +187,19 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_inbox_eventos_externo
 
 CREATE INDEX IF NOT EXISTS idx_inbox_eventos_fila
   ON public.inbox_eventos (status, prioridade, criado_em DESC);
+
+
+CREATE TABLE IF NOT EXISTS public.configuracao_operacao (
+  id boolean PRIMARY KEY DEFAULT true CHECK (id = true),
+  detector_atrasos_ativo boolean NOT NULL DEFAULT true,
+  previsao_operacional_ativa boolean NOT NULL DEFAULT true,
+  exigir_checklist_qualidade boolean NOT NULL DEFAULT true,
+  comunicacao_eventos_ativa boolean NOT NULL DEFAULT true,
+  resumo_setores_ativo boolean NOT NULL DEFAULT true,
+  cobranca_fornecedor_automatica boolean NOT NULL DEFAULT false,
+  atualizado_em timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO public.configuracao_operacao (id)
+VALUES (true)
+ON CONFLICT (id) DO NOTHING;
