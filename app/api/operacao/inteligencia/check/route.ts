@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { refreshSmartForecasts, scanOperationalExceptions } from '@/lib/operational-intelligence';
+import { flushPreparedOperationalCommunications } from '@/lib/operational-communications';
 
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
@@ -19,9 +20,10 @@ export async function GET(request:Request){
     FROM configuracao_operacao WHERE id=true LIMIT 1
   `;
   const config=rows[0]??{};
-  const [alerts,forecast]=await Promise.all([
+  const [alerts,forecast,communications]=await Promise.all([
     config.detector_atrasos_ativo===false?Promise.resolve({disabled:true}):scanOperationalExceptions(),
     config.previsao_operacional_ativa===false?Promise.resolve({disabled:true}):refreshSmartForecasts(),
+    flushPreparedOperationalCommunications(),
   ]);
-  return NextResponse.json({ok:true,alerts,forecast});
+  return NextResponse.json({ok:true,alerts,forecast,communications});
 }
