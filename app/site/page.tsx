@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import { getOfficeProfile } from '@/lib/office-profile';
 import SiteMotion from './site-motion';
@@ -54,6 +55,10 @@ const supportingServices = [
   ['04', 'Martelinho de ouro', 'Correção precisa de amassados quando o reparo permite preservar a peça.'],
   ['05', 'Pintura de rodas', 'Renovação estética do conjunto com preparação e acabamento consistentes.'],
   ['06', 'Higienização', 'Cuidado interno e externo pensado para completar a experiência de entrega.'],
+];
+
+const insurers = [
+  { name: 'Bradesco Seguros', short: 'BRADESCO', detail: 'Seguradora registrada na operação Pint Services' },
 ];
 
 const process = [
@@ -227,7 +232,7 @@ export default function PintServicesSite() {
               className={styles.featuredCard}
               data-reveal
               data-tilt
-              style={{ '--delay': `${index * 90}ms` } as React.CSSProperties}
+              style={{ '--delay': `${index * 90}ms` } as CSSProperties}
             >
               <div className={styles.cardMedia}>
                 <Image
@@ -252,7 +257,7 @@ export default function PintServicesSite() {
 
         <div className={styles.supportingStrip}>
           {supportingServices.map(([number, title, text], index) => (
-            <article key={number} data-reveal style={{ '--delay': `${index * 80}ms` } as React.CSSProperties}>
+            <article key={number} data-reveal style={{ '--delay': `${index * 80}ms` } as CSSProperties}>
               <span>{number}</span>
               <h3>{title}</h3>
               <p>{text}</p>
@@ -345,10 +350,72 @@ export default function PintServicesSite() {
         </div>
       </section>
 
+      <section className={styles.insurerSection}>
+        <div className={styles.insurerIntro} data-reveal>
+          <p className={styles.eyebrow}>SEGURADORAS / 05</p>
+          <h2>Atendimento que conversa com <span>quem protege o seu carro.</span></h2>
+          <p>
+            A Pint Services também atua em reparos vinculados a seguradoras. Abaixo estão as companhias já registradas na operação atual.
+          </p>
+        </div>
+        <div className={styles.insurerRail}>
+          {insurers.map((insurer) => (
+            <article key={insurer.name} className={styles.insurerCard} data-reveal>
+              <div className={styles.insurerMonogram}>{insurer.short.slice(0, 2)}</div>
+              <div>
+                <small>SEGURADORA</small>
+                <strong>{insurer.name}</strong>
+                <span>{insurer.detail}</span>
+              </div>
+              <Arrow />
+            </article>
+          ))}
+          <article className={styles.insurerCardMuted} data-reveal>
+            <small>OUTRA SEGURADORA?</small>
+            <strong>Consulte a equipe</strong>
+            <a href={whatsappHref} target="_blank" rel="noreferrer">Verificar atendimento <Arrow /></a>
+          </article>
+        </div>
+      </section>
+
+      <section className={styles.locationSection}>
+        <div className={styles.locationCopy} data-reveal>
+          <p className={styles.eyebrow}>LOCALIZAÇÃO / 06</p>
+          <h2>Vilas do Atlântico.<br/><span>Lauro de Freitas.</span></h2>
+          <p>
+            R. Leonardo Rodrigues da Silva, 480 — Vilas do Atlântico, Lauro de Freitas — BA.
+          </p>
+          <div className={styles.locationMeta}>
+            <div><small>TELEFONE</small><strong>{office.publicPhone}</strong></div>
+            <div><small>HORÁRIOS</small><strong>{office.hours}</strong></div>
+          </div>
+          <a href={office.googleBusinessUrl} target="_blank" rel="noreferrer" className={styles.locationCta}>
+            Abrir rota no Google Maps <Arrow />
+          </a>
+        </div>
+
+        <div className={styles.mapShell} data-reveal data-tilt>
+          <iframe
+            title="Mapa da Pint Services em Vilas do Atlântico"
+            src="https://www.google.com/maps?q=R.%20Leonardo%20Rodrigues%20da%20Silva%2C%20480%20-%20Vilas%20do%20Atl%C3%A2ntico%2C%20Lauro%20de%20Freitas%20-%20BA&output=embed"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            className={styles.mapFrame}
+          />
+          <div className={styles.mapOverlay} aria-hidden="true" />
+          <div className={styles.mapPinCard}>
+            <span>PINT SERVICES</span>
+            <strong>CAR CENTER</strong>
+            <small>Vilas do Atlântico · BA</small>
+          </div>
+          <div className={styles.mapCrosshair} aria-hidden="true">+</div>
+        </div>
+      </section>
+
       <section id="contato" className={styles.contactSection}>
         <div className={styles.contactAccent} aria-hidden="true" />
         <div className={styles.contactCopy} data-reveal>
-          <p className={styles.eyebrow}>ATENDIMENTO / 05</p>
+          <p className={styles.eyebrow}>ATENDIMENTO / 07</p>
           <h2>Seu carro. Nosso próximo projeto.</h2>
           <p>
             Conte o que aconteceu. A equipe orienta o próximo passo para avaliação, reparo particular ou atendimento relacionado a seguradora.
