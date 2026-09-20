@@ -5,15 +5,13 @@ import { useEffect } from 'react';
 export default function SiteMotion() {
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.add('site-motion-ready');
-
-    const revealItems = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+        const revealItems = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
           const el = entry.target as HTMLElement;
-          el.classList.add('is-visible');
+          el.dataset.visible = 'true';
           observer.unobserve(el);
         }
       },
@@ -51,7 +49,7 @@ export default function SiteMotion() {
           best = el;
         }
       }
-      processItems.forEach((el) => el.classList.toggle('is-active', el === best));
+      processItems.forEach((el) => { el.dataset.active = el === best ? 'true' : 'false'; });
     };
 
     const onScroll = () => {
@@ -91,7 +89,6 @@ export default function SiteMotion() {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
       cleanups.forEach((fn) => fn());
-      root.classList.remove('site-motion-ready');
     };
   }, []);
 
