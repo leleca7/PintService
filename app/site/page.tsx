@@ -7,7 +7,7 @@ import styles from './site.module.css';
 
 export const metadata: Metadata = {
   title: 'Pint Services | Funilaria, pintura e recuperação automotiva',
-  description: 'Funilaria, pintura, martelinho de ouro, polimento e recuperação automotiva em Lauro de Freitas, Bahia.',
+  description: 'Funilaria, pintura, acabamento, polimento e recuperação automotiva em Lauro de Freitas, Bahia.',
   openGraph: {
     title: 'Pint Services | Car Center',
     description: 'Precisão, processo e acabamento em recuperação automotiva.',
@@ -44,21 +44,25 @@ const featuredServices = [
   },
   {
     number: '03',
-    title: 'Acabamento final',
-    text: 'Polimento, revisão visual, limpeza e conferência antes da entrega ao cliente.',
+    title: 'Acabamento final & polimento',
+    text: 'Polimento, revisão visual e conferência final para entregar o veículo com acabamento consistente.',
     image: imagery.workshop,
-    label: 'Refino · entrega',
+    label: 'Acabamento · polimento · entrega',
   },
 ];
 
-const supportingServices = [
-  ['04', 'Martelinho de ouro', 'Correção precisa de amassados quando o reparo permite preservar a peça.'],
-  ['05', 'Pintura de rodas', 'Renovação estética do conjunto com preparação e acabamento consistentes.'],
-  ['06', 'Higienização', 'Cuidado interno e externo pensado para completar a experiência de entrega.'],
-];
-
 const insurers = [
-  { name: 'Bradesco Seguros', short: 'BRADESCO', detail: 'Seguradora registrada na operação Pint Services' },
+  { name: 'Bradesco Seguros', domain: 'bradescoseguros.com.br' },
+  { name: 'Tokio Marine', domain: 'tokiomarine.com.br' },
+  { name: 'MSIG', domain: 'msig.com.br' },
+  { name: 'Allianz', domain: 'allianz.com.br' },
+  { name: 'Suhai Seguradora', domain: 'suhai.com.br' },
+  { name: 'SulAmérica', domain: 'sulamerica.com.br' },
+  { name: 'Generali', domain: 'generali.com.br' },
+  { name: 'Liberty Seguros', domain: 'libertyseguros.com.br' },
+  { name: 'Azul Seguros', domain: 'azulseguros.com.br' },
+  { name: 'HDI Seguros', domain: 'hdiseguros.com.br' },
+  { name: 'Porto Seguro', domain: 'portoseguro.com.br' },
 ];
 
 const process = [
@@ -107,6 +111,9 @@ export default function PintServicesSite() {
   const phoneDigits = office.publicPhone.replace(/\D/g, '');
   const telHref = `tel:+${phoneDigits}`;
   const whatsappHref = `https://wa.me/${phoneDigits}`;
+  const scheduleHref = `${whatsappHref}?text=${encodeURIComponent(
+    'Olá! Gostaria de solicitar um agendamento para avaliação e possível entrada do veículo. Sei que a data será confirmada pela equipe após a análise do serviço.',
+  )}`;
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
@@ -153,7 +160,7 @@ export default function PintServicesSite() {
 
       <section className={styles.hero}>
         <div className={styles.heroGrid} aria-hidden="true" />
-        <div className={styles.heroBeam} aria-hidden="true" data-parallax="0.035" />
+        <div className={styles.heroBeam} aria-hidden="true" data-parallax="0.018" />
         <div className={styles.heroGhost} aria-hidden="true">PINT</div>
 
         <div className={styles.heroCopy} data-reveal>
@@ -177,7 +184,7 @@ export default function PintServicesSite() {
         </div>
 
         <div className={styles.heroVisual} data-tilt data-reveal>
-          <div className={styles.heroImageWrap} data-parallax="0.075">
+          <div className={styles.heroImageWrap} data-parallax="0.03">
             <Image
               className={styles.heroImage}
               src={imagery.hero}
@@ -188,7 +195,6 @@ export default function PintServicesSite() {
             />
           </div>
           <div className={styles.heroPhotoShade} aria-hidden="true" />
-          <div className={styles.heroOrbit} aria-hidden="true" />
           <div className={styles.heroCorner}>PINT / 01</div>
           <div className={styles.heroCaption}>
             <span>PROCESSO REAL</span>
@@ -255,19 +261,10 @@ export default function PintServicesSite() {
           ))}
         </div>
 
-        <div className={styles.supportingStrip}>
-          {supportingServices.map(([number, title, text], index) => (
-            <article key={number} data-reveal style={{ '--delay': `${index * 80}ms` } as CSSProperties}>
-              <span>{number}</span>
-              <h3>{title}</h3>
-              <p>{text}</p>
-            </article>
-          ))}
-        </div>
       </section>
 
       <section className={styles.statementSection}>
-        <div className={styles.statementPhoto} data-parallax="0.06">
+        <div className={styles.statementPhoto} data-parallax="0.025">
           <Image
             src={imagery.paint}
             alt="Técnico realizando pintura automotiva"
@@ -361,13 +358,19 @@ export default function PintServicesSite() {
         <div className={styles.insurerRail}>
           {insurers.map((insurer) => (
             <article key={insurer.name} className={styles.insurerCard} data-reveal>
-              <div className={styles.insurerMonogram}>{insurer.short.slice(0, 2)}</div>
+              <div className={styles.insurerLogoWrap}>
+                <img
+                  src={`https://www.google.com/s2/favicons?domain=${insurer.domain}&sz=128`}
+                  alt={`Logo ${insurer.name}`}
+                  className={styles.insurerLogo}
+                  loading="lazy"
+                />
+              </div>
               <div>
                 <small>SEGURADORA</small>
                 <strong>{insurer.name}</strong>
-                <span>{insurer.detail}</span>
+                <span>Atendimento vinculado à seguradora</span>
               </div>
-              <Arrow />
             </article>
           ))}
           <article className={styles.insurerCardMuted} data-reveal>
@@ -394,7 +397,7 @@ export default function PintServicesSite() {
           </a>
         </div>
 
-        <div className={styles.mapShell} data-reveal data-tilt>
+        <div className={styles.mapShell} data-reveal>
           <iframe
             title="Mapa da Pint Services em Vilas do Atlântico"
             src="https://www.google.com/maps?q=R.%20Leonardo%20Rodrigues%20da%20Silva%2C%20480%20-%20Vilas%20do%20Atl%C3%A2ntico%2C%20Lauro%20de%20Freitas%20-%20BA&output=embed"
@@ -402,13 +405,20 @@ export default function PintServicesSite() {
             referrerPolicy="no-referrer-when-downgrade"
             className={styles.mapFrame}
           />
-          <div className={styles.mapOverlay} aria-hidden="true" />
+          <a
+            href={office.googleBusinessUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.mapExpandLink}
+            aria-label="Abrir a localização completa da Pint Services no Google Maps"
+          >
+            <span>Ver mapa completo <Arrow /></span>
+          </a>
           <div className={styles.mapPinCard}>
             <span>PINT SERVICES</span>
             <strong>CAR CENTER</strong>
             <small>Vilas do Atlântico · BA</small>
           </div>
-          <div className={styles.mapCrosshair} aria-hidden="true">+</div>
         </div>
       </section>
 
@@ -425,6 +435,14 @@ export default function PintServicesSite() {
         <div className={styles.contactPanel} data-reveal>
           <a href={whatsappHref} target="_blank" rel="noreferrer" className={styles.contactPrimary}>
             <span><small>WHATSAPP</small><strong>Falar com a Pint Services</strong></span>
+            <Arrow />
+          </a>
+          <a href={scheduleHref} target="_blank" rel="noreferrer" className={styles.contactSchedule}>
+            <span>
+              <small>AGENDAMENTO</small>
+              <strong>Solicitar data de entrada</strong>
+              <em>A confirmação é feita manualmente pela equipe após análise do serviço.</em>
+            </span>
             <Arrow />
           </a>
           <a href={telHref} className={styles.contactRow}><span>Telefone</span><strong>{office.publicPhone}</strong></a>
