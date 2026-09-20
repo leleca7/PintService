@@ -19,7 +19,6 @@ export default function SiteMotion() {
     );
     revealItems.forEach((el) => observer.observe(el));
 
-    const parallaxItems = Array.from(document.querySelectorAll<HTMLElement>('[data-parallax]'));
     const processItems = Array.from(document.querySelectorAll<HTMLElement>('[data-process-step]'));
     let frame = 0;
 
@@ -29,15 +28,6 @@ export default function SiteMotion() {
       const scrollTop = window.scrollY;
       const maxScroll = Math.max(1, document.documentElement.scrollHeight - viewport);
       root.style.setProperty('--page-progress', String(scrollTop / maxScroll));
-
-      for (const el of parallaxItems) {
-        const rect = el.getBoundingClientRect();
-        const center = rect.top + rect.height / 2;
-        const normalized = (center - viewport / 2) / viewport;
-        const speed = Number(el.dataset.parallax || '0.08');
-        const move = Math.max(-42, Math.min(42, -normalized * viewport * speed));
-        el.style.setProperty('--parallax-y', `${move.toFixed(2)}px`);
-      }
 
       let best: HTMLElement | null = null;
       let bestDistance = Infinity;
@@ -56,29 +46,6 @@ export default function SiteMotion() {
       if (!frame) frame = requestAnimationFrame(update);
     };
 
-    const tiltItems = Array.from(document.querySelectorAll<HTMLElement>('[data-tilt]'));
-    const cleanups: Array<() => void> = [];
-
-    for (const el of tiltItems) {
-      const move = (event: PointerEvent) => {
-        const rect = el.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width - 0.5;
-        const y = (event.clientY - rect.top) / rect.height - 0.5;
-        el.style.setProperty('--tilt-x', `${(-y * 1.2).toFixed(2)}deg`);
-        el.style.setProperty('--tilt-y', `${(x * 1.6).toFixed(2)}deg`);
-      };
-      const leave = () => {
-        el.style.setProperty('--tilt-x', '0deg');
-        el.style.setProperty('--tilt-y', '0deg');
-      };
-      el.addEventListener('pointermove', move);
-      el.addEventListener('pointerleave', leave);
-      cleanups.push(() => {
-        el.removeEventListener('pointermove', move);
-        el.removeEventListener('pointerleave', leave);
-      });
-    }
-
     update();
     window.addEventListener('scroll', onScroll, { passive: true });
     window.addEventListener('resize', onScroll);
@@ -88,7 +55,6 @@ export default function SiteMotion() {
       if (frame) cancelAnimationFrame(frame);
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('resize', onScroll);
-      cleanups.forEach((fn) => fn());
     };
   }, []);
 
