@@ -91,13 +91,10 @@ const process = [
 function Brand() {
   return (
     <span className={styles.brand} aria-label="Pint Services Car Center">
-      <Image
-        src="/pint-services-logo.jpg"
+      <img
+        src="/pint-services-logo.jpg?v=3"
         alt="Pint Services Car Center"
-        width={447}
-        height={125}
         className={styles.brandImage}
-        priority
       />
     </span>
   );
