@@ -5,6 +5,17 @@ import styles from './site.module.css';
 export const metadata: Metadata = {
   title: 'Pint Services | Funilaria, pintura e recuperação automotiva',
   description: 'Funilaria, pintura, martelinho de ouro, polimento e recuperação automotiva em Lauro de Freitas, Bahia.',
+  openGraph: {
+    title: 'Pint Services | Car Center',
+    description: 'Precisão, processo e acabamento em recuperação automotiva.',
+    type: 'website',
+    locale: 'pt_BR',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Pint Services | Car Center',
+    description: 'Precisão, processo e acabamento em recuperação automotiva.',
+  },
 };
 
 const services = [
