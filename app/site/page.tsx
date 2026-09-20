@@ -52,17 +52,17 @@ const featuredServices = [
 ];
 
 const insurers = [
-  { name: 'Bradesco Seguros', domain: 'bradescoseguros.com.br' },
-  { name: 'Tokio Marine', domain: 'tokiomarine.com.br' },
-  { name: 'MSIG', domain: 'msig.com.br' },
-  { name: 'Allianz', domain: 'allianz.com.br' },
-  { name: 'Suhai Seguradora', domain: 'suhai.com.br' },
-  { name: 'SulAmérica', domain: 'sulamerica.com.br' },
-  { name: 'Generali', domain: 'generali.com.br' },
-  { name: 'Liberty Seguros', domain: 'libertyseguros.com.br' },
-  { name: 'Azul Seguros', domain: 'azulseguros.com.br' },
-  { name: 'HDI Seguros', domain: 'hdiseguros.com.br' },
-  { name: 'Porto Seguro', domain: 'portoseguro.com.br' },
+  { name: 'Bradesco Seguros', logo: 'https://www.google.com/s2/favicons?domain=bradescoseguros.com.br&sz=256' },
+  { name: 'Tokio Marine', logo: 'https://www.google.com/s2/favicons?domain=tokiomarine.com.br&sz=256' },
+  { name: 'MSIG', logo: 'https://www.google.com/s2/favicons?domain=msig.com.br&sz=256' },
+  { name: 'Allianz', logo: 'https://www.google.com/s2/favicons?domain=allianz.com.br&sz=256' },
+  { name: 'Suhai Seguradora', logo: 'https://logodownload.org/wp-content/uploads/2022/06/suhai-seguradora-logo.png' },
+  { name: 'SulAmérica', logo: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Logotipo_da_SulAm%C3%A9rica.svg' },
+  { name: 'Generali', logo: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Generali_wordmark_logo.svg' },
+  { name: 'Liberty Seguros', logo: 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Logo_Liberty_Insurance.svg' },
+  { name: 'Azul Seguros', logo: 'https://www.google.com/s2/favicons?domain=azulseguros.com.br&sz=256' },
+  { name: 'HDI Seguros', logo: 'https://www.google.com/s2/favicons?domain=hdiseguros.com.br&sz=256' },
+  { name: 'Porto Seguro', logo: 'https://www.google.com/s2/favicons?domain=portoseguro.com.br&sz=256' },
 ];
 
 const process = [
@@ -160,14 +160,14 @@ export default function PintServicesSite() {
 
       <section className={styles.hero}>
         <div className={styles.heroGrid} aria-hidden="true" />
-        <div className={styles.heroBeam} aria-hidden="true" data-parallax="0.018" />
+        <div className={styles.heroBeam} aria-hidden="true" />
         <div className={styles.heroGhost} aria-hidden="true">PINT</div>
 
         <div className={styles.heroCopy} data-reveal>
           <p className={styles.eyebrow}>PINT SERVICES · CAR CENTER · LAURO DE FREITAS</p>
           <div className={styles.heroTitle}>
             <span>REDEFINA</span>
-            <span>O REPARO.</span>
+            <span>O REPARO</span>
           </div>
           <p className={styles.heroText}>
             Funilaria, pintura e recuperação automotiva conduzidas como um processo.
@@ -183,8 +183,8 @@ export default function PintServicesSite() {
           </div>
         </div>
 
-        <div className={styles.heroVisual} data-tilt data-reveal>
-          <div className={styles.heroImageWrap} data-parallax="0.03">
+        <div className={styles.heroVisual} data-reveal>
+          <div className={styles.heroImageWrap}>
             <Image
               className={styles.heroImage}
               src={imagery.hero}
@@ -194,8 +194,6 @@ export default function PintServicesSite() {
               sizes="(max-width: 980px) 100vw, 62vw"
             />
           </div>
-          <div className={styles.heroPhotoShade} aria-hidden="true" />
-          <div className={styles.heroCorner}>PINT / 01</div>
           <div className={styles.heroCaption}>
             <span>PROCESSO REAL</span>
             <strong>Pintura · acabamento · controle visual</strong>
@@ -211,15 +209,21 @@ export default function PintServicesSite() {
 
       <section className={styles.marquee} aria-label="Especialidades Pint Services">
         <div className={styles.marqueeTrack}>
-          <span>FUNILARIA</span><i>×</i><span>PINTURA</span><i>×</i><span>PRECISÃO</span><i>×</i><span>ACABAMENTO</span><i>×</i>
-          <span>FUNILARIA</span><i>×</i><span>PINTURA</span><i>×</i><span>PRECISÃO</span><i>×</i><span>ACABAMENTO</span><i>×</i>
+          {[0, 1, 2].map((cycle) => (
+            <div className={styles.marqueeSet} key={cycle} aria-hidden={cycle > 0}>
+              <span>FUNILARIA</span><i>×</i>
+              <span>PINTURA</span><i>×</i>
+              <span>POLIMENTO</span><i>×</i>
+              <span>ACABAMENTO</span><i>×</i>
+            </div>
+          ))}
         </div>
       </section>
 
       <section id="servicos" className={styles.servicesSection}>
         <div className={styles.sectionIntroGrid} data-reveal>
           <div>
-            <p className={styles.eyebrow}>SERVIÇOS / 01</p>
+            <p className={styles.eyebrow}>SERVIÇOS</p>
             <h2>Construído para <span>recuperar.</span></h2>
           </div>
           <div className={styles.introCopy}>
@@ -237,7 +241,6 @@ export default function PintServicesSite() {
               key={service.number}
               className={styles.featuredCard}
               data-reveal
-              data-tilt
               style={{ '--delay': `${index * 90}ms` } as CSSProperties}
             >
               <div className={styles.cardMedia}>
@@ -264,7 +267,7 @@ export default function PintServicesSite() {
       </section>
 
       <section className={styles.statementSection}>
-        <div className={styles.statementPhoto} data-parallax="0.025">
+        <div className={styles.statementPhoto}>
           <Image
             src={imagery.paint}
             alt="Técnico realizando pintura automotiva"
@@ -276,7 +279,7 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.statementGrid} aria-hidden="true" />
         <div className={styles.statementCopy} data-reveal>
-          <p className={styles.eyebrow}>NOSSO PADRÃO / 02</p>
+          <p className={styles.eyebrow}>NOSSO PADRÃO</p>
           <h2>
             RESULTADO NÃO
             <span>ACONTECE NO</span>
@@ -291,14 +294,11 @@ export default function PintServicesSite() {
       <section id="processo" className={styles.processSection}>
         <div className={styles.processBackdrop} aria-hidden="true">PROCESSO</div>
         <div className={styles.processSticky} data-reveal>
-          <p className={styles.eyebrow}>FLUXO / 03</p>
+          <p className={styles.eyebrow}>FLUXO</p>
           <h2>Quatro movimentos. Um resultado coerente.</h2>
           <p>
             O veículo avança por uma sequência definida. Isso organiza a produção e concentra a equipe no próximo passo necessário.
           </p>
-          <div className={styles.processMeter}>
-            {process.map((item) => <span key={item.number}>{item.number}</span>)}
-          </div>
         </div>
 
         <div className={styles.processList}>
@@ -306,7 +306,7 @@ export default function PintServicesSite() {
             <article key={item.number} className={styles.processItem} data-process-step data-reveal>
               <div className={styles.processNumber}>{item.number}</div>
               <div className={styles.processBody}>
-                <small>PINT SERVICES · ETAPA {item.number}</small>
+                <small>PINT SERVICES · PROCESSO</small>
                 <h3>{item.title}</h3>
                 <p>{item.text}</p>
               </div>
@@ -317,7 +317,7 @@ export default function PintServicesSite() {
       </section>
 
       <section id="sobre" className={styles.aboutSection}>
-        <div className={styles.aboutVisual} data-reveal data-tilt>
+        <div className={styles.aboutVisual} data-reveal>
           <div className={styles.aboutFrame}>
             <Image
               className={styles.aboutImage}
@@ -333,7 +333,7 @@ export default function PintServicesSite() {
         </div>
 
         <div className={styles.aboutContent} data-reveal>
-          <p className={styles.eyebrow}>A PINT SERVICES / 04</p>
+          <p className={styles.eyebrow}>A PINT SERVICES</p>
           <h2>Mais do que reparar uma peça. <span>Cuidar da leitura do carro inteiro.</span></h2>
           <p>
             A Pint Services atua em recuperação automotiva para clientes particulares e operações com seguradoras.
@@ -349,7 +349,7 @@ export default function PintServicesSite() {
 
       <section className={styles.insurerSection}>
         <div className={styles.insurerIntro} data-reveal>
-          <p className={styles.eyebrow}>SEGURADORAS / 05</p>
+          <p className={styles.eyebrow}>SEGURADORAS</p>
           <h2>Atendimento que conversa com <span>quem protege o seu carro.</span></h2>
           <p>
             A Pint Services também atua em reparos vinculados a seguradoras. Abaixo estão as companhias já registradas na operação atual.
@@ -360,7 +360,7 @@ export default function PintServicesSite() {
             <article key={insurer.name} className={styles.insurerCard} data-reveal>
               <div className={styles.insurerLogoWrap}>
                 <img
-                  src={`https://www.google.com/s2/favicons?domain=${insurer.domain}&sz=128`}
+                  src={insurer.logo}
                   alt={`Logo ${insurer.name}`}
                   className={styles.insurerLogo}
                   loading="lazy"
@@ -383,7 +383,7 @@ export default function PintServicesSite() {
 
       <section className={styles.locationSection}>
         <div className={styles.locationCopy} data-reveal>
-          <p className={styles.eyebrow}>LOCALIZAÇÃO / 06</p>
+          <p className={styles.eyebrow}>LOCALIZAÇÃO</p>
           <h2>Vilas do Atlântico.<br/><span>Lauro de Freitas.</span></h2>
           <p>
             R. Leonardo Rodrigues da Silva, 480 — Vilas do Atlântico, Lauro de Freitas — BA.
@@ -425,7 +425,7 @@ export default function PintServicesSite() {
       <section id="contato" className={styles.contactSection}>
         <div className={styles.contactAccent} aria-hidden="true" />
         <div className={styles.contactCopy} data-reveal>
-          <p className={styles.eyebrow}>ATENDIMENTO / 07</p>
+          <p className={styles.eyebrow}>ATENDIMENTO</p>
           <h2>Seu carro. Nosso próximo projeto.</h2>
           <p>
             Conte o que aconteceu. A equipe orienta o próximo passo para avaliação, reparo particular ou atendimento relacionado a seguradora.
