@@ -7,15 +7,17 @@ import { fetchExternalVehicles } from '@/lib/external-vehicle-source';
 import { getOfficeProfile } from '@/lib/office-profile';
 import { getChannelStatuses } from '@/lib/reputation';
 import { getOperationalAutomationConfig } from '@/lib/operational-config';
-import { updateOperationalAutomationConfig } from './actions';
+import { getWhatsAppReadiness } from '@/lib/whatsapp-readiness';
+import { sendWhatsAppActivationTest, updateOperationalAutomationConfig } from './actions';
 
 function configured(...values: Array<string | undefined>) { return values.every((value) => Boolean(value?.trim())); }
 
 export default async function SettingsPage() {
-  const [data, vehicleSource, automation] = await Promise.all([
+  const [data, vehicleSource, automation, whatsapp] = await Promise.all([
     getDashboardData(),
     fetchExternalVehicles(),
     getOperationalAutomationConfig(),
+    getWhatsAppReadiness(),
   ]);
   const reputationChannels = getChannelStatuses();
   const office = getOfficeProfile();
@@ -27,7 +29,7 @@ export default async function SettingsPage() {
     { name: 'Login e permissões', description: 'Autentica cada pessoa e aplica Administrador, Gerente ou Funcionário com escopo por setor e tarefa.', ready: isAuthConfigured, detail: 'Neon Auth + vínculo em Perfis e acessos' },
     { name: 'Fonte operacional por link', description: 'Relê a planilha da oficina antes de responder status de veículo. Se a placa ou o status não estiverem lá, solicita confirmação humana.', ready: vehicleSourceReady, detail: vehicleSource.error ? `erro ao ler a fonte: ${vehicleSource.error}` : vehicleSourceReady ? `${vehicleSource.vehicles.length} veículo(s) lido(s) agora` : 'VEHICLE_DATA_URL — Google Sheets/CSV somente leitura' },
     { name: 'OpenAI', description: 'Triagem, interpretação e redação segura de respostas de atendimento e reputação.', ready: configured(process.env.OPENAI_API_KEY, process.env.OPENAI_MODEL), detail: 'OPENAI_API_KEY + OPENAI_MODEL' },
-    { name: 'WhatsApp Cloud API', description: 'Recebe e envia mensagens pelo número oficial, cria tarefas e envia alertas internos.', ready: configured(process.env.WHATSAPP_ACCESS_TOKEN, process.env.WHATSAPP_PHONE_NUMBER_ID, process.env.WHATSAPP_VERIFY_TOKEN, process.env.WHATSAPP_APP_SECRET, process.env.WHATSAPP_GRAPH_VERSION), detail: 'token + phone number id + verify token + app secret + Graph version' },
+    { name: 'WhatsApp Cloud API', description: 'Recebe e envia mensagens pelo número oficial, cria tarefas e envia alertas internos.', ready: whatsapp.transportConfigured && whatsapp.phone.reachable, detail: whatsapp.phone.reachable ? `${whatsapp.phone.verifiedName || 'Número validado'} · ${whatsapp.phone.displayPhoneNumber || 'telefone confirmado pela Meta'}` : 'credenciais + validação do número oficial na Meta' },
     { name: 'Google Business Profile', description: 'Lê avaliações da oficina e permite resposta controlada pela Central de reputação.', ready: reputationChannels.find((item) => item.channel === 'google')?.state === 'ready', detail: 'OAuth + account id + location id' },
     { name: 'Instagram profissional', description: 'Sincroniza DMs e comentários, responde pela API e recebe webhooks em tempo real.', ready: instagramReady, detail: 'token + Instagram business id + verify token + app secret' },
     { name: 'Reclame Aqui', description: 'Mostra reputação e, quando contratado, lê e responde reclamações pela RA API.', ready: reputationChannels.find((item) => item.channel === 'reclame_aqui')?.state !== 'missing', detail: reputationChannels.find((item) => item.channel === 'reclame_aqui')?.state === 'partial' ? 'indicadores conectados; casos individuais dependem do contrato RA API' : 'APIKey + company id + endpoints do contrato' },
@@ -57,6 +59,57 @@ export default async function SettingsPage() {
         <section className={core.section}>
           <div className={core.sectionHead}><div><p>CONEXÕES</p><h2>Estado real das integrações</h2></div><span className={core.count}>{readyCount}/{connections.length}</span></div>
           <div className={admin.connectionGrid}>{connections.map((connection) => <article className={admin.connection} key={connection.name}><div className={`${admin.status} ${connection.ready ? admin.statusReady : ''}`}>{connection.ready ? '✓' : '!'}</div><div><h3>{connection.name}</h3><p>{connection.description}</p><small>{connection.detail}</small></div><span className={`${admin.state} ${connection.ready ? admin.stateReady : ''}`}>{connection.ready ? 'configurado' : 'pendente'}</span></article>)}</div>
+        </section>
+
+        <section className={core.section}>
+          <div className={core.sectionHead}><div><p>WHATSAPP META</p><h2>Ativação e diagnóstico</h2></div><span className={core.count}>{whatsapp.approvedTemplates}/{whatsapp.templates.length} templates aprovados</span></div>
+          <div className={admin.infoGrid}>
+            <article className={admin.infoCard}>
+              <p>WEBHOOK</p>
+              <h2>{whatsapp.transportConfigured ? 'Credenciais principais informadas' : 'Configuração incompleta'}</h2>
+              <ul>
+                <li><strong>Callback:</strong> <code>{whatsapp.callbackUrl}</code></li>
+                <li><strong>Graph API:</strong> {whatsapp.graphVersion}</li>
+                <li><strong>Access Token:</strong> {whatsapp.credentialChecks.accessToken ? 'configurado' : 'pendente'}</li>
+                <li><strong>Phone Number ID:</strong> {whatsapp.credentialChecks.phoneNumberId ? 'configurado' : 'pendente'}</li>
+                <li><strong>Verify Token:</strong> {whatsapp.credentialChecks.verifyToken ? 'configurado' : 'pendente'}</li>
+                <li><strong>App Secret:</strong> {whatsapp.credentialChecks.appSecret ? 'configurado' : 'pendente'}</li>
+                <li><strong>WABA ID:</strong> {whatsapp.credentialChecks.businessAccountId ? 'configurado' : 'pendente'}</li>
+              </ul>
+            </article>
+            <article className={admin.infoCard}>
+              <p>NÚMERO OFICIAL</p>
+              <h2>{whatsapp.phone.reachable ? (whatsapp.phone.verifiedName || 'Número validado') : 'Ainda não validado'}</h2>
+              <ul>
+                <li><strong>Telefone:</strong> {whatsapp.phone.displayPhoneNumber || '—'}</li>
+                <li><strong>Qualidade:</strong> {whatsapp.phone.qualityRating || '—'}</li>
+                <li><strong>Consulta à Meta:</strong> {whatsapp.phone.reachable ? 'OK' : (whatsapp.phone.error || 'aguardando credenciais')}</li>
+                <li><strong>Templates listáveis:</strong> {whatsapp.businessAccountIdConfigured ? (whatsapp.templatesError || 'consulta habilitada') : 'aguardando WABA ID'}</li>
+              </ul>
+            </article>
+          </div>
+
+          <div className={admin.connectionGrid} style={{ marginTop: 14 }}>
+            {whatsapp.templates.map((template) => <article className={admin.connection} key={template.envKey}>
+              <div className={`${admin.status} ${template.approved ? admin.statusReady : ''}`}>{template.approved ? '✓' : '!'}</div>
+              <div>
+                <h3>{template.label}</h3>
+                <p>{template.purpose}</p>
+                <small>{template.configuredName || `sugestão: ${template.suggestedName}`} · {template.parameterCount} parâmetro(s) · categoria sugerida {template.categoryHint}</small>
+              </div>
+              <span className={`${admin.state} ${template.approved ? admin.stateReady : ''}`}>{template.approved ? 'aprovado' : template.remoteStatus || (template.configured ? 'configurado' : 'pendente')}</span>
+            </article>)}
+          </div>
+
+          <form action={sendWhatsAppActivationTest} style={{ display:'grid', gap:10, marginTop:16, maxWidth:620 }}>
+            <strong>Teste controlado de template</strong>
+            <small>Use somente depois que o número e pelo menos um template estiverem aprovados. O sistema envia uma única mensagem de teste e registra a ação na auditoria.</small>
+            <input name="phone" placeholder="Ex.: 5571999999999" inputMode="tel" style={{ padding:10, border:'1px solid var(--line,#d9dde3)', borderRadius:10 }}/>
+            <select name="template" defaultValue="WHATSAPP_OPERATION_UPDATE_TEMPLATE" style={{ padding:10, border:'1px solid var(--line,#d9dde3)', borderRadius:10 }}>
+              {whatsapp.templates.map((template) => <option key={template.envKey} value={template.envKey}>{template.label}{template.configured ? '' : ' — ainda não configurado'}</option>)}
+            </select>
+            <div><button className={core.button} type="submit">Enviar mensagem de teste</button></div>
+          </form>
         </section>
 
         <section className={core.section}>
