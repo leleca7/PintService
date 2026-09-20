@@ -45,8 +45,8 @@ export default function Image() {
           <span style={{ color: '#bd9558', fontSize: 17, letterSpacing: 5, fontWeight: 700 }}>
             LAURO DE FREITAS · BAHIA
           </span>
-          <div style={{ marginTop: 22, fontSize: 72, lineHeight: .96, letterSpacing: -5, fontWeight: 650 }}>
-            O reparo termina.<br />
+          <div style={{ marginTop: 22, fontSize: 72, lineHeight: .96, letterSpacing: -5, fontWeight: 650, display: 'flex', flexDirection: 'column' }}>
+            <span>O reparo termina.</span>
             <span style={{ color: '#e1c18f' }}>O padrão fica.</span>
           </div>
           <div style={{ marginTop: 30, color: '#a5a7a3', fontSize: 22 }}>
