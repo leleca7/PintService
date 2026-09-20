@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { getOfficeProfile } from '@/lib/office-profile';
 import styles from './site.module.css';
 
@@ -16,6 +17,12 @@ export const metadata: Metadata = {
     title: 'Pint Services | Car Center',
     description: 'Precisão, processo e acabamento em recuperação automotiva.',
   },
+};
+
+const imagery = {
+  hero: 'https://images.pexels.com/photos/33814680/pexels-photo-33814680.jpeg?auto=compress&cs=tinysrgb&w=1800',
+  paint: 'https://images.pexels.com/photos/30250199/pexels-photo-30250199.jpeg?auto=compress&cs=tinysrgb&w=1600',
+  workshop: 'https://images.pexels.com/photos/10162530/pexels-photo-10162530.jpeg?auto=compress&cs=tinysrgb&w=1600',
 };
 
 const services = [
@@ -170,28 +177,26 @@ export default function PintServicesSite() {
           </div>
         </div>
 
-        <div className={styles.heroStage} aria-hidden="true">
-          <div className={styles.stageNoise} />
-          <div className={styles.stageGlow} />
-          <div className={styles.paintBooth}>
-            <span className={styles.boothTop} />
-            <span className={styles.boothLeft} />
-            <span className={styles.boothRight} />
-            <span className={styles.boothFloor} />
-          </div>
-          <div className={styles.car}>
-            <span className={styles.carCabin} />
-            <span className={styles.carShoulder} />
-            <span className={styles.carLower} />
-            <span className={styles.wheelOne} />
-            <span className={styles.wheelTwo} />
-            <span className={styles.carHighlight} />
-          </div>
+        <div className={styles.heroStage}>
+          <Image
+            className={styles.heroImage}
+            src={imagery.hero}
+            alt="Carro em ambiente profissional de pintura automotiva"
+            fill
+            priority
+            sizes="(max-width: 1050px) 100vw, 52vw"
+          />
+          <div className={styles.heroPhotoShade} aria-hidden="true" />
+          <div className={styles.stageNoise} aria-hidden="true" />
           <div className={styles.stageIndex}>
             <strong>01</strong>
             <span>PRECISÃO EM CADA CAMADA</span>
           </div>
-          <div className={styles.stageWord}>PINT</div>
+          <div className={styles.stageCaption}>
+            <span>PROCESSO REAL</span>
+            <strong>Pintura · acabamento · controle visual</strong>
+          </div>
+          <div className={styles.stageWord} aria-hidden="true">PINT</div>
         </div>
       </section>
 
@@ -248,19 +253,28 @@ export default function PintServicesSite() {
       </section>
 
       <section className={styles.manifesto}>
-        <div className={styles.manifestoGrid} aria-hidden="true" />
-        <div className={styles.manifestoIndex}>PINT / 02</div>
+        <div className={styles.manifestoMedia}>
+          <Image
+            className={styles.manifestoImage}
+            src={imagery.paint}
+            alt="Técnico realizando pintura automotiva em oficina"
+            fill
+            sizes="(max-width: 1050px) 100vw, 44vw"
+          />
+          <div className={styles.manifestoMediaShade} aria-hidden="true" />
+          <div className={styles.manifestoIndex}>PINT / 02</div>
+        </div>
         <div className={styles.manifestoCopy}>
           <p className={styles.eyebrow}>NOSSO PADRÃO</p>
           <h2>Resultado de oficina não acontece no improviso.</h2>
           <p>
             Ele nasce quando cada etapa é executada no momento certo, com leitura clara do que o veículo precisa e atenção ao que será percebido na entrega.
           </p>
-        </div>
-        <div className={styles.manifestoLayers} aria-hidden="true">
-          <span>PREPARAÇÃO</span>
-          <span>PINTURA</span>
-          <span>ACABAMENTO</span>
+          <div className={styles.manifestoLayers} aria-hidden="true">
+            <span>PREPARAÇÃO</span>
+            <span>PINTURA</span>
+            <span>ACABAMENTO</span>
+          </div>
         </div>
       </section>
 
@@ -294,10 +308,18 @@ export default function PintServicesSite() {
       </section>
 
       <section id="sobre" className={styles.aboutSection}>
-        <div className={styles.aboutVisual} aria-hidden="true">
+        <div className={styles.aboutVisual}>
           <div className={styles.aboutFrame}>
-            <span className={styles.aboutScan} />
-            <span className={styles.aboutAxis} />
+            <Image
+              className={styles.aboutImage}
+              src={imagery.workshop}
+              alt="Carro em oficina automotiva moderna durante serviço"
+              fill
+              sizes="(max-width: 1050px) 100vw, 40vw"
+            />
+            <div className={styles.aboutPhotoShade} aria-hidden="true" />
+            <span className={styles.aboutScan} aria-hidden="true" />
+            <span className={styles.aboutAxis} aria-hidden="true" />
             <span className={styles.aboutBadge}>CAR CENTER · BA</span>
           </div>
         </div>
@@ -377,6 +399,7 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.footerEnd}>
           <span>© {new Date().getFullYear()} Pint Services</span>
+          <span className={styles.photoCredit}>Fotografias ilustrativas · Pexels</span>
           <a href="#top">Voltar ao topo ↑</a>
         </div>
       </footer>
