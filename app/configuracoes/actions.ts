@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { requirePermission } from '@/lib/auth/current-user';
 import { writeAudit } from '@/lib/audit';
 import { getDb } from '@/lib/db';
+import { sendWhatsAppTemplate } from '@/lib/whatsapp';
+import { WHATSAPP_TEMPLATE_SPECS } from '@/lib/whatsapp-readiness';
 
 function on(formData:FormData,key:string){return String(formData.get(key)??'')==='on';}
 
@@ -40,6 +42,40 @@ export async function updateOperationalAutomationConfig(formData:FormData){
   await writeAudit(user,'configurar_automacoes','configuracao_operacao','global',{
     antes:before[0]??null,
     depois:next,
+  });
+  revalidatePath('/configuracoes');
+}
+
+
+export async function sendWhatsAppActivationTest(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const phone=String(formData.get('phone')??'').replace(/\D/g,'');
+  const envKey=String(formData.get('template')??'').trim();
+  if(!phone||phone.length<10) throw new Error('Informe um número de teste com DDD e país.');
+  const spec=WHATSAPP_TEMPLATE_SPECS.find((item)=>item.envKey===envKey);
+  if(!spec) throw new Error('Template de teste inválido.');
+  const templateName=String(process.env[spec.envKey]??'').trim();
+  if(!templateName) throw new Error('Esse template ainda não está configurado na Vercel.');
+
+  const paramsByKey:Record<string,string[]>={
+    WHATSAPP_OPERATION_UPDATE_TEMPLATE:['Teste','Veículo TESTE','Teste de integração','Mensagem de teste da integração da Pint Services.'],
+    WHATSAPP_POST_DELIVERY_TEMPLATE:['Teste','Veículo TESTE','1 ano','6 meses','sem pendências registradas'],
+    WHATSAPP_POST_DELIVERY_PENDING_TEMPLATE:['Teste','Veículo TESTE','1 ano','6 meses','pendência de teste'],
+    WHATSAPP_POST_DELIVERY_UPDATE_TEMPLATE:['Teste','Veículo TESTE','Pendência de teste','Atualização de teste da integração.'],
+    WHATSAPP_SUPPLIER_DELAY_TEMPLATE:['Fornecedor teste','PEDIDO-TESTE','TESTE123','19/09/2026'],
+    ALERT_WHATSAPP_TEMPLATE:['Teste de integração do Sistema da Pint.'],
+  };
+  await sendWhatsAppTemplate(
+    phone,
+    templateName,
+    paramsByKey[spec.envKey]??[],
+    spec.envKey==='ALERT_WHATSAPP_TEMPLATE'
+      ? (process.env.ALERT_WHATSAPP_TEMPLATE_LANGUAGE?.trim()||'pt_BR')
+      : 'pt_BR'
+  );
+  await writeAudit(user,'teste_whatsapp_meta','integracao','whatsapp',{
+    template:templateName,
+    destinatarioFinal:phone.slice(-4),
   });
   revalidatePath('/configuracoes');
 }
