@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 export default function SiteMotion() {
   useEffect(() => {
     const root = document.documentElement;
-        const revealItems = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const revealItems = Array.from(document.querySelectorAll<HTMLElement>('[data-reveal]'));
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -15,7 +15,7 @@ export default function SiteMotion() {
           observer.unobserve(el);
         }
       },
-      { threshold: 0.14, rootMargin: '0px 0px -8% 0px' },
+      { threshold: 0.1, rootMargin: '0px 0px -4% 0px' },
     );
     revealItems.forEach((el) => observer.observe(el));
 
@@ -35,7 +35,7 @@ export default function SiteMotion() {
         const center = rect.top + rect.height / 2;
         const normalized = (center - viewport / 2) / viewport;
         const speed = Number(el.dataset.parallax || '0.08');
-        const move = Math.max(-90, Math.min(90, -normalized * viewport * speed));
+        const move = Math.max(-42, Math.min(42, -normalized * viewport * speed));
         el.style.setProperty('--parallax-y', `${move.toFixed(2)}px`);
       }
 
@@ -64,8 +64,8 @@ export default function SiteMotion() {
         const rect = el.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width - 0.5;
         const y = (event.clientY - rect.top) / rect.height - 0.5;
-        el.style.setProperty('--tilt-x', `${(-y * 2.4).toFixed(2)}deg`);
-        el.style.setProperty('--tilt-y', `${(x * 3.2).toFixed(2)}deg`);
+        el.style.setProperty('--tilt-x', `${(-y * 1.2).toFixed(2)}deg`);
+        el.style.setProperty('--tilt-y', `${(x * 1.6).toFixed(2)}deg`);
       };
       const leave = () => {
         el.style.setProperty('--tilt-x', '0deg');
