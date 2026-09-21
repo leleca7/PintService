@@ -7,7 +7,7 @@ export type DataSource = 'live' | 'demo' | 'error';
 export type DashboardVehicle = { id: string; placa: string; modelo: string; cor: string; cliente: string; etapa: string; status: string; ultimaAtualizacao: string | null };
 export type DashboardTask = { id: string; codigo: string; tipo: string; titulo: string; instrucoes: string; setor: string; responsavel: string; prioridade: string; status: string; requerFoto: boolean; placa: string; modelo: string; criadoEm: string | null };
 export type DashboardConversation = { id: string; cliente: string; telefone: string; mensagem: string; origem: string; intencao: string; status: string; criadoEm: string | null; placa: string };
-export type DashboardEmployee = { id: string; nome: string; setor: string; cargo: string; telefone: string; ativo: boolean };
+export type DashboardEmployee = { id: string; nome: string; setor: string; cargo: string; telefone: string; ativo: boolean; fotoUrl: string };
 export type DashboardData = { source: DataSource; error?: string; vehicles: DashboardVehicle[]; tasks: DashboardTask[]; conversations: DashboardConversation[]; employees: DashboardEmployee[] };
 
 function iso(value: unknown): string | null {
@@ -56,15 +56,15 @@ export async function getDashboardData(): Promise<DashboardData> {
       : [];
 
     const employeeRows = canSeeEmployees
-      ? await sql`SELECT id, nome, setor, cargo, telefone, ativo FROM funcionarios ORDER BY nome ASC LIMIT 200`
+      ? await sql`SELECT id, nome, setor, cargo, telefone, ativo, foto_data_url FROM funcionarios ORDER BY nome ASC LIMIT 200`
       : user.funcionarioId
-        ? await sql`SELECT id, nome, setor, cargo, telefone, ativo FROM funcionarios WHERE id = ${user.funcionarioId} LIMIT 1`
+        ? await sql`SELECT id, nome, setor, cargo, telefone, ativo, foto_data_url FROM funcionarios WHERE id = ${user.funcionarioId} LIMIT 1`
         : [];
 
     const vehicles: DashboardVehicle[] = vehiclesRows.map((row: any) => ({ id: String(row.id), placa: String(row.placa ?? ''), modelo: String(row.modelo ?? 'Veículo'), cor: String(row.cor ?? ''), cliente: String(row.cliente_nome ?? 'Cliente não informado'), etapa: String(row.setor ?? row.status ?? 'Sem etapa'), status: String(row.status ?? 'Em acompanhamento'), ultimaAtualizacao: iso(row.ultima_atualizacao) }));
     const tasks: DashboardTask[] = taskRows.map((row: any) => ({ id: String(row.id), codigo: String(row.codigo ?? ''), tipo: String(row.tipo ?? ''), titulo: String(row.titulo ?? 'Tarefa operacional'), instrucoes: String(row.instrucoes ?? ''), setor: String(row.setor_responsavel ?? 'Sem setor'), responsavel: String(row.responsavel_nome ?? 'Sem responsável'), prioridade: String(row.prioridade ?? 'normal'), status: String(row.status ?? 'aberta'), requerFoto: Boolean(row.requer_foto), placa: String(row.placa ?? ''), modelo: String(row.modelo ?? 'Veículo'), criadoEm: iso(row.criado_em) }));
     const conversations: DashboardConversation[] = conversationRows.map((row: any) => ({ id: String(row.id), cliente: String(row.cliente_nome ?? row.telefone ?? 'Cliente'), telefone: String(row.telefone ?? ''), mensagem: String(row.mensagem ?? ''), origem: String(row.origem ?? ''), intencao: String(row.intencao ?? ''), status: row.atendente_assumiu ? 'Aguardando humano' : row.origem === 'bot' ? 'IA respondeu' : 'IA acompanhando', criadoEm: iso(row.criado_em), placa: String(row.placa ?? '') }));
-    const employees: DashboardEmployee[] = employeeRows.map((row: any) => ({ id: String(row.id), nome: String(row.nome ?? ''), setor: String(row.setor ?? ''), cargo: String(row.cargo ?? ''), telefone: String(row.telefone ?? ''), ativo: Boolean(row.ativo) }));
+    const employees: DashboardEmployee[] = employeeRows.map((row: any) => ({ id: String(row.id), nome: String(row.nome ?? ''), setor: String(row.setor ?? ''), cargo: String(row.cargo ?? ''), telefone: String(row.telefone ?? ''), ativo: Boolean(row.ativo), fotoUrl: String(row.foto_data_url ?? '') }));
 
     return { source: 'live', vehicles, tasks, conversations, employees };
   } catch (error) {
