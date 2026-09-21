@@ -7,17 +7,19 @@ import { fetchExternalVehicles } from '@/lib/external-vehicle-source';
 import { getOfficeProfile } from '@/lib/office-profile';
 import { getChannelStatuses } from '@/lib/reputation';
 import { getOperationalAutomationConfig } from '@/lib/operational-config';
+import { getSiteMediaState } from '@/lib/site-media';
 import { getWhatsAppReadiness } from '@/lib/whatsapp-readiness';
-import { resetSiteLogo, sendWhatsAppActivationTest, updateOperationalAutomationConfig, updateSiteLogo } from './actions';
+import { resetSiteLogo, resetSiteMedia, sendWhatsAppActivationTest, updateOperationalAutomationConfig, updateSiteLogo, updateSiteMedia } from './actions';
 
 function configured(...values: Array<string | undefined>) { return values.every((value) => Boolean(value?.trim())); }
 
 export default async function SettingsPage() {
-  const [data, vehicleSource, automation, whatsapp] = await Promise.all([
+  const [data, vehicleSource, automation, whatsapp, siteMedia] = await Promise.all([
     getDashboardData(),
     fetchExternalVehicles(),
     getOperationalAutomationConfig(),
     getWhatsAppReadiness(),
+    getSiteMediaState(),
   ]);
   const reputationChannels = getChannelStatuses();
   const office = getOfficeProfile();
