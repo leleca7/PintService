@@ -2,7 +2,21 @@ import 'server-only';
 import crypto from 'node:crypto';
 
 export type IncomingWhatsAppMessage = { id: string; phone: string; name: string; type: string; text: string; mediaId: string; contextMessageId: string; interactiveId: string };
-export function normalizeWhatsAppPhone(value = '') { return value.replace(/\D/g, ''); }
+
+export function normalizeWhatsAppPhone(value = '') {
+  const raw = String(value || '');
+  let digits = raw.replace(/\D/g, '');
+
+  // Número brasileiro local (DDD + celular) -> E.164 sem "+".
+  if (/^\d{2}9\d{8}$/.test(digits)) digits = `55${digits}`;
+
+  // Alguns webhooks/contatos legados brasileiros podem chegar sem o 9 adicional.
+  if (/^55\d{2}[6-9]\d{7}$/.test(digits)) {
+    digits = `${digits.slice(0, 4)}9${digits.slice(4)}`;
+  }
+
+  return digits;
+}
 
 export function verifyMetaSignature(rawBody: string, signature: string | null) {
   const appSecret = process.env.WHATSAPP_APP_SECRET;
