@@ -564,3 +564,5 @@ a.contactRow:hover{background:rgba(200,154,86,.04)}
   .googleProofScore{margin-top:2px}
   .googleProofCta{min-width:0;width:100%}
 }
+
+.insuranceFlowCta p{margin:0;color:#91948f;font-size:9px;line-height:1.55}
