@@ -84,6 +84,7 @@ export default async function SettingsPage() {
                 <li><strong>Telefone:</strong> {whatsapp.phone.displayPhoneNumber || '—'}</li>
                 <li><strong>Qualidade:</strong> {whatsapp.phone.qualityRating || '—'}</li>
                 <li><strong>Consulta à Meta:</strong> {whatsapp.phone.reachable ? 'OK' : (whatsapp.phone.error || 'aguardando credenciais')}</li>
+                <li><strong>WABA inscrita no app:</strong> {whatsapp.businessAccountIdConfigured ? (whatsapp.appSubscription.error || (whatsapp.appSubscription.subscribed ? 'sim' : 'não')) : 'aguardando WABA ID'}</li>
                 <li><strong>Templates listáveis:</strong> {whatsapp.businessAccountIdConfigured ? (whatsapp.templatesError || 'consulta habilitada') : 'aguardando WABA ID'}</li>
               </ul>
             </article>
