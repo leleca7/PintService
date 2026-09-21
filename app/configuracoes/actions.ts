@@ -157,3 +157,90 @@ export async function resetSiteLogo(){
   revalidatePath('/site');
   revalidatePath('/configuracoes');
 }
+
+
+export async function updateSiteMedia(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const slot=String(formData.get('slot')??'').trim();
+  if(slot!=='processo'&&slot!=='resultado') throw new Error('Espaço de vídeo inválido.');
+
+  const file=formData.get('media');
+  if(!(file instanceof File)||file.size===0) throw new Error('Selecione um vídeo.');
+
+  const allowed=new Set(['video/mp4','video/webm']);
+  if(!allowed.has(file.type)) throw new Error('Use vídeo MP4 ou WEBM.');
+
+  const maxBytes=8*1024*1024;
+  if(file.size>maxBytes) throw new Error('O vídeo deve ter no máximo 8 MB.');
+
+  const buffer=Buffer.from(await file.arrayBuffer());
+  const sql=getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS configuracao_site_media (
+      slot text PRIMARY KEY,
+      media bytea,
+      mime text,
+      nome_arquivo text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+
+  const before=await sql`
+    SELECT slot,mime,nome_arquivo,atualizado_em
+    FROM configuracao_site_media
+    WHERE slot=${slot}
+    LIMIT 1
+  `;
+
+  await sql`
+    INSERT INTO configuracao_site_media (slot,media,mime,nome_arquivo,atualizado_em)
+    VALUES (${slot},${buffer},${file.type},${file.name},now())
+    ON CONFLICT (slot) DO UPDATE SET
+      media=EXCLUDED.media,
+      mime=EXCLUDED.mime,
+      nome_arquivo=EXCLUDED.nome_arquivo,
+      atualizado_em=now()
+  `;
+
+  await writeAudit(user,'atualizar_video_site','configuracao_site_media',slot,{
+    antes:before[0]??null,
+    depois:{slot,mime:file.type,tamanho:file.size,nome:file.name},
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
+
+export async function resetSiteMedia(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const slot=String(formData.get('slot')??'').trim();
+  if(slot!=='processo'&&slot!=='resultado') throw new Error('Espaço de vídeo inválido.');
+
+  const sql=getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS configuracao_site_media (
+      slot text PRIMARY KEY,
+      media bytea,
+      mime text,
+      nome_arquivo text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+
+  const before=await sql`
+    SELECT slot,mime,nome_arquivo,atualizado_em
+    FROM configuracao_site_media
+    WHERE slot=${slot}
+    LIMIT 1
+  `;
+
+  await sql`DELETE FROM configuracao_site_media WHERE slot=${slot}`;
+
+  await writeAudit(user,'remover_video_site','configuracao_site_media',slot,{
+    antes:before[0]??null,
+    depois:null,
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
