@@ -30,7 +30,9 @@ export default function SiteAssistant({ phone }: { phone: string }) {
       `Atendimento: ${channel || 'não informado'}`,
       `Veículo / observação: ${vehicle.trim() || 'não informado'}`,
       '',
-      'Quero orientação sobre o próximo passo. Posso enviar fotos da avaria por aqui.',
+      channel === 'Seguradora'
+        ? 'Quero orientação para atendimento pelo seguro e posso enviar fotos da avaria por aqui.'
+        : 'Quero orientação para avaliação/orçamento e posso enviar fotos da avaria por aqui.',
     ].join('\n');
 
     return `https://wa.me/${phoneDigits}?text=${encodeURIComponent(summary)}`;
