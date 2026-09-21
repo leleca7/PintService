@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import { getOfficeProfile } from '@/lib/office-profile';
+import { getSiteMediaState } from '@/lib/site-media';
 import SiteMotion from './site-motion';
 import SiteAssistant from './site-assistant';
 import styles from './site.module.css';
@@ -118,8 +119,9 @@ function Arrow() {
   return <span aria-hidden="true" className={styles.arrow}>↗</span>;
 }
 
-export default function PintServicesSite() {
+export default async function PintServicesSite() {
   const office = getOfficeProfile();
+  const siteMedia = await getSiteMediaState();
   const phoneDigits = office.publicPhone.replace(/\D/g, '');
   const telHref = `tel:+${phoneDigits}`;
   const whatsappHref = `https://wa.me/${phoneDigits}`;
@@ -270,6 +272,38 @@ export default function PintServicesSite() {
 
       </section>
 
+      {siteMedia.resultado ? (
+        <section className={styles.realResultSection} aria-label="Resultado real da Pint Services">
+          <div className={styles.realResultCopy} data-reveal>
+            <p className={styles.eyebrow}>RESULTADO REAL</p>
+            <h2>Do dano ao <span>acabamento.</span></h2>
+            <p>
+              Um caso real da Pint Services, mostrado em poucos segundos: condição inicial,
+              processo e resultado final do veículo.
+            </p>
+            <small>Vídeo real da oficina · reprodução sem áudio</small>
+          </div>
+
+          <div className={styles.realResultMedia} data-reveal>
+            <video
+              className={styles.realVideo}
+              src="/api/site/media/resultado"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              poster={imagery.workshop}
+              aria-label="Vídeo de resultado real de serviço da Pint Services"
+            />
+            <div className={styles.realVideoLabel}>
+              <span>ANTES · PROCESSO · RESULTADO</span>
+              <strong>Pint Services</strong>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <section id="processo" className={styles.processSection}>
         <div className={styles.processBackdrop} aria-hidden="true">PROCESSO</div>
         <div className={styles.processSticky} data-reveal>
@@ -278,6 +312,25 @@ export default function PintServicesSite() {
           <p>
             O reparo avança por etapas: avaliação, preparação, execução, acabamento e entrega.
           </p>
+          {siteMedia.processo ? (
+            <div className={styles.processVideoWrap}>
+              <video
+                className={styles.processVideo}
+                src="/api/site/media/processo"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                poster={imagery.paint}
+                aria-label="Vídeo real do processo de pintura da Pint Services"
+              />
+              <div className={styles.processVideoCaption}>
+                <span>PROCESSO REAL</span>
+                <strong>Cabine · preparação · pintura</strong>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className={styles.processList}>
