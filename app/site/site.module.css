@@ -520,3 +520,47 @@ a.contactRow:hover{background:rgba(200,154,86,.04)}
   .insuranceFlowGrid{grid-template-columns:1fr}
   .floatingWhatsapp{right:14px;bottom:14px;min-width:128px}
 }
+
+
+.googleProofSection{
+  padding:36px max(24px,calc((100vw - 1420px)/2));
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:40px;
+  align-items:center;
+  background:#f1efe9;
+  color:#111;
+  border-top:1px solid rgba(17,17,17,.08);
+  border-bottom:1px solid rgba(17,17,17,.10);
+}
+.googleProofSection .eyebrow{margin-bottom:12px;color:var(--gold)}
+.googleProofCopy{display:grid;grid-template-columns:auto 1fr;gap:6px 22px;align-items:center}
+.googleProofCopy .eyebrow{grid-column:1/-1}
+.googleProofScore{display:flex;align-items:center;gap:14px}
+.googleProofScore strong{font-size:46px;line-height:1;letter-spacing:-.06em}
+.googleProofScore span{font-size:17px;letter-spacing:2px;color:#c89a56;white-space:nowrap}
+.googleProofScore span i{font-style:normal;color:#b7b3aa}
+.googleProofCopy>p:last-child{margin:0;max-width:460px;color:#646760;font-size:11px;line-height:1.6}
+.googleProofCta{
+  min-width:280px;
+  min-height:78px;
+  padding:18px 22px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  grid-template-rows:auto auto;
+  gap:5px 18px;
+  align-items:center;
+  text-decoration:none;
+  background:#111315;
+  color:#fff!important;
+}
+.googleProofCta span{font-size:7px;font-weight:900;letter-spacing:.15em;color:var(--gold2)}
+.googleProofCta strong{font-size:13px;letter-spacing:-.02em}
+.googleProofCta .arrow{grid-column:2;grid-row:1/3;font-size:20px;color:var(--gold2)}
+
+@media(max-width:760px){
+  .googleProofSection{grid-template-columns:1fr;padding:28px 15px;gap:20px}
+  .googleProofCopy{grid-template-columns:1fr}
+  .googleProofScore{margin-top:2px}
+  .googleProofCta{min-width:0;width:100%}
+}
