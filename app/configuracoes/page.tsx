@@ -8,7 +8,7 @@ import { getOfficeProfile } from '@/lib/office-profile';
 import { getChannelStatuses } from '@/lib/reputation';
 import { getOperationalAutomationConfig } from '@/lib/operational-config';
 import { getWhatsAppReadiness } from '@/lib/whatsapp-readiness';
-import { sendWhatsAppActivationTest, updateOperationalAutomationConfig } from './actions';
+import { resetSiteLogo, sendWhatsAppActivationTest, updateOperationalAutomationConfig, updateSiteLogo } from './actions';
 
 function configured(...values: Array<string | undefined>) { return values.every((value) => Boolean(value?.trim())); }
 
@@ -128,6 +128,45 @@ export default async function SettingsPage() {
             </label>)}
             <div><button className={core.button} type="submit">Salvar automações</button></div>
           </form>
+        </section>
+
+        <section className={core.section}>
+          <div className={core.sectionHead}>
+            <div><p>MARCA DO SITE</p><h2>Logo pública da Pint Services</h2></div>
+          </div>
+
+          <div className={admin.infoGrid}>
+            <article className={admin.infoCard}>
+              <p>PRÉ-VISUALIZAÇÃO</p>
+              <h2>Logo usada no site</h2>
+              <div style={{ marginTop:16, minHeight:120, display:'grid', placeItems:'center', padding:18, border:'1px solid var(--line,#d9dde3)', borderRadius:12, background:'#090a0b' }}>
+                <img src="/api/site/logo" alt="Logo atual da Pint Services" style={{ display:'block', maxWidth:'100%', width:260, maxHeight:110, objectFit:'contain' }}/>
+              </div>
+              <small style={{ display:'block', marginTop:10 }}>
+                Se nenhuma logo personalizada estiver salva, o sistema usa automaticamente a logo local de segurança.
+              </small>
+            </article>
+
+            <article className={admin.infoCard}>
+              <p>SUBSTITUIR LOGO</p>
+              <h2>Trocar sem editar o código</h2>
+              <form action={updateSiteLogo} encType="multipart/form-data" style={{ display:'grid', gap:12, marginTop:16 }}>
+                <input
+                  type="file"
+                  name="logo"
+                  accept="image/png,image/jpeg,image/webp"
+                  required
+                  style={{ padding:10, border:'1px solid var(--line,#d9dde3)', borderRadius:10 }}
+                />
+                <small>PNG, JPG ou WEBP · até 2 MB. Para melhor resultado, prefira PNG com fundo transparente.</small>
+                <div><button className={core.button} type="submit">Salvar nova logo</button></div>
+              </form>
+
+              <form action={resetSiteLogo} style={{ marginTop:12 }}>
+                <button className={core.button} type="submit">Restaurar logo padrão</button>
+              </form>
+            </article>
+          </div>
         </section>
 
         <section className={admin.infoGrid}>
