@@ -20,6 +20,10 @@ export async function GET(_request:Request,{params}:{params:Promise<{slot:string
       ? media.media
       : Buffer.from(media.media);
 
+    if(buffer.length===0){
+      return new Response(null,{status:204});
+    }
+
     return new Response(new Uint8Array(buffer),{
       headers:{
         'content-type':String(media.mime),
