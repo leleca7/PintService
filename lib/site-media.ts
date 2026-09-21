@@ -28,7 +28,7 @@ export async function getSiteMediaState(){
     const rows=await sql`
       SELECT slot, mime, nome_arquivo, atualizado_em
       FROM configuracao_site_media
-      WHERE media IS NOT NULL
+      WHERE media IS NOT NULL AND octet_length(media) > 0
     `;
     const bySlot=new Map(rows.map((row)=>[String(row.slot),row]));
     return {
