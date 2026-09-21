@@ -1,0 +1,116 @@
+.shell{
+  position:fixed;
+  z-index:120;
+  right:22px;
+  bottom:22px;
+  font-family:inherit;
+}
+.launcher{
+  min-width:174px;
+  height:58px;
+  padding:8px 14px 8px 9px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  border:1px solid rgba(255,255,255,.14);
+  background:#111315;
+  color:#fff;
+  box-shadow:0 16px 48px rgba(0,0,0,.34);
+  cursor:pointer;
+}
+.launcherIcon{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  flex:0 0 auto;
+  border-radius:50%;
+  background:#c89a56;
+  color:#111;
+  font-size:15px;
+  font-weight:950;
+}
+.launcher>span:last-child{display:grid;gap:2px;text-align:left}
+.launcher small{font-size:7px;font-weight:900;letter-spacing:.15em;color:#9da09b}
+.launcher strong{font-size:12px;font-weight:750;letter-spacing:-.01em}
+.panel{
+  position:absolute;
+  right:0;
+  bottom:70px;
+  width:min(390px,calc(100vw - 28px));
+  max-height:min(660px,calc(100vh - 110px));
+  overflow:auto;
+  border:1px solid rgba(255,255,255,.11);
+  background:#0c0e0f;
+  color:#f6f4ee;
+  box-shadow:0 24px 80px rgba(0,0,0,.52);
+}
+.header{
+  position:sticky;
+  top:0;
+  z-index:2;
+  min-height:70px;
+  padding:14px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.08);
+  background:rgba(12,14,15,.96);
+  backdrop-filter:blur(10px);
+}
+.identity{display:flex;align-items:center;gap:10px}
+.avatar{
+  width:36px;height:36px;display:grid;place-items:center;border-radius:50%;
+  background:#c89a56;color:#111;font-size:14px;font-weight:950
+}
+.identity>div{display:grid;gap:2px}
+.identity strong{font-size:12px}
+.identity small{font-size:8px;color:#7e817d}
+.close{
+  width:34px;height:34px;border:0;background:transparent;color:#8f928d;
+  font-size:25px;line-height:1;cursor:pointer
+}
+.body{padding:22px 18px 18px}
+.kicker{margin:0 0 9px;color:#c89a56;font-size:8px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+.body h2{margin:0;font-size:27px;line-height:1.03;letter-spacing:-.045em}
+.helper{margin:12px 0 0;color:#8c8f8a;font-size:10px;line-height:1.65}
+.options{display:grid;gap:8px;margin-top:22px}
+.options button{
+  min-height:52px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;
+  border:1px solid rgba(255,255,255,.09);background:#131517;color:#f4f2ec;
+  font:inherit;font-size:11px;text-align:left;cursor:pointer
+}
+.options button:hover{border-color:rgba(200,154,86,.65);background:rgba(200,154,86,.06)}
+.options button span{color:#c89a56;font-size:20px}
+.back,.restart{
+  margin-top:14px;padding:0;border:0;background:transparent;color:#8e918d;
+  font:inherit;font-size:9px;text-decoration:underline;text-underline-offset:4px;cursor:pointer
+}
+.textarea{
+  width:100%;margin-top:20px;padding:13px 14px;resize:vertical;
+  border:1px solid rgba(255,255,255,.10);background:#131517;color:#f6f4ee;
+  font:inherit;font-size:11px;line-height:1.55;outline:none
+}
+.textarea:focus{border-color:#c89a56}
+.actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:16px}
+.actions .back{margin-top:0}
+.next{
+  min-height:44px;padding:0 17px;border:1px solid #c89a56;background:#c89a56;color:#111;
+  font:inherit;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;cursor:pointer
+}
+.summary{display:grid;gap:0;margin-top:20px;border-top:1px solid rgba(255,255,255,.08)}
+.summary div{padding:11px 0;display:grid;grid-template-columns:88px 1fr;gap:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+.summary span{font-size:8px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#636662}
+.summary strong{font-size:10px;line-height:1.5}
+.whatsapp{
+  margin-top:18px;min-height:50px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;
+  background:#c89a56;color:#111!important;text-decoration:none;font-size:9px;font-weight:950;
+  letter-spacing:.07em;text-transform:uppercase
+}
+.whatsapp span{font-size:18px}
+.restart{width:100%;text-align:center}
+@media(max-width:760px){
+  .shell{right:14px;bottom:14px}
+  .launcher{min-width:0}
+  .panel{right:0;bottom:68px}
+}
