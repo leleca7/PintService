@@ -184,7 +184,7 @@
 .marqueeTrack span{font-size:13px;font-weight:950;letter-spacing:.18em;white-space:nowrap}
 .marqueeTrack i{font-style:normal;font-size:18px;font-weight:400;opacity:.42;flex:0 0 auto}
 
-.servicesSection{padding:120px max(24px,calc((100vw - 1420px)/2));background:var(--ink)}
+.servicesSection{padding:96px max(24px,calc((100vw - 1420px)/2)) 104px;background:var(--ink)}
 .sectionIntroGrid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(300px,.55fr);gap:80px;align-items:end;margin-bottom:50px}
 .sectionIntroGrid h2{margin:0;font-size:clamp(54px,7vw,104px);line-height:.88;letter-spacing:-.07em;font-weight:700}
 .sectionIntroGrid h2 span{display:block;color:transparent;-webkit-text-stroke:1px rgba(239,199,124,.95)}
@@ -195,7 +195,7 @@
 .featuredGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .featuredCard{
   position:relative;
-  min-height:520px;
+  min-height:470px;
   overflow:hidden;
   border:1px solid rgba(255,255,255,.08);
   background:#0d0f10;
