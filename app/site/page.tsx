@@ -3,6 +3,7 @@ import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import { getOfficeProfile } from '@/lib/office-profile';
 import SiteMotion from './site-motion';
+import SiteAssistant from './site-assistant';
 import styles from './site.module.css';
 
 export const metadata: Metadata = {
@@ -118,12 +119,6 @@ export default function PintServicesSite() {
   const phoneDigits = office.publicPhone.replace(/\D/g, '');
   const telHref = `tel:+${phoneDigits}`;
   const whatsappHref = `https://wa.me/${phoneDigits}`;
-  const quoteHref = `${whatsappHref}?text=${encodeURIComponent(
-    'Olá! Quero uma orientação sobre um reparo. Modelo/ano do veículo: ____. Vou enviar 3 fotos da avaria: uma de longe, uma de perto e uma de lado.',
-  )}`;
-  const scheduleHref = `${whatsappHref}?text=${encodeURIComponent(
-    'Olá! Gostaria de solicitar um agendamento para avaliação e possível entrada do veículo. Sei que a data será confirmada pela equipe após a análise do serviço.',
-  )}`;
 
   const localBusinessSchema = {
     '@context': 'https://schema.org',
@@ -164,13 +159,14 @@ export default function PintServicesSite() {
 
         <nav className={styles.nav} aria-label="Navegação principal">
           <a href="#servicos">Serviços</a>
-          <a href="#processo">Processo</a>
+          <a href="#processo">Como funciona</a>
+          <a href="#seguro">Seguro</a>
           <a href="#sobre">A Pint</a>
-          <a href="#contato">Contato</a>
+          <a href="#localizacao">Localização</a>
         </nav>
 
-        <a href={quoteHref} target="_blank" rel="noreferrer" className={styles.headerCta}>
-          Enviar fotos <Arrow />
+        <a href="#contato" className={styles.headerCta}>
+          Atendimento <Arrow />
         </a>
       </header>
 
@@ -186,15 +182,15 @@ export default function PintServicesSite() {
             <span>RISCOU?</span>
           </div>
           <p className={styles.heroText}>
-            Envie fotos do dano pelo WhatsApp. A equipe orienta o próximo passo para avaliação,
-            reparo particular ou atendimento relacionado à seguradora.
+            Funilaria, pintura e recuperação automotiva com um processo claro,
+            do primeiro diagnóstico ao acabamento final.
           </p>
           <div className={styles.heroActions}>
-            <a href={quoteHref} target="_blank" rel="noreferrer" className={styles.primary}>
-              Enviar fotos <Arrow />
+            <a href="#servicos" className={styles.primary}>
+              Conhecer os serviços <Arrow />
             </a>
             <a href="#processo" className={styles.secondary}>
-              Conhecer o processo
+              Como funciona
             </a>
           </div>
         </div>
@@ -245,39 +241,6 @@ export default function PintServicesSite() {
         </a>
       </section>
 
-      <section className={styles.photoGuideSection} aria-label="Como enviar fotos para avaliação">
-        <div className={styles.photoGuideIntro} data-reveal>
-          <div>
-            <p className={styles.eyebrow}>AVALIAÇÃO INICIAL PELO WHATSAPP</p>
-            <h2>Mande 3 fotos. <span>A equipe orienta o próximo passo.</span></h2>
-          </div>
-          <div>
-            <p>
-              Um primeiro contato mais claro reduz idas e vindas. Envie o modelo, o ano do veículo
-              e três ângulos da avaria para a equipe entender melhor o caso antes de orientar a avaliação.
-            </p>
-            <a href={quoteHref} target="_blank" rel="noreferrer" className={styles.photoGuideCta}>
-              Enviar fotos pelo WhatsApp <Arrow />
-            </a>
-          </div>
-        </div>
-
-        <div className={styles.photoGuideGrid}>
-          <article data-reveal>
-            <strong>01</strong>
-            <div><span>DE LONGE</span><p>Mostre a peça e a posição do dano no veículo.</p></div>
-          </article>
-          <article data-reveal>
-            <strong>02</strong>
-            <div><span>DE PERTO</span><p>Registre riscos, amassados, trincas e detalhes visíveis.</p></div>
-          </article>
-          <article data-reveal>
-            <strong>03</strong>
-            <div><span>DE LADO</span><p>Ajude a mostrar profundidade, alinhamento e reflexo da lataria.</p></div>
-          </article>
-        </div>
-      </section>
-
       <section className={styles.marquee} aria-label="Especialidades Pint Services">
         <div className={styles.marqueeTrack}>
           {[0, 1, 2].map((cycle) => (
@@ -302,7 +265,7 @@ export default function PintServicesSite() {
               Do primeiro contato à conferência final, cada etapa existe para dar clareza ao serviço
               e consistência ao acabamento.
             </p>
-            <a href={quoteHref} target="_blank" rel="noreferrer">Conversar sobre meu veículo <Arrow /></a>
+            <a href="#processo">Entender como funciona <Arrow /></a>
           </div>
         </div>
 
@@ -337,31 +300,6 @@ export default function PintServicesSite() {
 
       </section>
 
-      <section className={styles.statementSection}>
-        <div className={styles.statementPhoto}>
-          <Image
-            src={imagery.paint}
-            alt="Técnico realizando pintura automotiva"
-            fill
-            sizes="100vw"
-            className={styles.statementImage}
-          />
-          <div className={styles.statementShade} />
-        </div>
-        <div className={styles.statementGrid} aria-hidden="true" />
-        <div className={styles.statementCopy} data-reveal>
-          <p className={styles.eyebrow}>NOSSO PADRÃO</p>
-          <h2>
-            RESULTADO NÃO
-            <span>ACONTECE NO</span>
-            <strong>IMPROVISO.</strong>
-          </h2>
-          <p>
-            Ele nasce quando cada etapa é executada no momento certo e com atenção ao que será percebido na entrega.
-          </p>
-        </div>
-      </section>
-
       <section id="processo" className={styles.processSection}>
         <div className={styles.processBackdrop} aria-hidden="true">PROCESSO</div>
         <div className={styles.processSticky} data-reveal>
@@ -384,6 +322,33 @@ export default function PintServicesSite() {
               <span className={styles.processLine} aria-hidden="true" />
             </article>
           ))}
+        </div>
+      </section>
+
+
+      <section id="seguro" className={styles.insurerSection}>
+        <div className={styles.insurerIntro} data-reveal>
+          <p className={styles.eyebrow}>REPARO PELO SEGURO</p>
+          <h2>Um fluxo mais claro, <span>do sinistro à entrega.</span></h2>
+          <p>
+            O processo pode variar conforme a seguradora. Por isso, a equipe confirma o atendimento
+            antes de apresentar qualquer companhia como parceira ou atendida.
+          </p>
+        </div>
+
+        <div className={styles.insuranceFlowGrid}>
+          {insuranceFlow.map((step) => (
+            <article key={step.number} className={styles.insuranceFlowCard} data-reveal>
+              <span>{step.number}</span>
+              <strong>{step.title}</strong>
+              <p>{step.text}</p>
+            </article>
+          ))}
+          <article className={styles.insuranceFlowCta} data-reveal>
+            <small>PRECISA DE ORIENTAÇÃO?</small>
+            <strong>Use o Assistente Pint</strong>
+            <p>A triagem no canto da tela organiza o contexto antes de abrir o WhatsApp.</p>
+          </article>
         </div>
       </section>
 
@@ -418,33 +383,7 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <section className={styles.insurerSection}>
-        <div className={styles.insurerIntro} data-reveal>
-          <p className={styles.eyebrow}>REPARO PELO SEGURO</p>
-          <h2>Um fluxo mais claro, <span>do sinistro à entrega.</span></h2>
-          <p>
-            O processo pode variar conforme a seguradora. Por isso, a equipe confirma o atendimento
-            antes de apresentar qualquer companhia como parceira ou atendida.
-          </p>
-        </div>
-
-        <div className={styles.insuranceFlowGrid}>
-          {insuranceFlow.map((step) => (
-            <article key={step.number} className={styles.insuranceFlowCard} data-reveal>
-              <span>{step.number}</span>
-              <strong>{step.title}</strong>
-              <p>{step.text}</p>
-            </article>
-          ))}
-          <article className={styles.insuranceFlowCta} data-reveal>
-            <small>QUAL É A SUA SEGURADORA?</small>
-            <strong>Confirme com a equipe</strong>
-            <a href={quoteHref} target="_blank" rel="noreferrer">Consultar atendimento <Arrow /></a>
-          </article>
-        </div>
-      </section>
-
-      <section className={styles.locationSection}>
+      <section id="localizacao" className={styles.locationSection}>
         <div className={styles.locationCopy} data-reveal>
           <p className={styles.eyebrow}>LOCALIZAÇÃO</p>
           <h2>Vilas do Atlântico.<br/><span>Lauro de Freitas.</span></h2>
@@ -489,24 +428,16 @@ export default function PintServicesSite() {
         <div className={styles.contactAccent} aria-hidden="true" />
         <div className={styles.contactCopy} data-reveal>
           <p className={styles.eyebrow}>ATENDIMENTO</p>
-          <h2>Aconteceu com o seu carro? Mande as fotos.</h2>
+          <h2>Prefere falar direto com a equipe?</h2>
           <p>
-            Envie o modelo, o ano e imagens da avaria. A equipe analisa o primeiro contexto e orienta
-            o próximo passo para reparo particular ou atendimento relacionado à seguradora.
+            O Assistente Pint organiza a triagem inicial. Se preferir, você também pode seguir
+            direto para o atendimento humano pelos canais abaixo.
           </p>
         </div>
 
         <div className={styles.contactPanel} data-reveal>
-          <a href={quoteHref} target="_blank" rel="noreferrer" className={styles.contactPrimary}>
-            <span><small>WHATSAPP</small><strong>Enviar fotos para a Pint Services</strong></span>
-            <Arrow />
-          </a>
-          <a href={scheduleHref} target="_blank" rel="noreferrer" className={styles.contactSchedule}>
-            <span>
-              <small>AGENDAMENTO</small>
-              <strong>Solicitar data de entrada</strong>
-              <em>A confirmação é feita manualmente pela equipe após análise do serviço.</em>
-            </span>
+          <a href={whatsappHref} target="_blank" rel="noreferrer" className={styles.contactPrimary}>
+            <span><small>WHATSAPP</small><strong>Falar com a equipe</strong></span>
             <Arrow />
           </a>
           <a href={telHref} className={styles.contactRow}><span>Telefone</span><strong>{office.publicPhone}</strong></a>
@@ -516,16 +447,7 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <a
-        href={quoteHref}
-        target="_blank"
-        rel="noreferrer"
-        className={styles.floatingWhatsapp}
-        aria-label="Enviar fotos pelo WhatsApp para a Pint Services"
-      >
-        <span>WHATSAPP</span>
-        <strong>Enviar fotos</strong>
-      </a>
+      <SiteAssistant phone={office.publicPhone} />
 
       <footer className={styles.footer}>
         <div className={styles.footerBrand}>
@@ -534,9 +456,10 @@ export default function PintServicesSite() {
         </div>
         <div className={styles.footerNav}>
           <a href="#servicos">Serviços</a>
-          <a href="#processo">Processo</a>
+          <a href="#processo">Como funciona</a>
+          <a href="#seguro">Seguro</a>
           <a href="#sobre">A Pint</a>
-          <a href="#contato">Contato</a>
+          <a href="#localizacao">Localização</a>
         </div>
         <div className={styles.footerEnd}>
           <span>© {new Date().getFullYear()} Pint Services</span>
