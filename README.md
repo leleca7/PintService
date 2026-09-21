@@ -3,6 +3,8 @@
 Sistema de atendimento e operação da Pint Services para funilaria e pintura, com painel web, Neon Postgres, autenticação/RBAC, fila operacional, WhatsApp + IA e Central de reputação.
 
 > **Memória oficial do projeto:** antes de alterar arquitetura, fluxo operacional, veículos ou IA, ler [`docs/PROJECT_CONTEXT_CHECKPOINT.md`](docs/PROJECT_CONTEXT_CHECKPOINT.md). As decisões mais recentes de automação estão em [`docs/DECISAO-2026-09-19-OPERACAO-INTELIGENTE.md`](docs/DECISAO-2026-09-19-OPERACAO-INTELIGENTE.md).
+>
+> **Checkpoint para a reunião:** [`docs/CHECKPOINT-2026-09-21-PRE-REUNIAO.md`](docs/CHECKPOINT-2026-09-21-PRE-REUNIAO.md).
 
 ## Direção operacional atual
 
