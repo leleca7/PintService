@@ -140,6 +140,33 @@ export async function getWhatsAppReadiness() {
 
   let remoteTemplates: Array<{ name: string; status: string; category: string; language: string }> = [];
   let templatesError: string | null = null;
+  let appSubscription: {
+    checked: boolean;
+    subscribed: boolean;
+    appCount: number;
+    error: string | null;
+  } = {
+    checked: false,
+    subscribed: false,
+    appCount: 0,
+    error: null,
+  };
+
+  if (credentialChecks.accessToken && credentialChecks.businessAccountId) {
+    const result = await getJson(
+      `https://graph.facebook.com/${graphVersion}/${businessAccountId}/subscribed_apps`,
+      token,
+    );
+    appSubscription.checked = true;
+    if (result.ok) {
+      const apps = Array.isArray(result.data?.data) ? result.data.data : [];
+      appSubscription.subscribed = apps.length > 0;
+      appSubscription.appCount = apps.length;
+    } else {
+      appSubscription.error = `Meta respondeu HTTP ${result.status}: ${String(result.data?.error?.message ?? 'não foi possível consultar a inscrição do app').slice(0, 220)}`;
+    }
+  }
+
 
   if (credentialChecks.accessToken && credentialChecks.businessAccountId) {
     const result = await getJson(
@@ -187,6 +214,7 @@ export async function getWhatsAppReadiness() {
     transportConfigured,
     phone,
     businessAccountIdConfigured: credentialChecks.businessAccountId,
+    appSubscription,
     templates,
     templatesError,
     approvedTemplates: templates.filter((item) => item.approved).length,
