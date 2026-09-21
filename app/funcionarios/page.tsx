@@ -47,6 +47,7 @@ export default async function EmployeesPage() {
               <label className={styles.field}>Setor<input name="setor" required placeholder="Ex.: Pintura" /></label>
               <label className={styles.field}>Cargo<input name="cargo" placeholder="Ex.: Pintor" /></label>
               <label className={styles.field}>WhatsApp<input name="telefone" inputMode="tel" placeholder="55..." /></label>
+              <label className={styles.field}>Foto<input name="foto" type="file" accept="image/jpeg,image/png,image/webp" /></label>
               <div className={styles.formAction}><button className={styles.button} type="submit">Adicionar</button></div>
             </form>
           </details>
@@ -64,7 +65,7 @@ export default async function EmployeesPage() {
               const row = (
                 <>
                   <div className={styles.identity}>
-                    <div className={styles.avatar}>{initials(employee.nome)}</div>
+                    <div className={styles.avatar}>{employee.fotoUrl ? <img src={employee.fotoUrl} alt="" /> : initials(employee.nome)}</div>
                     <div><strong>{employee.nome}</strong><span>{employee.cargo || 'Cargo não informado'}</span></div>
                   </div>
                   <div className={styles.cell}><span>Setor</span><strong>{employee.setor || 'Sem setor'}</strong></div>
@@ -91,6 +92,8 @@ export default async function EmployeesPage() {
                       <label className={styles.field}>Setor<input name="setor" defaultValue={employee.setor} required/></label>
                       <label className={styles.field}>Cargo<input name="cargo" defaultValue={employee.cargo}/></label>
                       <label className={styles.field}>WhatsApp<input name="telefone" defaultValue={employee.telefone}/></label>
+                      <label className={styles.field}>Foto<input name="foto" type="file" accept="image/jpeg,image/png,image/webp" /></label>
+                      {employee.fotoUrl && <label className={styles.removePhoto}><input type="checkbox" name="remover_foto" value="true" /> Remover foto atual</label>}
                       <div className={styles.editActions}>
                         <button className={styles.button} type="submit">Salvar alterações</button>
                       </div>
