@@ -9,7 +9,8 @@ import { getChannelStatuses } from '@/lib/reputation';
 import { getOperationalAutomationConfig } from '@/lib/operational-config';
 import { getSiteMediaState } from '@/lib/site-media';
 import { getWhatsAppReadiness } from '@/lib/whatsapp-readiness';
-import { resetSiteLogo, resetSiteMedia, sendWhatsAppActivationTest, updateOperationalAutomationConfig, updateSiteLogo, updateSiteMedia } from './actions';
+import { resetSiteLogo, sendWhatsAppActivationTest, updateOperationalAutomationConfig, updateSiteLogo } from './actions';
+import SiteMediaSettings from './site-media-settings';
 
 function configured(...values: Array<string | undefined>) { return values.every((value) => Boolean(value?.trim())); }
 
@@ -170,6 +171,8 @@ export default async function SettingsPage() {
             </article>
           </div>
         </section>
+
+        <SiteMediaSettings state={siteMedia} />
 
         <section className={admin.infoGrid}>
           <article className={admin.infoCard}><p>CADASTRO OFICIAL</p><h2>{office.name}</h2><ul><li><strong>Telefone:</strong> {office.publicPhone}</li><li><strong>Endereço:</strong> {office.address}</li><li><strong>Horários:</strong> {office.hours}</li><li><strong>Instagram:</strong> <a href={office.instagramUrl} target="_blank" rel="noreferrer">{office.instagramHandle}</a></li><li><strong>Google:</strong> <a href={office.googleBusinessUrl} target="_blank" rel="noreferrer">abrir perfil/localização</a></li><li><strong>Site antigo:</strong> {office.legacySiteUrl} — referência histórica.</li></ul></article>
