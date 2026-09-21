@@ -10,6 +10,6 @@ export default function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/auth|api/whatsapp|api/instagram/webhook|api/inbox/email|api/inbox/site|api/health|api/reputacao/check|api/operacao/resumo/check|api/operacao/inteligencia/check|api/integracoes/zeta/check|api/blinko/summary|auth|site|_next/static|_next/image|favicon.ico|manifest.webmanifest|pint-services-logo.jpg).*)',
+    '/((?!api/auth|api/site/logo|api/whatsapp|api/instagram/webhook|api/inbox/email|api/inbox/site|api/health|api/reputacao/check|api/operacao/resumo/check|api/operacao/inteligencia/check|api/integracoes/zeta/check|api/blinko/summary|auth|site|_next/static|_next/image|favicon.ico|manifest.webmanifest|pint-services-logo.jpg).*)',
   ],
 };
