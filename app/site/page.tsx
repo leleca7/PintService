@@ -139,6 +139,12 @@ export default function PintServicesSite() {
       addressCountry: 'BR',
     },
     sameAs: [office.instagramUrl],
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: office.googleRating,
+      reviewCount: office.googleReviewCount,
+      bestRating: 5,
+    },
   };
 
   return (
@@ -215,6 +221,28 @@ export default function PintServicesSite() {
           <div><small>02</small><span>FLUXO</span><strong>Processo por etapas</strong></div>
           <div><small>03</small><span>ATENDIMENTO</span><strong>Seguradoras &amp; particulares</strong></div>
         </div>
+      </section>
+
+      <section className={styles.googleProofSection} aria-label="Avaliações da Pint Services no Google">
+        <div className={styles.googleProofCopy} data-reveal>
+          <p className={styles.eyebrow}>AVALIAÇÕES NO GOOGLE</p>
+          <div className={styles.googleProofScore}>
+            <strong>{office.googleRating.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
+            <span aria-label="4 de 5 estrelas">★★★★<i>★</i></span>
+          </div>
+          <p>{office.googleReviewCount} avaliações publicadas no perfil da Pint Services no Google.</p>
+        </div>
+        <a
+          href={office.googleBusinessUrl}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.googleProofCta}
+          data-reveal
+        >
+          <span>PROVA SOCIAL</span>
+          <strong>Ver avaliações no Google</strong>
+          <Arrow />
+        </a>
       </section>
 
       <section className={styles.photoGuideSection} aria-label="Como enviar fotos para avaliação">
