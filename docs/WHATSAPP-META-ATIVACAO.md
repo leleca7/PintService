@@ -2,7 +2,12 @@
 
 ## Objetivo
 
-Ativar o número oficial da Pint Services na WhatsApp Business Platform/Cloud API sem alterar as regras operacionais do sistema.
+Validar primeiro o WhatsApp Cloud API da Pint Services em ambiente de teste e, somente depois do fluxo ponta a ponta estar estável, conectar o número oficial sem alterar as regras operacionais do sistema.
+
+A ativação deve seguir duas fases:
+
+1. **Teste Meta:** número de teste fornecido pela Meta + destinatário pessoal autorizado.
+2. **Produção:** número oficial da Pint Services, somente após entrada, persistência, interpretação e saída estarem validadas.
 
 O webhook já está preparado em:
 
@@ -35,6 +40,17 @@ No app da Meta:
 3. Verify Token: deve ser exatamente o mesmo valor de `WHATSAPP_VERIFY_TOKEN`.
 4. Assinar pelo menos o campo `messages`.
 5. O App Secret do mesmo app precisa estar em `WHATSAPP_APP_SECRET`.
+6. Confirmar que a **WABA está inscrita no app**. O Sistema da Pint consulta `/{WABA_ID}/subscribed_apps` no diagnóstico de Configurações.
+7. No número de teste, cadastrar e validar o telefone que será usado como **Destinatário** antes de testar respostas.
+
+### Sinais de diagnóstico já conhecidos
+
+- `(#131030) Recipient phone number not in allowed list`: o destinatário ainda não está autorizado na lista de teste da Meta.
+- `Authentication Error` / erro de token: normalmente indica token temporário expirado ou credencial inválida.
+- Mensagem entra no webhook mas não volta ao telefone: conferir primeiro token, destinatário autorizado e inscrição da WABA no app.
+- O webhook deve continuar confirmando recebimento mesmo quando a tentativa de resposta externa falhar; a falha de transporte não deve apagar o evento recebido.
+
+O sistema já normaliza celulares brasileiros para reduzir divergência entre números com e sem o nono dígito.
 
 ## Templates sugeridos
 
@@ -145,20 +161,34 @@ Variável:
 
 ## Ordem de ativação
 
-1. Conectar Business Portfolio/WABA/número no app Meta.
-2. Gerar System User token com permissões necessárias para WhatsApp.
-3. Configurar as 6 credenciais/IDs na Vercel.
-4. Validar o número pelo painel Configurações do Sistema da Pint.
+### Fase 1 — ambiente de teste
+
+1. Criar/configurar o app Meta e adicionar WhatsApp.
+2. Usar o **número de teste da Meta**; não migrar o número oficial ainda.
+3. Cadastrar e validar um destinatário de teste.
+4. Configurar na Vercel as credenciais do ambiente de teste.
 5. Configurar o webhook e assinar `messages`.
-6. Criar e enviar os templates para análise.
-7. Após aprovação, preencher os nomes dos templates nas variáveis Vercel.
-8. Executar o teste controlado na tela Configurações.
-9. Testar mensagem recebida no número oficial e confirmar criação/continuidade da conversa.
-10. Só depois habilitar automações proativas adicionais.
+6. Confirmar a inscrição da WABA no app.
+7. Enviar a mensagem de teste da Meta e responder pelo WhatsApp.
+8. Confirmar o ciclo completo: **WhatsApp → Meta → webhook → Neon → processamento → Graph API → WhatsApp**.
+9. Testar texto livre, erro de digitação, áudio/mídia, placa inexistente, orçamento, peça, reclamação e fallback humano.
+10. Trocar token temporário por credencial apropriada/permanente antes de qualquer go-live.
+
+### Fase 2 — produção
+
+1. Definir a estratégia segura para o número oficial da Pint Services.
+2. Conectar o número oficial somente depois dos testes anteriores estarem estáveis.
+3. Criar e enviar os templates para análise.
+4. Após aprovação, preencher os nomes dos templates nas variáveis Vercel.
+5. Executar o teste controlado na tela Configurações.
+6. Validar entrada e saída com o número oficial.
+7. Só depois habilitar automações proativas adicionais.
 
 ## Regras de segurança
 
 - Não usar token temporário como solução definitiva.
+- Não conectar/migrar o número oficial antes de validar o ambiente de teste ponta a ponta.
+- Em teste, não interpretar erro de destinatário autorizado como falha do webhook.
 - Não expor Access Token, App Secret ou Verify Token em tela/log.
 - Não enviar mensagens proativas fora das regras da Meta sem template aprovado.
 - Não ativar cobrança automática de fornecedor antes de testar contato/template.
