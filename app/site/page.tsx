@@ -32,23 +32,23 @@ const featuredServices = [
   {
     number: '01',
     title: 'Funilaria & pintura',
-    text: 'Recuperação de peças e superfícies, preparação, correção e pintura em uma sequência coordenada.',
+    text: 'Recuperação de avarias na lataria, preparação e pintura para devolver forma, cor e acabamento ao veículo.',
     image: imagery.hero,
-    label: 'Estrutura · superfície · cor',
+    label: 'Reparação automotiva',
   },
   {
     number: '02',
-    title: 'Preparação & execução',
-    text: 'Cada intervenção acontece no momento certo: desmontagem, preparação, pintura e montagem.',
+    title: 'Martelinho de ouro',
+    text: 'Correção de amassados quando a técnica é indicada, preservando a pintura original sempre que possível.',
     image: imagery.paint,
-    label: 'Processo · precisão',
+    label: 'Correção de amassados',
   },
   {
     number: '03',
-    title: 'Acabamento final & polimento',
-    text: 'Polimento, revisão visual e conferência final para entregar o veículo com acabamento consistente.',
+    title: 'Polimento & acabamento',
+    text: 'Refino da superfície, revisão visual e acabamento final para valorizar o resultado do reparo.',
     image: imagery.workshop,
-    label: 'Acabamento · polimento · entrega',
+    label: 'Refino · brilho · entrega',
   },
 ];
 
@@ -79,22 +79,27 @@ const process = [
   {
     number: '01',
     title: 'Avaliação',
-    text: 'Entendimento do dano, escopo do reparo e orientação inicial do atendimento.',
+    text: 'Entendimento da avaria, definição do escopo e orientação inicial do atendimento.',
   },
   {
     number: '02',
     title: 'Preparação',
-    text: 'Desmontagem, funilaria e preparação de pintura conforme a necessidade do veículo.',
+    text: 'Desmontagem, correção da lataria e preparação da superfície conforme a necessidade do veículo.',
   },
   {
     number: '03',
-    title: 'Execução',
-    text: 'Pintura, correções e montagem seguindo uma sequência de produção organizada.',
+    title: 'Reparo',
+    text: 'Execução da funilaria, pintura e demais intervenções previstas para o serviço.',
   },
   {
     number: '04',
     title: 'Acabamento',
-    text: 'Polimento, revisão visual, limpeza e conferência antes da entrega.',
+    text: 'Montagem, polimento, revisão visual e conferência do resultado.',
+  },
+  {
+    number: '05',
+    title: 'Entrega',
+    text: 'Conferência final e alinhamento da entrega com o cliente.',
   },
 ];
 
@@ -207,8 +212,8 @@ export default function PintServicesSite() {
             />
           </div>
           <div className={styles.heroCaption}>
-            <span>PROCESSO REAL</span>
-            <strong>Pintura · acabamento · controle visual</strong>
+            <span>RECUPERAÇÃO AUTOMOTIVA</span>
+            <strong>Funilaria · pintura · acabamento</strong>
           </div>
         </div>
 
@@ -219,51 +224,16 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <section className={styles.googleProofSection} aria-label="Avaliações da Pint Services no Google">
-        <div className={styles.googleProofCopy} data-reveal>
-          <p className={styles.eyebrow}>AVALIAÇÕES NO GOOGLE</p>
-          <div className={styles.googleProofScore}>
-            <strong>{office.googleRating.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</strong>
-            <span aria-label="4 de 5 estrelas">★★★★<i>★</i></span>
-          </div>
-          <p>{office.googleReviewCount} avaliações publicadas no perfil da Pint Services no Google.</p>
-        </div>
-        <a
-          href={office.googleBusinessUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={styles.googleProofCta}
-          data-reveal
-        >
-          <span>PROVA SOCIAL</span>
-          <strong>Ver avaliações no Google</strong>
-          <Arrow />
-        </a>
-      </section>
-
-      <section className={styles.marquee} aria-label="Especialidades Pint Services">
-        <div className={styles.marqueeTrack}>
-          {[0, 1, 2].map((cycle) => (
-            <div className={styles.marqueeSet} key={cycle} aria-hidden={cycle > 0}>
-              <span>FUNILARIA</span><i>×</i>
-              <span>PINTURA</span><i>×</i>
-              <span>POLIMENTO</span><i>×</i>
-              <span>ACABAMENTO</span><i>×</i>
-            </div>
-          ))}
-        </div>
-      </section>
-
       <section id="servicos" className={styles.servicesSection}>
         <div className={styles.sectionIntroGrid} data-reveal>
           <div>
             <p className={styles.eyebrow}>SERVIÇOS</p>
-            <h2>Reparo com <span>processo.</span></h2>
+            <h2>Soluções para <span>recuperar seu carro.</span></h2>
           </div>
           <div className={styles.introCopy}>
             <p>
-              Do primeiro contato à conferência final, cada etapa existe para dar clareza ao serviço
-              e consistência ao acabamento.
+              Da correção da lataria ao acabamento final, o serviço é definido de acordo com a avaria
+              e com o que o veículo realmente precisa.
             </p>
             <a href="#processo">Entender como funciona <Arrow /></a>
           </div>
@@ -298,15 +268,33 @@ export default function PintServicesSite() {
           ))}
         </div>
 
+        <div className={styles.supportingStrip} data-reveal>
+          <article>
+            <span>04</span>
+            <h3>Pintura de rodas</h3>
+            <p>Recuperação estética e pintura de rodas conforme avaliação do estado da peça.</p>
+          </article>
+          <article>
+            <span>05</span>
+            <h3>Higienização</h3>
+            <p>Cuidados de limpeza e higienização para complementar a experiência de entrega do veículo.</p>
+          </article>
+          <article>
+            <span>06</span>
+            <h3>Seguro & particular</h3>
+            <p>Orientação inicial para entender o caminho do reparo em cada tipo de atendimento.</p>
+          </article>
+        </div>
+
       </section>
 
       <section id="processo" className={styles.processSection}>
         <div className={styles.processBackdrop} aria-hidden="true">PROCESSO</div>
         <div className={styles.processSticky} data-reveal>
           <p className={styles.eyebrow}>FLUXO</p>
-          <h2>Do orçamento à entrega, cada etapa tem um próximo passo claro.</h2>
+          <h2>Você sabe o que acontece antes da entrega.</h2>
           <p>
-            Avaliação, preparação, execução e acabamento organizam o reparo e deixam claro o que precisa acontecer em seguida.
+            O reparo avança por etapas: avaliação, preparação, execução, acabamento e entrega.
           </p>
         </div>
 
@@ -383,6 +371,42 @@ export default function PintServicesSite() {
         </div>
       </section>
 
+      <section className={styles.trustSection} aria-label="Sinais de confiança da Pint Services">
+        <div className={styles.trustIntro} data-reveal>
+          <p className={styles.eyebrow}>POR QUE CONFIAR</p>
+          <h2>Confiança começa pelo que <span>você consegue verificar.</span></h2>
+          <p>
+            Processo explicado, atendimento local e informações públicas acessíveis antes de deixar o veículo na oficina.
+          </p>
+        </div>
+
+        <div className={styles.trustGrid}>
+          <article data-reveal>
+            <span>PROCESSO</span>
+            <strong>Etapas claras</strong>
+            <p>Avaliação, preparação, reparo, acabamento e entrega organizados em uma sequência definida.</p>
+          </article>
+          <article data-reveal>
+            <span>ATENDIMENTO</span>
+            <strong>Particular & seguro</strong>
+            <p>A equipe orienta o caminho inicial de acordo com o tipo de atendimento do veículo.</p>
+          </article>
+          <article data-reveal>
+            <span>REPUTAÇÃO PÚBLICA</span>
+            <strong>{office.googleReviewCount} avaliações no Google</strong>
+            <p>A nota atual é pública e pode ser acompanhada diretamente no perfil da empresa.</p>
+            <a href={office.googleBusinessUrl} target="_blank" rel="noreferrer">
+              Ver perfil no Google <Arrow />
+            </a>
+          </article>
+          <article data-reveal>
+            <span>LOCAL</span>
+            <strong>Lauro de Freitas</strong>
+            <p>Endereço, telefone, horários e rota reunidos no próprio site para facilitar a visita.</p>
+          </article>
+        </div>
+      </section>
+
       <section id="localizacao" className={styles.locationSection}>
         <div className={styles.locationCopy} data-reveal>
           <p className={styles.eyebrow}>LOCALIZAÇÃO</p>
@@ -428,10 +452,9 @@ export default function PintServicesSite() {
         <div className={styles.contactAccent} aria-hidden="true" />
         <div className={styles.contactCopy} data-reveal>
           <p className={styles.eyebrow}>ATENDIMENTO</p>
-          <h2>Prefere falar direto com a equipe?</h2>
+          <h2>Fale com a Pint.</h2>
           <p>
-            O Assistente Pint organiza a triagem inicial. Se preferir, você também pode seguir
-            direto para o atendimento humano pelos canais abaixo.
+            Use os canais oficiais para tirar dúvidas, falar sobre seu veículo ou combinar o próximo passo com a equipe.
           </p>
         </div>
 
