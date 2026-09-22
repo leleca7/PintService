@@ -192,3 +192,107 @@ Para sair da reunião com execução clara:
 > Primeiro fazer a operação real funcionar com pouca fricção. Depois conectar os canais.
 
 Evitar colocar WhatsApp, Instagram, Google, Reclame Aqui, Zeta e automações simultaneamente antes de a equipe estar atualizando os dados corretamente no Sistema da Pint.
+
+
+## 10. Registro técnico final de 21/09/2026
+
+Depois da criação inicial deste checkpoint, foram concluídos e validados mais alguns ajustes:
+
+### Foto de funcionários
+
+Implementação concluída ponta a ponta:
+
+- coluna `foto_data_url` adicionada à tabela `funcionarios` no Neon;
+- migration documentada em `docs/migrations/2026-09-21-foto-funcionarios.sql`;
+- formulário de criação aceita JPG, PNG e WEBP;
+- edição aceita substituir ou remover a foto;
+- limite de 700 KB por avatar;
+- listagem de funcionários exibe a imagem quando houver;
+- iniciais continuam como fallback;
+- esse armazenamento é exclusivo para avatar pequeno da equipe, não para mídia operacional pesada.
+
+### Diagnóstico de integrações
+
+O endpoint `/api/health` foi atualizado e validado ao vivo.
+
+Estado verificado após a alteração:
+
+- `database=true`
+- `auth=true`
+- `shop=true`
+- `openai=true`
+- `whatsapp=false`
+- `whatsappBusinessAccount=false`
+- `instagram=false`
+- `google=false`
+- `reclameAqui=false`
+- `blinko=false`
+- `zeta=false`
+- `inboxEmail=false`
+- `inboxSite=false`
+- `internalAlerts=false`
+- `operationUpdateTemplate=false`
+- `vehicleSource=false`
+
+O health agora informa explicitamente:
+
+- `operationalSource=native-database`;
+- `vehicleSource` como conexão opcional;
+- integrações externas pendentes separadas do core.
+
+Isso elimina a leitura equivocada de que a Pint precisaria de uma planilha externa para o sistema estar operacional.
+
+### WhatsApp / Meta
+
+Foram incorporados ao código e à documentação os aprendizados do fluxo Meta já validado em ambiente controlado:
+
+- normalização de celular brasileiro com ou sem nono dígito;
+- consulta do status de inscrição da WABA no app por `/{WABA_ID}/subscribed_apps`;
+- exibição desse status em Configurações;
+- orientação para testar primeiro com número de teste da Meta;
+- separação clara entre token temporário de desenvolvimento e credencial apropriada para produção;
+- documentação dos erros `#131030` e de autenticação/token;
+- regra de não conectar/migrar o número oficial antes do teste ponta a ponta.
+
+Arquivo atualizado:
+`docs/WHATSAPP-META-ATIVACAO.md`.
+
+### Estado do banco para a reunião
+
+Leitura direta do Neon em 21/09/2026:
+
+- 0 funcionários;
+- 1 usuário do sistema;
+- 1 veículo;
+- 1 cliente;
+- 0 tarefas;
+- 0 conversas;
+- 0 pendências;
+- 0 itens no controle de peças.
+
+Isso confirma que a próxima etapa é implantação operacional real, não limpeza de uma base antiga.
+
+### Observação sobre deploy
+
+As alterações são publicadas pelo branch `main` no projeto Vercel `oficina-ia-demo`. O deploy contendo foto de funcionário chegou a `READY`, e o health público já refletiu a nova leitura de fonte operacional nativa e das conexões pendentes.
+
+## 11. Mudanças de código/documentação desta rodada
+
+Arquivos principais alterados ou adicionados em 21/09:
+
+- `app/funcionarios/actions.ts`
+- `app/funcionarios/page.tsx`
+- `app/funcionarios/funcionarios.module.css`
+- `lib/dashboard-data.ts`
+- `app/api/health/route.ts`
+- `lib/whatsapp.ts`
+- `lib/whatsapp-readiness.ts`
+- `app/configuracoes/page.tsx`
+- `docs/WHATSAPP-META-ATIVACAO.md`
+- `docs/migrations/2026-09-21-foto-funcionarios.sql`
+- `docs/CHECKPOINT-2026-09-21-PRE-REUNIAO.md`
+- `README.md`
+
+### Princípio preservado
+
+> Primeiro consolidar a operação real e a fonte de verdade. Depois conectar canais externos e automações.
