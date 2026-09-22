@@ -127,7 +127,7 @@ export default async function Dashboard() {
     { label: 'Banco', ready: data.source === 'live' },
     { label: 'IA', ready: Boolean(process.env.OPENAI_API_KEY?.trim() && process.env.OPENAI_MODEL?.trim()) },
     { label: 'WhatsApp', ready: Boolean(process.env.WHATSAPP_ACCESS_TOKEN?.trim() && process.env.WHATSAPP_PHONE_NUMBER_ID?.trim()) },
-    { label: 'Veículos', ready: Boolean(process.env.VEHICLE_DATA_URL?.trim()) },
+    { label: 'Base operacional', ready: data.source === 'live' },
   ];
   const integrationsWithIssue = systemChecks.filter((item) => !item.ready).length;
   const integrationsMessage = integrationsWithIssue === 0
@@ -157,7 +157,7 @@ export default async function Dashboard() {
           <h1>{escalations.length ? `${escalations.length} ${escalations.length === 1 ? 'situação chegou' : 'situações chegaram'} ao seu nível.` : 'Operação sob controle.'}</h1>
           <p>{escalations.length ? 'A base já absorveu a rotina. Aqui aparecem apenas exceções que ainda precisam de decisão.' : 'Nenhuma exceção venceu a base neste momento. A operação segue monitorada em segundo plano.'}</p>
           <div className="pa-command-actions">
-            {escalations.length ? <Link href="/tarefas" className="pa-primary-action">Ver decisões pendentes</Link> : <Link href="/veiculos" className="pa-primary-action">Ver operação</Link>}
+            {escalations.length ? <Link href="/tarefas" className="pa-primary-action">Ver decisões pendentes</Link> : <Link href="/veiculos" className="pa-primary-action">Abrir Oficina</Link>}
             <Link href="/atendimento" className="pa-secondary-action">Abrir atendimento</Link>
           </div>
         </div>
