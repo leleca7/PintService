@@ -1,4 +1,4 @@
-import AppShell from '@/app/components/app-shell';
+import Link from 'next/link';\nimport AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
@@ -56,9 +56,12 @@ export default async function AttendancePage() {
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerCopy}>
-            <p className={styles.kicker}>ATENDIMENTO · CENTRAL DE TRIAGEM</p>
+            <p className={styles.kicker}>ATENDIMENTO · CONVERSAS E REPUTAÇÃO</p>
             <h1 className={styles.title}>Atendimento</h1>
-            <p className={styles.subtitle}>A automação cuida da rotina. Aqui aparecem com clareza as conversas que realmente precisam de decisão ou presença humana.</p>
+            <p className={styles.subtitle}>Conversas, triagem e presença humana ficam no mesmo lugar. A automação cuida da rotina e sobe somente o que exige alguém.</p>
+          </div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <Link className={styles.button} href="/reputacao">Avaliações e reputação</Link>
           </div>
         </header>
 
