@@ -22,6 +22,19 @@ export default function SiteAssistant({ phone }: { phone: string }) {
 
   const phoneDigits = phone.replace(/\D/g, '');
 
+  useEffect(() => {
+    function openFromSite(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      const trigger = target?.closest('[data-assistant-open]');
+      if (!trigger) return;
+      event.preventDefault();
+      setStep('reason');
+    }
+
+    document.addEventListener('click', openFromSite);
+    return () => document.removeEventListener('click', openFromSite);
+  }, []);
+
   const whatsappHref = useMemo(() => {
     const summary = [
       'Olá! Fiz uma triagem inicial pelo site da Pint Services.',
