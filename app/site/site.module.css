@@ -79,7 +79,7 @@
 .heroActions{display:flex;gap:10px;flex-wrap:wrap;margin-top:30px}
 .primary,.secondary,.darkCta,.lightCta,.locationCta,.contactPrimary{min-height:48px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;gap:12px;text-decoration:none;font-size:8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
 .primary{background:var(--accent);color:#111!important}
-.secondary{border:1px solid rgba(255,255,255,.35);color:#fff}
+.secondary{border:1px solid rgba(255,255,255,.35);color:#fff!important}
 .heroIndex{position:absolute;right:max(24px,calc((100vw - 1400px)/2));bottom:82px;display:flex;align-items:center;gap:10px;color:#e8e4dc}
 .heroIndex span{font-size:12px;font-weight:800}
 .heroIndex i{width:70px;height:1px;background:rgba(255,255,255,.45)}
@@ -99,19 +99,32 @@
 
 .servicesSection{padding:120px max(24px,calc((100vw - 1400px)/2)) 140px;background:var(--cream);color:var(--darkText)}
 .sectionHead{
+  position:relative;
   display:grid;
-  grid-template-columns:minmax(0,1.25fr) minmax(300px,.55fr);
-  grid-template-areas:
-    "eyebrow eyebrow"
-    "title copy";
+  grid-template-columns:minmax(0,1.2fr) minmax(300px,.55fr);
+  grid-template-areas:"title copy";
   column-gap:72px;
-  row-gap:18px;
   align-items:end;
+  min-height:240px;
+  padding-top:36px;
   margin-bottom:52px
 }
-.sectionHead .eyebrowDark{grid-area:eyebrow;margin-bottom:0}
-.sectionHead h2{grid-area:title}
-.sectionHead>p:last-child{grid-area:copy;align-self:end}
+.sectionHead .eyebrowDark{
+  position:absolute;
+  top:0;
+  left:0;
+  margin:0
+}
+.sectionHead h2{
+  grid-area:title;
+  justify-self:start;
+  max-width:760px
+}
+.sectionHead>p:last-child{
+  grid-area:copy;
+  align-self:end;
+  justify-self:end
+}
 .sectionHead h2,.processIntro h2,.resultCopy h2,.aboutCopy h2,.locationCopy h2,.contactSection h2{margin:0;font-size:clamp(52px,6.8vw,98px);line-height:.86;letter-spacing:-.065em;font-weight:720}
 .sectionHead h2 span,.resultCopy h2 span,.aboutCopy h2 span{color:#a27639}
 .sectionHead>p:last-child{max-width:430px;margin:0;color:#343631;font-size:12px;font-weight:520;line-height:1.8}
@@ -134,7 +147,7 @@
 .performanceCopy h2{margin:0;font-size:clamp(48px,5.8vw,88px);line-height:.88;letter-spacing:-.065em;font-weight:710}
 .performanceCopy h2 span{color:var(--accent2)}
 .performanceCopy>p:not(.eyebrow){max-width:580px;margin:28px 0 0;color:#969993;font-size:12px;line-height:1.8}
-.darkCta{margin-top:32px;border:1px solid rgba(230,189,124,.55);color:#fff}
+.darkCta{margin-top:32px;border:1px solid rgba(230,189,124,.55);color:#fff!important;background:#111214}
 
 .processSection{padding:120px max(24px,calc((100vw - 1400px)/2)) 130px;background:#f7f5ef;color:var(--darkText)}
 .processIntro{max-width:760px}
@@ -149,7 +162,7 @@
 .resultSection{display:grid;grid-template-columns:.88fr 1.12fr;background:var(--cream2);color:var(--darkText)}
 .resultCopy{padding:120px 70px 120px max(24px,calc((100vw - 1400px)/2));align-self:center}
 .resultCopy>p:not(.eyebrowDark){max-width:520px;margin:28px 0 0;color:#686a64;font-size:12px;line-height:1.8}
-.lightCta{margin-top:30px;background:#111214;color:#fff}
+.lightCta{margin-top:30px;background:#111214;color:#fff!important;border:1px solid #111214}
 .resultVisual{position:relative;min-height:720px;overflow:hidden}
 .resultVisual img{object-fit:cover;filter:saturate(.75) contrast(1.04)}
 .resultVisual:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(233,228,218,.24),transparent 28%),linear-gradient(0deg,rgba(0,0,0,.28),transparent 35%)}
@@ -173,10 +186,26 @@
 .locationMeta div{display:grid;gap:7px}
 .locationMeta span{font-size:7px;font-weight:900;letter-spacing:.16em;color:#676a65}
 .locationMeta strong{font-size:10px;line-height:1.55}
-.locationCta{margin-top:28px;border:1px solid rgba(230,189,124,.55);color:#fff}
-.mapShell{position:relative;min-height:720px;overflow:hidden}
-.mapFrame{position:absolute;inset:-3%;width:106%;height:106%;border:0;filter:grayscale(1) contrast(1.02) brightness(.84)}
-.mapOverlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,12,13,.24),transparent 26%),linear-gradient(0deg,rgba(11,12,13,.18),transparent 38%);pointer-events:none}
+.locationCta{margin-top:28px;border:1px solid rgba(230,189,124,.55);color:#fff!important;background:#111214}
+.mapShell{position:relative;min-height:720px;overflow:hidden;background:#d8d6d0}
+.mapFrame{
+  position:absolute;
+  left:-4%;
+  top:-22%;
+  width:108%;
+  height:144%;
+  border:0;
+  pointer-events:none;
+  filter:grayscale(1) contrast(1.02) brightness(.90)
+}
+.mapOverlay{
+  position:absolute;
+  inset:0;
+  background:
+    linear-gradient(90deg,rgba(11,12,13,.24),transparent 24%),
+    linear-gradient(0deg,rgba(11,12,13,.12),transparent 34%);
+  pointer-events:none
+}
 
 .contactSection{padding:120px max(24px,calc((100vw - 1400px)/2));display:grid;grid-template-columns:1.05fr .75fr;gap:90px;background:var(--cream);color:var(--darkText)}
 .contactCopy{align-self:end}
@@ -195,7 +224,8 @@
   .header{grid-template-columns:1fr auto}.nav{display:none}
   .quickProof{grid-template-columns:1fr 1fr}
   .quickProof>div:nth-child(2){border-right:0}
-  .sectionHead{grid-template-columns:1fr;grid-template-areas:"eyebrow" "title" "copy";gap:18px}
+  .sectionHead{grid-template-columns:1fr;grid-template-areas:"title" "copy";min-height:0;padding-top:34px;gap:18px}
+  .sectionHead>p:last-child{justify-self:start}
   .serviceGrid{grid-template-columns:1fr 1fr}
   .serviceCard:last-child{grid-column:1/-1}
   .performanceSection,.resultSection,.aboutSection,.locationSection,.contactSection{grid-template-columns:1fr}
