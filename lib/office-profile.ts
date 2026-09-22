@@ -8,6 +8,8 @@ export type OfficeProfile = {
   instagramHandle: string;
   instagramUrl: string;
   googleBusinessUrl: string;
+  googleRating: number;
+  googleReviewCount: number;
   legacySiteUrl: string;
   reclameAquiUrl: string;
 };
@@ -20,12 +22,21 @@ const defaults: OfficeProfile = {
   instagramHandle: '@pintservicescarcenter',
   instagramUrl: 'https://www.instagram.com/pintservicescarcenter/',
   googleBusinessUrl: 'https://share.google/g4u3pkUYBNI0GKkVd',
+  googleRating: 4.0,
+  googleReviewCount: 29,
   legacySiteUrl: 'https://pintservices.com.br/',
   reclameAquiUrl: 'https://www.reclameaqui.com.br/empresa/pint-services-reparos-automotivos/',
 };
 
 function value(name: string, fallback: string) {
   return process.env[name]?.trim() || fallback;
+}
+
+function numberValue(name: string, fallback: number) {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const parsed = Number(raw.replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 export function getOfficeProfile(): OfficeProfile {
@@ -37,6 +48,8 @@ export function getOfficeProfile(): OfficeProfile {
     instagramHandle: value('OFICINA_INSTAGRAM_HANDLE', defaults.instagramHandle),
     instagramUrl: value('OFICINA_INSTAGRAM_URL', defaults.instagramUrl),
     googleBusinessUrl: value('OFICINA_GOOGLE_BUSINESS_URL', defaults.googleBusinessUrl),
+    googleRating: numberValue('OFICINA_GOOGLE_RATING', defaults.googleRating),
+    googleReviewCount: numberValue('OFICINA_GOOGLE_REVIEW_COUNT', defaults.googleReviewCount),
     legacySiteUrl: value('OFICINA_LEGACY_SITE_URL', defaults.legacySiteUrl),
     reclameAquiUrl: value('OFICINA_RECLAME_AQUI_URL', defaults.reclameAquiUrl),
   };
@@ -51,7 +64,8 @@ export function getOfficeProfileFacts() {
     `Horários gerais: ${office.hours}.`,
     `Instagram oficial informado: ${office.instagramHandle} (${office.instagramUrl}).`,
     `Perfil/localização do Google informado: ${office.googleBusinessUrl}.`,
+    `Avaliação pública do Google verificada em 21/09/2026: ${office.googleRating.toFixed(1)} de 5, com ${office.googleReviewCount} avaliações.`,
     'O site pintservices.com.br é uma referência histórica e pode estar indisponível; não oriente o cliente a depender dele.',
-    'Existe uma URL informada de Reclame Aqui, mas a titularidade desse perfil ainda precisa ser confirmada; não apresente esse perfil como canal oficial até confirmação humana.',
+    'Perfil público do Reclame Aqui localizado em 21/09/2026: empresa não verificada e sem reputação definida. Não apresentar esse perfil como selo de confiança ou canal oficial até regularização.',
   ].join('\n');
 }

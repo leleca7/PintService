@@ -79,3 +79,168 @@ export async function sendWhatsAppActivationTest(formData:FormData){
   });
   revalidatePath('/configuracoes');
 }
+
+
+async function ensureSiteConfigTable(){
+  const sql=getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS configuracao_site (
+      id boolean PRIMARY KEY DEFAULT true,
+      logo_base64 text,
+      logo_mime text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+  return sql;
+}
+
+export async function updateSiteLogo(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const file=formData.get('logo');
+
+  if(!(file instanceof File) || file.size===0){
+    throw new Error('Selecione uma imagem para a logo.');
+  }
+
+  const allowed=new Set(['image/png','image/jpeg','image/webp']);
+  if(!allowed.has(file.type)){
+    throw new Error('Use uma logo em PNG, JPG ou WEBP.');
+  }
+
+  const maxBytes=2*1024*1024;
+  if(file.size>maxBytes){
+    throw new Error('A logo deve ter no máximo 2 MB.');
+  }
+
+  const buffer=Buffer.from(await file.arrayBuffer());
+  const base64=buffer.toString('base64');
+  const sql=await ensureSiteConfigTable();
+  const before=await sql`SELECT logo_mime, atualizado_em FROM configuracao_site WHERE id=true LIMIT 1`;
+
+  await sql`
+    INSERT INTO configuracao_site (id,logo_base64,logo_mime,atualizado_em)
+    VALUES (true,${base64},${file.type},now())
+    ON CONFLICT (id) DO UPDATE SET
+      logo_base64=EXCLUDED.logo_base64,
+      logo_mime=EXCLUDED.logo_mime,
+      atualizado_em=now()
+  `;
+
+  await writeAudit(user,'atualizar_logo_site','configuracao_site','global',{
+    antes:before[0]??null,
+    depois:{mime:file.type,tamanho:file.size,nome:file.name},
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
+
+export async function resetSiteLogo(){
+  const user=await requirePermission('gerenciar_integracoes');
+  const sql=await ensureSiteConfigTable();
+  const before=await sql`SELECT logo_mime, atualizado_em FROM configuracao_site WHERE id=true LIMIT 1`;
+
+  await sql`
+    INSERT INTO configuracao_site (id,logo_base64,logo_mime,atualizado_em)
+    VALUES (true,NULL,NULL,now())
+    ON CONFLICT (id) DO UPDATE SET
+      logo_base64=NULL,
+      logo_mime=NULL,
+      atualizado_em=now()
+  `;
+
+  await writeAudit(user,'restaurar_logo_padrao','configuracao_site','global',{
+    antes:before[0]??null,
+    depois:{logo:'padrao_local'},
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
+
+
+export async function updateSiteMedia(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const slot=String(formData.get('slot')??'').trim();
+  if(slot!=='processo'&&slot!=='resultado') throw new Error('Espaço de vídeo inválido.');
+
+  const file=formData.get('media');
+  if(!(file instanceof File)||file.size===0) throw new Error('Selecione um vídeo.');
+
+  const allowed=new Set(['video/mp4','video/webm']);
+  if(!allowed.has(file.type)) throw new Error('Use vídeo MP4 ou WEBM.');
+
+  const maxBytes=8*1024*1024;
+  if(file.size>maxBytes) throw new Error('O vídeo deve ter no máximo 8 MB.');
+
+  const buffer=Buffer.from(await file.arrayBuffer());
+  const sql=getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS configuracao_site_media (
+      slot text PRIMARY KEY,
+      media bytea,
+      mime text,
+      nome_arquivo text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+
+  const before=await sql`
+    SELECT slot,mime,nome_arquivo,atualizado_em
+    FROM configuracao_site_media
+    WHERE slot=${slot}
+    LIMIT 1
+  `;
+
+  await sql`
+    INSERT INTO configuracao_site_media (slot,media,mime,nome_arquivo,atualizado_em)
+    VALUES (${slot},${buffer},${file.type},${file.name},now())
+    ON CONFLICT (slot) DO UPDATE SET
+      media=EXCLUDED.media,
+      mime=EXCLUDED.mime,
+      nome_arquivo=EXCLUDED.nome_arquivo,
+      atualizado_em=now()
+  `;
+
+  await writeAudit(user,'atualizar_video_site','configuracao_site_media',slot,{
+    antes:before[0]??null,
+    depois:{slot,mime:file.type,tamanho:file.size,nome:file.name},
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
+
+export async function resetSiteMedia(formData:FormData){
+  const user=await requirePermission('gerenciar_integracoes');
+  const slot=String(formData.get('slot')??'').trim();
+  if(slot!=='processo'&&slot!=='resultado') throw new Error('Espaço de vídeo inválido.');
+
+  const sql=getDb();
+  await sql`
+    CREATE TABLE IF NOT EXISTS configuracao_site_media (
+      slot text PRIMARY KEY,
+      media bytea,
+      mime text,
+      nome_arquivo text,
+      atualizado_em timestamptz NOT NULL DEFAULT now()
+    )
+  `;
+
+  const before=await sql`
+    SELECT slot,mime,nome_arquivo,atualizado_em
+    FROM configuracao_site_media
+    WHERE slot=${slot}
+    LIMIT 1
+  `;
+
+  await sql`DELETE FROM configuracao_site_media WHERE slot=${slot}`;
+
+  await writeAudit(user,'remover_video_site','configuracao_site_media',slot,{
+    antes:before[0]??null,
+    depois:null,
+  });
+
+  revalidatePath('/site');
+  revalidatePath('/configuracoes');
+}
