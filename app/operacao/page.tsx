@@ -72,19 +72,21 @@ export default async function OperationPage() {
   const blockedQueues = capacity.phases.filter((phase) => phase.filaTravada).length;
   const canManageEntryQueue = userHasPermission(user, 'gerenciar_fila_entrada');
   const canManageParts = userHasPermission(user, 'gerenciar_pecas');
+  const canViewTasks = userHasPermission(user, 'ver_todas_tarefas') || userHasPermission(user, 'ver_proprias_tarefas');
 
   return (
     <AppShell active="operacao" source={data.source}>
       <div className={styles.page}>
         <header className={styles.header}>
           <div className={styles.headerCopy}>
-            <p className={styles.kicker}>CHÃO DE OFICINA · ATUALIZAÇÃO RÁPIDA</p>
-            <h1 className={styles.title}>Modo Operação</h1>
-            <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
+            <p className={styles.kicker}>OFICINA · ROTINA OPERACIONAL</p>
+            <h1 className={styles.title}>Oficina</h1>
+            <p className={styles.subtitle}>Veja os veículos em produção e atualize somente o que mudou. O sistema reaproveita essa informação no restante da operação.</p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Entradas</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
+            {canViewTasks && <Link className={styles.button} href="/tarefas">Minhas tarefas</Link>}
             <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
           </div>
         </header>
