@@ -71,7 +71,7 @@ export default async function OperationPage() {
   const overCapacity = capacity.phases.filter((phase) => phase.situacao === 'over').length;
   const blockedQueues = capacity.phases.filter((phase) => phase.filaTravada).length;
   const canManageEntryQueue = userHasPermission(user, 'gerenciar_fila_entrada');
-  const canManageParts = userHasPermission(user, 'gerenciar_pecas');
+  const canManageParts = userHasPermission(user, 'gerenciar_pecas');\n  const canViewTasks = userHasPermission(user, 'ver_todas_tarefas') || userHasPermission(user, 'ver_proprias_tarefas');
 
   return (
     <AppShell active="operacao" source={data.source}>
@@ -85,6 +85,7 @@ export default async function OperationPage() {
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Entradas</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
+            {canViewTasks && <Link className={styles.button} href="/tarefas">Minhas tarefas</Link>}
             <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
           </div>
         </header>
