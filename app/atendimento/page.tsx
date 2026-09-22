@@ -1,4 +1,5 @@
-import Link from 'next/link';\nimport AppShell from '@/app/components/app-shell';
+import Link from 'next/link';
+import AppShell from '@/app/components/app-shell';
 import styles from '@/app/components/precision-atelier-core.module.css';
 import ops from '@/app/components/precision-atelier-ops.module.css';
 import { getDashboardData } from '@/lib/dashboard-data';
