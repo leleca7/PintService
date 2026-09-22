@@ -83,12 +83,9 @@ export default async function OperationPage() {
             <p className={styles.subtitle}>Atualize a etapa real do veículo uma vez. O restante do Sistema da Pint usa essa informação como fonte operacional.</p>
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Fila de entrada</Link>}
-            {canManageEntryQueue && <Link className={styles.button} href="/operacao/agenda">Agenda</Link>}
+            {canManageEntryQueue && <Link className={styles.button} href="/operacao/fila">Entradas</Link>}
             {canManageParts && <Link className={styles.button} href="/operacao/pecas">Peças</Link>}
             <Link className={styles.button} href="/operacao/pos-entrega">Pós-entrega</Link>
-            <Link className={styles.button} href="/operacao/inteligencia">Inteligência</Link>
-            <Link className={styles.button} href="/operacao/capacidade">Capacidade</Link>
           </div>
         </header>
 
@@ -115,7 +112,7 @@ export default async function OperationPage() {
 
         <section className={styles.section}>
           <div className={local.toolbar}>
-            <div className={styles.sectionHead}><div><p>CARTEIRA DO SETOR</p><h2>Veículos para atualizar</h2></div><span className={styles.count}>{data.vehicles.length}</span></div>
+            <div className={styles.sectionHead}><div><p>EM PRODUÇÃO</p><h2>Veículos da oficina</h2></div><span className={styles.count}>{data.vehicles.length}</span></div>
           </div>
 
           {data.vehicles.length ? (
