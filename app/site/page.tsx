@@ -259,11 +259,6 @@ export default function PintServicesSite() {
             className={styles.mapFrame}
           />
           <div className={styles.mapOverlay}/>
-          <div className={styles.mapCard}>
-            <small>PINT SERVICES</small>
-            <strong>CAR CENTER</strong>
-            <span>Vilas do Atlântico · BA</span>
-          </div>
         </div>
       </section>
 
