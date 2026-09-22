@@ -71,7 +71,8 @@ export default async function OperationPage() {
   const overCapacity = capacity.phases.filter((phase) => phase.situacao === 'over').length;
   const blockedQueues = capacity.phases.filter((phase) => phase.filaTravada).length;
   const canManageEntryQueue = userHasPermission(user, 'gerenciar_fila_entrada');
-  const canManageParts = userHasPermission(user, 'gerenciar_pecas');\n  const canViewTasks = userHasPermission(user, 'ver_todas_tarefas') || userHasPermission(user, 'ver_proprias_tarefas');
+  const canManageParts = userHasPermission(user, 'gerenciar_pecas');
+  const canViewTasks = userHasPermission(user, 'ver_todas_tarefas') || userHasPermission(user, 'ver_proprias_tarefas');
 
   return (
     <AppShell active="operacao" source={data.source}>
