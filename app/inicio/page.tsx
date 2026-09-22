@@ -6,6 +6,6 @@ export const dynamic = 'force-dynamic';
 export default async function StartPage() {
   const user = await getCurrentAppUser();
   if (!user?.ativo) redirect('/sem-acesso');
-  if (user.perfil === 'funcionario') redirect('/tarefas');
+  if (user.perfil === 'funcionario') redirect('/operacao');
   redirect('/');
 }
