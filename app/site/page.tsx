@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 };
 
 const imagery = {
-  hero: 'https://images.pexels.com/photos/33814680/pexels-photo-33814680.jpeg?auto=compress&cs=tinysrgb&w=2000',
+  hero: 'https://images.pexels.com/photos/33814680/pexels-photo-33814680.jpeg?auto=compress&cs=tinysrgb&w=2200',
   paint: 'https://images.pexels.com/photos/30250199/pexels-photo-30250199.jpeg?auto=compress&cs=tinysrgb&w=1800',
   workshop: 'https://images.pexels.com/photos/10162530/pexels-photo-10162530.jpeg?auto=compress&cs=tinysrgb&w=1800',
 };
@@ -26,53 +26,34 @@ const services = [
   {
     number: '01',
     title: 'Funilaria & pintura',
-    text: 'Recuperação de avarias na lataria, preparação e pintura para devolver forma, cor e acabamento ao veículo.',
+    text: 'Recuperação de avarias, preparação e pintura para devolver forma, cor e acabamento ao veículo.',
     image: imagery.hero,
-    label: 'Reparação automotiva',
   },
   {
     number: '02',
     title: 'Martelinho de ouro',
     text: 'Correção de amassados quando a técnica é indicada, preservando a pintura original sempre que possível.',
     image: imagery.paint,
-    label: 'Correção de amassados',
   },
   {
     number: '03',
     title: 'Polimento & acabamento',
     text: 'Refino da superfície, revisão visual e acabamento final para valorizar o resultado do reparo.',
     image: imagery.workshop,
-    label: 'Refino e entrega',
   },
 ];
 
 const process = [
-  {
-    number: '01',
-    title: 'Avaliação',
-    text: 'Entendemos o dano e orientamos o caminho adequado para atendimento particular ou por seguradora.',
-  },
-  {
-    number: '02',
-    title: 'Reparação',
-    text: 'Desmontagem, funilaria e preparação acontecem conforme a necessidade real do veículo.',
-  },
-  {
-    number: '03',
-    title: 'Pintura & acabamento',
-    text: 'A execução segue para pintura, montagem, polimento e os ajustes finais do serviço.',
-  },
-  {
-    number: '04',
-    title: 'Conferência & entrega',
-    text: 'O veículo passa pela revisão final antes de ser liberado para o cliente.',
-  },
+  { number: '01', title: 'Avaliação', text: 'Entendemos o dano e orientamos o melhor caminho para o atendimento.' },
+  { number: '02', title: 'Reparação', text: 'Funilaria, preparação e desmontagem conforme a necessidade real do veículo.' },
+  { number: '03', title: 'Pintura & acabamento', text: 'Pintura, montagem, polimento e ajustes finais entram na mesma jornada.' },
+  { number: '04', title: 'Conferência & entrega', text: 'O veículo passa por revisão final antes da liberação ao cliente.' },
 ];
 
 function Brand() {
   return (
     <span className={styles.brand} aria-label="Pint Services Car Center">
-      <span className={styles.brandMark} aria-hidden="true"><span className={styles.brandCut}/></span>
+      <span className={styles.brandMark} aria-hidden="true"><span/></span>
       <span className={styles.brandCopy}><strong>Pint Services</strong><small>car center</small></span>
     </span>
   );
@@ -110,87 +91,72 @@ export default function PintServicesSite() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}/>
 
       <header className={styles.header}>
-        <a href="#top" className={styles.brandLink} aria-label="Pint Services — início"><Brand/></a>
+        <a href="#top" className={styles.brandLink}><Brand/></a>
         <nav className={styles.nav} aria-label="Navegação principal">
           <a href="#servicos">Serviços</a>
-          <a href="#processo">Como funciona</a>
+          <a href="#processo">Processo</a>
           <a href="#sobre">A Pint</a>
           <a href="#contato">Contato</a>
         </nav>
         <a href="#assistente-pint" data-assistant-open className={styles.headerCta}>
-          Avaliar meu veículo <Arrow/>
+          Avaliar veículo <Arrow/>
         </a>
       </header>
 
       <section className={styles.hero}>
-        <div className={styles.heroGrid} aria-hidden="true"/>
-        <div className={styles.heroCopy} data-reveal>
+        <div className={styles.heroMedia}>
+          <Image
+            className={styles.heroImage}
+            src={imagery.hero}
+            alt="Veículo em ambiente automotivo"
+            fill
+            priority
+            sizes="100vw"
+          />
+          <div className={styles.heroShade}/>
+        </div>
+
+        <div className={styles.heroContent} data-reveal>
           <p className={styles.eyebrow}>PINT SERVICES · LAURO DE FREITAS</p>
-          <div className={styles.heroTitle}>
-            <span>FUNILARIA.</span>
-            <span>PINTURA.</span>
-          </div>
+          <h1>REDEFINA<br/><span>O REPARO.</span></h1>
           <p className={styles.heroText}>
-            Recuperação automotiva para clientes particulares e atendimento relacionado a seguradoras,
-            com uma jornada clara da avaliação à entrega.
+            Funilaria e pintura automotiva para clientes particulares e atendimentos relacionados a seguradoras.
           </p>
           <div className={styles.heroActions}>
-            <a href="#assistente-pint" data-assistant-open className={styles.primary}>
-              Avaliar meu veículo <Arrow/>
-            </a>
-            <a href="#servicos" className={styles.secondary}>Conhecer os serviços</a>
+            <a href="#assistente-pint" data-assistant-open className={styles.primary}>Avaliar meu veículo <Arrow/></a>
+            <a href="#servicos" className={styles.secondary}>Conhecer serviços</a>
           </div>
         </div>
 
-        <div className={styles.heroVisual} data-reveal>
-          <div className={styles.heroImageWrap}>
-            <Image
-              className={styles.heroImage}
-              src={imagery.hero}
-              alt="Veículo em ambiente profissional de recuperação automotiva"
-              fill
-              priority
-              sizes="(max-width: 980px) 100vw, 62vw"
-            />
-          </div>
-          <div className={styles.heroPhotoShade} aria-hidden="true"/>
-          <div className={styles.heroCaption}>
-            <span>PINT SERVICES</span>
-            <strong>Funilaria · pintura · acabamento</strong>
-          </div>
-        </div>
-
-        <div className={styles.heroFacts} data-reveal>
-          <div><small>01</small><span>ESPECIALIDADE</span><strong>Funilaria & pintura</strong></div>
-          <div><small>02</small><span>ATENDIMENTO</span><strong>Particular & seguradoras</strong></div>
-          <div><small>03</small><span>LOCALIZAÇÃO</span><strong>Lauro de Freitas · BA</strong></div>
+        <div className={styles.heroIndex} aria-hidden="true">
+          <span>01</span>
+          <i/>
+          <small>PINT SERVICES</small>
         </div>
       </section>
 
+      <section className={styles.quickProof}>
+        <div><span>ESPECIALIDADE</span><strong>Funilaria & pintura</strong></div>
+        <div><span>ATENDIMENTO</span><strong>Particular & seguradoras</strong></div>
+        <div><span>LOCALIZAÇÃO</span><strong>Lauro de Freitas · BA</strong></div>
+        <div><span>JORNADA</span><strong>Da avaliação à entrega</strong></div>
+      </section>
+
       <section id="servicos" className={styles.servicesSection}>
-        <div className={styles.sectionIntroGrid} data-reveal>
-          <div>
-            <p className={styles.eyebrow}>SERVIÇOS</p>
-            <h2>O que a Pint <span>resolve.</span></h2>
-          </div>
-          <div className={styles.introCopy}>
-            <p>
-              Serviços apresentados pelo que o cliente procura — sem transformar cada etapa interna da oficina em uma oferta diferente.
-            </p>
-            <a href="#assistente-pint" data-assistant-open>Quero avaliar meu veículo <Arrow/></a>
-          </div>
+        <div className={styles.sectionHead} data-reveal>
+          <p className={styles.eyebrowDark}>SERVIÇOS</p>
+          <h2>O QUE A PINT<br/><span>RESOLVE.</span></h2>
+          <p>Três frentes principais. Sem transformar cada etapa da oficina em um serviço diferente.</p>
         </div>
 
-        <div className={styles.featuredGrid}>
+        <div className={styles.serviceGrid}>
           {services.map((service) => (
-            <article key={service.number} className={styles.featuredCard} data-reveal>
-              <div className={styles.cardMedia}>
-                <Image src={service.image} alt={service.title} fill sizes="(max-width: 980px) 100vw, 33vw" className={styles.cardImage}/>
-                <div className={styles.cardShade}/>
+            <article key={service.number} className={styles.serviceCard} data-reveal>
+              <div className={styles.serviceImage}>
+                <Image src={service.image} alt={service.title} fill sizes="(max-width: 760px) 100vw, 33vw"/>
               </div>
-              <div className={styles.cardIndex}>{service.number}</div>
-              <div className={styles.cardCopy}>
-                <span>{service.label}</span>
+              <div className={styles.serviceCopy}>
+                <span>{service.number}</span>
                 <h3>{service.title}</h3>
                 <p>{service.text}</p>
               </div>
@@ -199,61 +165,73 @@ export default function PintServicesSite() {
         </div>
       </section>
 
-      <section id="processo" className={styles.processSection}>
-        <div className={styles.processBackdrop} aria-hidden="true">PROCESSO</div>
-        <div className={styles.processSticky} data-reveal>
-          <p className={styles.eyebrow}>COMO FUNCIONA</p>
-          <h2>Um caminho claro do problema à entrega.</h2>
-          <p>
-            O processo aparece aqui uma única vez: simples para o cliente e coerente com a operação da oficina.
-          </p>
-          <div className={styles.processMeter}>
-            {process.map((item) => <span key={item.number}>{item.number}</span>)}
-          </div>
+      <section id="processo" className={styles.performanceSection}>
+        <div className={styles.performanceVisual} data-reveal>
+          <Image src={imagery.paint} alt="Processo de pintura automotiva" fill sizes="(max-width: 980px) 100vw, 52vw"/>
+          <div className={styles.performanceShade}/>
+          <span className={styles.performanceTag}>PINTURA · ACABAMENTO · PRECISÃO</span>
         </div>
 
-        <div className={styles.processList}>
+        <div className={styles.performanceCopy} data-reveal>
+          <p className={styles.eyebrow}>PADRÃO PINT</p>
+          <h2>RESULTADO NÃO<br/><span>ACONTECE NO IMPROVISO.</span></h2>
+          <p>
+            Organização de processo, leitura correta do reparo e atenção ao acabamento trabalham juntas.
+            O cliente vê simplicidade; a oficina mantém controle.
+          </p>
+          <a href="#assistente-pint" data-assistant-open className={styles.darkCta}>Começar avaliação <Arrow/></a>
+        </div>
+      </section>
+
+      <section className={styles.processSection}>
+        <div className={styles.processIntro} data-reveal>
+          <p className={styles.eyebrowDark}>COMO FUNCIONA</p>
+          <h2>UM CAMINHO.<br/>QUATRO ETAPAS.</h2>
+        </div>
+
+        <div className={styles.processGrid}>
           {process.map((item) => (
             <article key={item.number} className={styles.processItem} data-process-step data-reveal>
-              <div className={styles.processNumber}>{item.number}</div>
-              <div className={styles.processBody}>
-                <small>ETAPA {item.number}</small>
-                <h3>{item.title}</h3>
-                <p>{item.text}</p>
-              </div>
-              <span className={styles.processLine} aria-hidden="true"/>
+              <span>{item.number}</span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section id="sobre" className={styles.aboutSection}>
-        <div className={styles.aboutVisual} data-reveal>
-          <div className={styles.aboutFrame}>
-            <Image
-              className={styles.aboutImage}
-              src={imagery.workshop}
-              alt="Ambiente de oficina automotiva"
-              fill
-              sizes="(max-width: 980px) 100vw, 48vw"
-            />
-            <div className={styles.aboutPhotoShade}/>
-            <span className={styles.aboutOutline}>PINT</span>
-            <span className={styles.aboutBadge}>CAR CENTER · BA</span>
-          </div>
+      <section className={styles.resultSection}>
+        <div className={styles.resultCopy} data-reveal>
+          <p className={styles.eyebrowDark}>DETALHE IMPORTA</p>
+          <h2>O REPARO TERMINA<br/><span>NO ACABAMENTO.</span></h2>
+          <p>
+            A percepção de qualidade está nos detalhes: alinhamento, superfície, brilho, montagem e conferência final.
+          </p>
+          <a href="#assistente-pint" data-assistant-open className={styles.lightCta}>Avaliar meu veículo <Arrow/></a>
         </div>
 
-        <div className={styles.aboutContent} data-reveal>
-          <p className={styles.eyebrow}>A PINT SERVICES</p>
-          <h2>Técnica na oficina. <span>Clareza no atendimento.</span></h2>
+        <div className={styles.resultVisual} data-reveal>
+          <Image src={imagery.workshop} alt="Ambiente de oficina automotiva" fill sizes="(max-width: 980px) 100vw, 54vw"/>
+          <span>PINT SERVICES · CAR CENTER</span>
+        </div>
+      </section>
+
+      <section id="sobre" className={styles.aboutSection}>
+        <div className={styles.aboutVisual} data-reveal>
+          <Image src={imagery.hero} alt="Veículo em destaque" fill sizes="(max-width: 980px) 100vw, 48vw"/>
+        </div>
+
+        <div className={styles.aboutCopy} data-reveal>
+          <p className={styles.eyebrowDark}>A PINT SERVICES</p>
+          <h2>TÉCNICA NA OFICINA.<br/><span>CLAREZA NO ATENDIMENTO.</span></h2>
           <p>
-            A Pint Services atua em recuperação automotiva em Lauro de Freitas.
-            A proposta é simples: organizar o reparo, manter o cliente orientado e cuidar do acabamento até a entrega.
+            A Pint Services atua em recuperação automotiva em Lauro de Freitas com uma proposta simples:
+            organizar o reparo, orientar o cliente e acompanhar o veículo até a entrega.
           </p>
           <div className={styles.aboutFacts}>
-            <div><span>01</span><strong>Processo organizado</strong><small>O veículo avança por etapas definidas.</small></div>
-            <div><span>02</span><strong>Atendimento direto</strong><small>Particular ou seguradora, cada caso começa pela orientação correta.</small></div>
-            <div><span>03</span><strong>Conferência final</strong><small>A entrega faz parte do serviço, não é apenas o fim da produção.</small></div>
+            <div><span>01</span><strong>Processo organizado</strong></div>
+            <div><span>02</span><strong>Atendimento direto</strong></div>
+            <div><span>03</span><strong>Conferência final</strong></div>
           </div>
         </div>
       </section>
@@ -261,14 +239,14 @@ export default function PintServicesSite() {
       <section className={styles.locationSection}>
         <div className={styles.locationCopy} data-reveal>
           <p className={styles.eyebrow}>ONDE ESTAMOS</p>
-          <h2>Vilas do Atlântico.<br/><span>Lauro de Freitas.</span></h2>
+          <h2>VILAS DO ATLÂNTICO.<br/><span>LAURO DE FREITAS.</span></h2>
           <p>{office.address}</p>
           <div className={styles.locationMeta}>
-            <div><small>TELEFONE</small><strong>{office.publicPhone}</strong></div>
-            <div><small>HORÁRIOS</small><strong>{office.hours}</strong></div>
+            <div><span>TELEFONE</span><strong>{office.publicPhone}</strong></div>
+            <div><span>HORÁRIOS</span><strong>{office.hours}</strong></div>
           </div>
           <a href={office.googleBusinessUrl} target="_blank" rel="noreferrer" className={styles.locationCta}>
-            Abrir rota no Google Maps <Arrow/>
+            Abrir rota <Arrow/>
           </a>
         </div>
 
@@ -280,50 +258,37 @@ export default function PintServicesSite() {
             referrerPolicy="no-referrer-when-downgrade"
             className={styles.mapFrame}
           />
-          <div className={styles.mapOverlay} aria-hidden="true"/>
-          <div className={styles.mapPinCard}>
-            <span>PINT SERVICES</span>
-            <strong>CAR CENTER</strong>
-            <small>Vilas do Atlântico · BA</small>
-          </div>
+          <div className={styles.mapOverlay}/>
         </div>
       </section>
 
       <section id="contato" className={styles.contactSection}>
-        <div className={styles.contactCopy} data-reveal>
-          <p className={styles.eyebrow}>PRÓXIMO PASSO</p>
-          <h2>Conte o que aconteceu com o seu carro.</h2>
-          <p>
-            O Assistente Pint organiza três informações antes de abrir o WhatsApp.
-            Assim a equipe já recebe o contexto e começa a conversa do ponto certo.
-          </p>
+        <div data-reveal>
+          <p className={styles.eyebrowDark}>PRÓXIMO PASSO</p>
+          <h2>CONTE O QUE<br/>ACONTECEU.</h2>
         </div>
-
-        <div className={styles.contactPanel} data-reveal>
-          <a href="#assistente-pint" data-assistant-open className={styles.contactPrimary}>
-            <span><small>ASSISTENTE PINT</small><strong>Iniciar avaliação</strong></span>
-            <Arrow/>
-          </a>
-          <a href={telHref} className={styles.contactRow}><span>Telefone</span><strong>{office.publicPhone}</strong></a>
-          <a href={office.instagramUrl} target="_blank" rel="noreferrer" className={styles.contactRow}><span>Instagram</span><strong>{office.instagramHandle}</strong></a>
-          <div className={styles.contactRow}><span>Horários</span><strong>{office.hours}</strong></div>
+        <div className={styles.contactCopy} data-reveal>
+          <p>
+            O Assistente Pint organiza o contexto antes de abrir o WhatsApp. A equipe recebe a conversa já com o motivo do contato.
+          </p>
+          <a href="#assistente-pint" data-assistant-open className={styles.contactPrimary}>Iniciar avaliação <Arrow/></a>
+          <div className={styles.contactMeta}>
+            <a href={telHref}>{office.publicPhone}</a>
+            <a href={office.instagramUrl} target="_blank" rel="noreferrer">{office.instagramHandle}</a>
+          </div>
         </div>
       </section>
 
       <footer className={styles.footer}>
-        <div className={styles.footerBrand}>
-          <Brand/>
-          <p>Funilaria, pintura e recuperação automotiva em Lauro de Freitas, Bahia.</p>
-        </div>
+        <Brand/>
         <div className={styles.footerNav}>
           <a href="#servicos">Serviços</a>
-          <a href="#processo">Como funciona</a>
+          <a href="#processo">Processo</a>
           <a href="#sobre">A Pint</a>
           <a href="#contato">Contato</a>
         </div>
         <div className={styles.footerEnd}>
           <span>© {new Date().getFullYear()} Pint Services</span>
-          <span className={styles.photoCredit}>Fotografias ilustrativas · Pexels</span>
           <a href="#top">Voltar ao topo ↑</a>
         </div>
       </footer>
