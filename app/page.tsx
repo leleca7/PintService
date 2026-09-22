@@ -281,7 +281,7 @@ export default async function Dashboard() {
         </article>
       </section>
 
-      <footer className="pa-footer"><span>PintService · Precision Atelier</span><span>Rotina silenciosa. Exceção visível.</span></footer>
+      <footer className="pa-footer"><span>Sistema da Pint · Pint Services</span><span>Rotina silenciosa. Exceção visível.</span></footer>
     </AppShell>
   );
 }
