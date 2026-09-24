@@ -108,7 +108,7 @@ function Brand() {
   return (
     <span className={styles.brand} aria-label="Pint Services Car Center">
       <img
-        src="/api/site/logo"
+        src="/pint-services-logo.jpg?v=5"
         alt="Pint Services Car Center"
         className={styles.brandImage}
       />
